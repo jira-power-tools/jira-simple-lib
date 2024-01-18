@@ -17,6 +17,27 @@ def get_list_of_all_projects():
 
     return {project.key:project.name for project in projects}
 
+#print(get_list_of_all_projects())
+
+def get_all_stories():
+    # Define the JQL query to search for issues of type 'Story'
+    jql_query = 'issuetype = Story'
+
+    # Search for issues using the JQL query
+    issues = jira.search_issues(jql_query)
+
+    return {issue.key:issue.fields.summary for issue in issues}
 
 
-print(get_list_of_all_projects())
+#print(get_all_stories())
+
+def get_all_stories_in_project(project_key):
+    # Define the JQL query to search for issues of type 'Story' in a specific project
+    jql_query = f'project = {project_key} AND issuetype = Story'
+
+    # Search for issues using the JQL query
+    issues = jira.search_issues(jql_query)
+
+    return {issue.key:issue.fields.summary for issue in issues}
+
+print(get_all_stories_in_project("JE"))
