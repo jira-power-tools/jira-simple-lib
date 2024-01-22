@@ -13,18 +13,32 @@ def get_list_of_all_projects():
     return {project.key:project.name for project in projects}
 print(get_list_of_all_projects())
 
+<<<<<<< HEAD
 #Get list of all stories in a project
 def print_stories(project_key):
     issues = jira.search_issues(f'project = {project_key} AND issuetype = Story')
     for issue in issues:
         print(f"Story Key: {issue.key}, Summary: {issue.fields.summary}")
 print_stories('JE')
+=======
+#print(get_list_of_all_projects())
+
+def get_all_stories():
+    # Define the JQL query to search for issues of type 'Story'
+    jql_query = 'issuetype = Story'
+
+    # Search for issues using the JQL query
+    issues = jira.search_issues(jql_query)
+
+    return {issue.key:issue.fields.summary for issue in issues}
+>>>>>>> 0e626b3128c79fda40ca6501dc78d8990773b796
 
 #Get report of specific sprint
 def print_sprint_details(jira, project_key, sprint_id):
     # Get detailed information about the sprint
     sprint_info = jira.sprint(sprint_id)
 
+<<<<<<< HEAD
     if not sprint_info:
         print(f"Sprint with ID {sprint_id} not found.")
         return
@@ -36,10 +50,18 @@ def print_sprint_details(jira, project_key, sprint_id):
 
     # Define the JQL query to search for issues of type 'Story' in a specific sprint
     jql_query = f'project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}'
+=======
+#print(get_all_stories())
+
+def get_all_stories_in_project(project_key):
+    # Define the JQL query to search for issues of type 'Story' in a specific project
+    jql_query = f'project = {project_key} AND issuetype = Story'
+>>>>>>> 0e626b3128c79fda40ca6501dc78d8990773b796
 
     # Search for issues using the JQL query
     issues = jira.search_issues(jql_query)
 
+<<<<<<< HEAD
     # Count issue statuses
     status_counts = {'To Do': 0, 'In Progress': 0, 'Done': 0}
     for issue in issues:
@@ -85,3 +107,8 @@ def print_sprint_details(jira, project_key, sprint_id):
 
 # Example usage
 print_sprint_details(jira, 'JE', '1')
+=======
+    return {issue.key:issue.fields.summary for issue in issues}
+
+print(get_all_stories_in_project("JE"))
+>>>>>>> 0e626b3128c79fda40ca6501dc78d8990773b796
