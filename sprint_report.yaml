@@ -1,0 +1,92 @@
+Sprint Details:
+  createdDate: '2023-11-29T12:28:59.182Z'
+  endDate: '2024-02-29T05:00:00.000Z'
+  goal: ''
+  id: 2
+  name: Sprint 1
+  originBoardId: 2
+  self: https://jtest-vl.atlassian.net/rest/agile/1.0/sprint/2
+  startDate: '2024-01-03T12:26:49.000Z'
+  state: future
+Issue Status Distribution:
+  Done: 11
+  In Progress: 0
+  To Do: 0
+Issue Details:
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:58:05'
+  Issue Key: JE-32
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of stories visible to a user
+  Updated Date: '2023-12-06 02:01:53'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:56:42'
+  Issue Key: JE-31
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of projects
+  Updated Date: '2023-12-06 02:01:50'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:46:15'
+  Issue Key: JE-30
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get all stories in a project
+  Updated Date: '2023-12-05 03:06:01'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:23:12'
+  Issue Key: JE-12
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of Epics
+  Updated Date: '2023-12-13 06:43:29'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:20:42'
+  Issue Key: JE-9
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: 'Dummy Epic '
+  Updated Date: '2023-12-13 06:17:30'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:20:24'
+  Issue Key: JE-8
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of comments for stories since a particular date
+  Updated Date: '2023-12-13 07:11:08'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:20:12'
+  Issue Key: JE-7
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of comments for a story
+  Updated Date: '2023-12-13 06:22:22'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:20:03'
+  Issue Key: JE-6
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get the current sprint
+  Updated Date: '2023-12-13 06:17:35'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:18:00'
+  Issue Key: JE-4
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of sprints
+  Updated Date: '2023-12-05 03:26:35'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:17:32'
+  Issue Key: JE-3
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Get a list of stories in the backlog
+  Updated Date: '2023-12-05 03:06:04'
+- Assignee: Unassigned
+  Created Date: '2023-11-29 07:17:03'
+  Issue Key: JE-2
+  Reporter: Arman Anwar
+  Status: Done
+  Summary: Connect to jira using api-token
+  Updated Date: '2023-12-06 02:01:47'
