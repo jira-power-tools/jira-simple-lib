@@ -1,86 +1,159 @@
-from jira import JIRA
-from datetime import datetime
-import yaml
-from pathlib import Path
-import matplotlib.pyplot as plt
+from jira import JIRA, JIRAError
 
-# Function to get specific sprint report
-def get_sprint_details(jira_url, jira_username, api_token, project_key, sprint_id):
-    # Create a Jira connection
-    jira = JIRA(server=jira_url, basic_auth=(jira_username, api_token))
+# Function to create a Jira connection
+def create_jira_connection(jira_url, user, api_token):
+    return JIRA(server=jira_url, basic_auth=(user, api_token))
 
-    # Get detailed information about the sprint
-    sprint_info = jira.sprint(sprint_id)
+# Function to create a new story in Jira
+def create_story(jira, project_key, summary, description, goal):
+    try:
+        new_story = jira.create_issue(
+            project=project_key,
+            summary=summary,
+            description=description,
+            #customfield_10030=goal,  # Using custom field 'Total forms' for story goal
+            issuetype={'name': 'Story'},
+        )
+        print(f"Story created successfully. Story Key: {new_story.key}")
+        return new_story
+    except JIRAError as e:
+        print(f"Error creating story: {e}")
+        return None
 
-    if not sprint_info:
-        return {"error": f"Sprint with ID {sprint_id} not found."}
+# Function to read a story's details
+def read_story_details(jira, story_key):
+    try:
+        story = jira.issue(story_key)
+        print(f"Key: {story.key}")
+        print(f"Summary: {story.fields.summary}")
+        print(f"Description: {story.fields.description}")
+        print(f"Status: {story.fields.status.name}")
 
-    # JQL query to search for issues of type 'Story' in a specific sprint
-    jql_query = f'project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}'
+        # Check if assignee is set before accessing displayName
+        if story.fields.assignee:
+            print(f"Assignee: {story.fields.assignee.displayName}")
+        else:
+            print("Assignee: Unassigned")
 
-    # Search for issues using the JQL query
-    issues = jira.search_issues(jql_query)
+        # Check if reporter is set before accessing displayName
+        if story.fields.reporter:
+            print(f"Reporter: {story.fields.reporter.displayName}")
+        else:
+            print("Reporter: Unassigned")
 
-    # Count issue statuses
-    status_counts = {'To Do': 0, 'In Progress': 0, 'Done': 0}
-    issue_details = []
+        print(f"Created: {story.fields.created}")
+        print(f"Updated: {story.fields.updated}")
 
-    for issue in issues:
-        status = issue.fields.status.name
-        if status in status_counts:
-            status_counts[status] += 1
+    except JIRAError as e:
+        print(f"Error reading story: {e}")
 
-        assignee = getattr(issue.fields, 'assignee', None)
-        assignee_display_name = assignee.get('displayName', 'Unassigned') if assignee else 'Unassigned'
-        reporter_display_name = getattr(getattr(issue.fields, 'reporter', None), 'displayName', 'N/A')
+# Function to update a story's summary
+def update_story_summary(jira, story_key, new_summary):
+    try:
+        story = jira.issue(story_key)
+        story.update(summary=new_summary)
+        print(f"Story summary updated successfully. Key: {story_key}")
+        return story
+    except JIRAError as e:
+        print(f"Error updating story summary: {e}")
+        return None
 
-        issue_details.append({
-            "Issue Key": issue.key,
-            "Summary": issue.fields.summary,
-            "Status": issue.fields.status.name,
-            "Assignee": assignee_display_name,
-            "Reporter": reporter_display_name,
-            "Created Date": datetime.strptime(issue.fields.created, "%Y-%m-%dT%H:%M:%S.%f%z").strftime("%Y-%m-%d %H:%M:%S"),
-            "Updated Date": datetime.strptime(issue.fields.updated, "%Y-%m-%dT%H:%M:%S.%f%z").strftime("%Y-%m-%d %H:%M:%S"),
-        })
 
-    sprint_details = {
-        "Sprint Details": sprint_info.raw,
-        "Issue Status Distribution": status_counts,
-        "Issue Details": issue_details,
-    }
+# Function to update a story's description
+def update_story_description(jira, story_key, new_description):
+    try:
+        story = jira.issue(story_key)
+        story.update(description=new_description)
+        print(f"Story description updated successfully. Key: {story_key}")
+        return story
+    except JIRAError as e:
+        print(f"Error updating story description: {e}")
+        return None
 
-    return sprint_details
 
-# Jira configuration
-jira_url = 'https://jtest-vl.atlassian.net'
-api_token = "ATATT3xFfGF033NKJ-mORvkUaA4D4vjuoyUeBcZI-Flp5DPvyDVpmBJEHA-ght6aI25vmgemImTniuMOihZvnd1bbWKProU4VJcJNnnq5-1GwVT7txZQOFOB9f8zHL96uKyaK0vhYQni7brR2Tp5ClGEA5jrH1wi1bkZIIvHm1TEJMGYsZrqTMU=D4D623B5"
-user = 'admin@jtest.verituslabs.com'
-project_key = 'JE'
-sprint_id = '2'
+# Function to update a story's status
+def update_story_status(jira, story_key, new_status):
+    try:
+        story = jira.issue(story_key)
+        transitions = jira.transitions(story)
+        for transition in transitions:
+            if transition['to']['name'] == new_status:
+                jira.transition_issue(story, transition['id'])
+                print(f"Story status updated successfully. Key: {story_key}")
+                return story
+        print(f"Invalid status: {new_status}")
+        return None
+    except JIRAError as e:
+        print(f"Error updating story status: {e}")
+        return None
 
-# Get specific sprint report
-jira = JIRA(server=jira_url, basic_auth=(user, api_token))
-result = get_sprint_details(jira_url, user, api_token, project_key, sprint_id)
+# Function to update a story's assignee
+def update_story_assignee(jira, story_key, new_assignee):
+    try:
+        story = jira.issue(story_key)
+        story.update(assignee={'name': new_assignee})
+        print(f"Story assignee updated successfully. Key: {story_key}")
+        return story
+    except JIRAError as e:
+        print(f"Error updating story assignee: {e}")
+        return None
 
-# Save sprint report to YAML file with bar graph
-yaml_file_path = Path("sprint_report.yaml")
-with yaml_file_path.open(mode="w") as yaml_file:
-    # Write Sprint Details
-    yaml.dump({"Sprint Details": result["Sprint Details"]}, yaml_file, default_flow_style=False)
+# Function to update a story's reporter
+def update_story_reporter(jira, story_key, new_reporter):
+    try:
+        story = jira.issue(story_key)
+        story.update(reporter={'name': new_reporter})
+        print(f"Story reporter updated successfully. Key: {story_key}")
+        return story
+    except JIRAError as e:
+        print(f"Error updating story reporter: {e}")
+        return None
 
-    # Write Issue Status Distribution
-    yaml.dump({"Issue Status Distribution": result["Issue Status Distribution"]}, yaml_file, default_flow_style=False)
+# Function to delete a story
+def delete_story(jira, story_key):
+    try:
+        issue = jira.issue(story_key)
+        issue.delete()
+        print(f"Story deleted successfully. Key: {story_key}")
+        return True
+    except JIRAError as e:
+        print(f"Error deleting story: {e}")
+        return False
 
-    # Write Issue Details
-    yaml.dump({"Issue Details": result["Issue Details"]}, yaml_file, default_flow_style=False)
 
-# Plot a bar chart
-labels = result["Issue Status Distribution"].keys()
-counts = result["Issue Status Distribution"].values()
-plt.bar(labels, counts, color=['orange', 'yellow', 'green'])
-plt.title('Issue Status Distribution in Sprint')
-plt.xlabel('Status')
-plt.ylabel('Number of Issues')
-plt.savefig('sprint_status_distribution.png')
-print("Plot saved as 'sprint_status_distribution.png'")
+# Driver function
+def main():
+    jira_url = 'https://jtest-vl.atlassian.net'
+    api_token = 'ATATT3xFfGF0XxgsYvdpyIsMnMOeE9CdUPu75dO7Kh03II60Cg5KYf4d41LTubrshQFmTVCo24mxyYd07-flBqd6DIQHvuKdkWGDrlohGhNMew_hCMqTjgnaPnj2NYCXv4PtzxdzjNq8Vi0vg3NzJcFAQivkuvDjPVnqAs-BdN9PAHfSwGCYex8=7C73D52A'
+    user = 'rimsha.ashfaq@verituslabs.com'
+    jira = create_jira_connection(jira_url, user, api_token)
+    project_key = 'JE'
+    story_key = 'JE-187'
+
+
+    # Create a new story
+    new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
+
+    # Read the newly created story
+    #story = read_story_details(jira, story_key)
+
+    # Update the story with new summary
+    #story = update_story_summary(jira, story_key, "Updated Test Story")
+
+    # Update the story with new description
+    #story = update_story_description(jira, story_key, "This is an updated test story.")
+
+    # Update the story with new status
+    #story = update_story_status(jira, story_key, "In Progress")
+
+    # Update the story with new assignee
+    #story = update_story_assignee(jira, story_key, "Arman")
+  
+    # Update the story with new reporter
+    #story = update_story_reporter(jira, story_key, "Arman Anwar")
+
+    # Delete the story
+    #delete_story(jira, story_key)
+
+if __name__ == "__main__":
+    main()
