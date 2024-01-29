@@ -1,4 +1,5 @@
 from jira import JIRA, JIRAError
+import requests
 
 # Function to create a Jira connection
 def create_jira_connection(jira_url, user, api_token):
@@ -119,6 +120,33 @@ def delete_story(jira, story_key):
     except JIRAError as e:
         print(f"Error deleting story: {e}")
         return False
+# Function to create a new sprint
+def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
+    # API endpoint for creating a new sprint
+    create_sprint_api_url = f'{jira_url}/rest/agile/1.0/sprint'
+
+    # HTTP Basic Authentication
+    auth = (jira_username, api_token)
+
+    # Sprint details
+    sprint_data = {
+        "name": sprint_name,
+        "originBoardId": board_id,
+    }
+
+    # Send a POST request to create the sprint
+    response_create_sprint = requests.post(create_sprint_api_url, json=sprint_data, auth=auth)
+
+    # Check the response status for creating the sprint
+    if response_create_sprint.status_code == 201:
+        created_sprint_data = response_create_sprint.json()
+        sprint_id = created_sprint_data.get('id')
+        print(f"New Sprint created with ID: {sprint_id}")
+        return sprint_id
+    else:
+        print(f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}")
+        return None
+
 
 
 # Driver function
@@ -129,10 +157,13 @@ def main():
     jira = create_jira_connection(jira_url, user, api_token)
     project_key = 'JE'
     story_key = 'JE-187'
+    board_id = '2'
+    sprint_name = "Sprint test"
+    sprint_goal = "Complete feature X"
 
 
     # Create a new story
-    new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
+    #new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
 
     # Read the newly created story
     #story = read_story_details(jira, story_key)
@@ -154,6 +185,7 @@ def main():
 
     # Delete the story
     #delete_story(jira, story_key)
+    sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
 
 if __name__ == "__main__":
     main()
