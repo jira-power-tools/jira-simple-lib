@@ -146,6 +146,15 @@ def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
     else:
         print(f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}")
         return None
+def update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date, end_date):
+    try:
+        sprint = jira.sprint(sprint_id)
+        sprint.update(name=new_summary, state=sprint_state, startDate=start_date, endDate=end_date)
+        print(f"Sprint summary updated successfully. ID: {sprint_id}")
+        return sprint
+    except JIRAError as e:
+        print(f"Error updating sprint summary: {e}")
+        return None
 
 
 
@@ -185,7 +194,9 @@ def main():
 
     # Delete the story
     #delete_story(jira, story_key)
-    sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
+    #sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
+    updated_sprint_summary = update_sprint_summary(jira, "1", "1New summary", "active", "2024-01-30","2024-02-10")
+
 
 if __name__ == "__main__":
     main()
