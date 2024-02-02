@@ -14,6 +14,20 @@ def list_projects(jira):
     except JIRAError as e:
         print(f"Error listing projects: {e}")
         return None
+#get a list of stories in a project
+def get_stories_for_project(jira, project_key):
+    try:        
+        # Define the JQL query to search for issues of type 'Story' in the specified project
+        jql_query = f'project = {project_key} AND issuetype = Story'
+        
+        # Search for issues using the JQL query
+        issues = jira.search_issues(jql_query)
+        
+        # Return the list of issues (stories)
+        return issues
+    except Exception as e:
+        print(f"Error retrieving stories for project: {e}")
+        return None
 
 # Function to create a new story in Jira
 def create_story(jira, project_key, summary, description, goal):
@@ -294,6 +308,15 @@ def main():
 
 # Example usage:
     #list_projects(jira)
+    # get a list of stories in a projects
+    stories = get_stories_for_project(jira, "JE")
+
+    # Print details of each story
+    if stories:
+        for issue in stories:
+            print(f"Story Key: {issue.key}, Summary: {issue.fields.summary}")
+    else:
+        print("No stories found.")
 
     # Create a new story
     #new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
@@ -341,7 +364,7 @@ def main():
      #   print("No sprints found.")
 
     # Call the function
-    move_issue_to_sprint(jira,"JE-18" , "13")
+    #move_issue_to_sprint(jira,"JE-18" , "13")
 
     
 
