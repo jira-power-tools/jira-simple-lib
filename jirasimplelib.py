@@ -155,6 +155,50 @@ def update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date
     except JIRAError as e:
         print(f"Error updating sprint summary: {e}")
         return None
+#sprint report
+def sprint_report(jira, sprint_id, project_key):
+    try:
+        # Get detailed information about the sprint
+        sprint_info = jira.sprint(sprint_id)
+        if not sprint_info:
+            print(f"Sprint with ID {sprint_id} not found.")
+            return
+
+        # Print all details of the sprint
+        print("Sprint Details:")
+        for key, value in sprint_info.raw.items():
+            print(f"{key}: {value}")
+
+        # Define the JQL query to search for issues of type 'Story' in the sprint
+        jql_query = f'project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}'
+
+        # Search for issues using the JQL query
+        issues = jira.search_issues(jql_query)
+
+        # Count issue statuses
+        status_counts = {'To Do': 0, 'In Progress': 0, 'Done': 0}
+        for issue in issues:
+            status = issue.fields.status.name
+            if status in status_counts:
+                status_counts[status] += 1
+
+        # Print issue status distribution
+        print("Issue Status Distribution in Sprint:")
+        for status, count in status_counts.items():
+            print(f"{status}: {count}")
+
+    except Exception as e:
+        print(f"Error generating sprint report: {e}")
+    #delete a sprint
+def delete_sprint(jira, sprint_id):
+    try:
+        sprint = jira.sprint(sprint_id)
+        sprint.delete()
+        print(f"Sprint with ID {sprint_id} deleted successfully.")
+        return True
+    except JIRAError as e:
+        print(f"Error deleting sprint: {e}")
+        return False
 
 
 
@@ -195,8 +239,9 @@ def main():
     # Delete the story
     #delete_story(jira, story_key)
     #sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
-    updated_sprint_summary = update_sprint_summary(jira, "1", "1New summary", "active", "2024-01-30","2024-02-10")
-
+    #updated_sprint_summary = update_sprint_summary(jira, "2", "2New summary", "future", "2024-01-30","2024-02-10")
+    sprint_report(jira, "2", "JE")
+    #delete_sprint(jira, "6")
 
 if __name__ == "__main__":
     main()
