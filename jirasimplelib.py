@@ -1,6 +1,58 @@
 from jira import JIRA, JIRAError
 import requests
 
+# TODO so let's create group functions by resource
+# the type of resources we have are:
+# 1. project
+#    def list_projects(jira):
+#    def get_stories_for_project(jira, project_key):
+#    def create_story(jira, project_key, summary, description, goal):
+#    def sprint_report(jira, sprint_id, project_key):
+#    def get_velocity(jira, project_key):
+# 2. epic (I wonder if this is just a type of story)
+# 3. story
+#    def get_stories_for_project(jira, project_key):
+#    def create_story(jira, project_key, summary, description, goal):
+#    def read_story_details(jira, story_key):
+#    def update_story_summary(jira, story_key, new_summary):
+#    def update_story_description(jira, story_key, new_description):
+#    def update_story_status(jira, story_key, new_status):
+#    def update_story_assignee(jira, story_key, new_assignee):
+#    def update_story_reporter(jira, story_key, new_reporter):
+#    def delete_story(jira, story_key):
+# 4. sprint 
+#    def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
+#    def update_sprint_summary(
+#    def sprint_report(jira, sprint_id, project_key):
+#    def delete_sprint(jira, sprint_id):
+#    def get_sprints_for_board(jira, board_id):
+#    def move_issue_to_sprint(jira, issue_key, target_sprint_id):
+#
+#  you can also group functions that done fit in the above categories at the end
+#
+
+# TODO for each resource type you need to have functions that perform the following
+# 1. Create
+#   for example create_story_...
+# 2. Read
+#   list_stories_... these are read methods that return lists of objects
+#   read_story_... a read mothod reads one object
+# 3. Update
+#   update_story_... this will update one object
+#   move_story_... move methods allow one obect to be moved from one object to another
+#   detach_story_from_epic ... this will detach a story from an epic
+# 4. Delete
+#   this will delete an object
+# in the ideal case for each type of the resource (project, epic, story, sprint)
+#   you want to have CRUD type methods
+
+# TODO exception design
+# so typically exceptions should be caught, logged and thrown
+# 
+
+
+
+
 
 # Function to create a Jira connection
 def create_jira_connection(jira_url, user, api_token):
