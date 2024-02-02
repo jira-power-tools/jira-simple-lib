@@ -246,6 +246,34 @@ def get_velocity(jira, project_key):
     except Exception as e:
         print(f"Error calculating velocity: {e}")
         return None, None
+def get_sprints_for_board(jira, board_id):
+    try:
+        
+        # Get all sprints for the specified board
+        sprints = jira.sprints(board_id)
+        
+        # Return the list of sprints
+        return sprints
+    except Exception as e:
+        print(f"Error retrieving sprints for board: {e}")
+        return None
+
+
+
+def move_issue_to_sprint(jira, issue_key, target_sprint_id):
+    try:        
+        # Get the issue
+        issue = jira.issue(issue_key)
+        
+        # Move the issue to the target sprint
+        jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+        
+        print(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
+        return True
+    except Exception as e:
+        print(f"Error moving issue to Sprint: {e}")
+        return False
+
 
 
 
@@ -295,13 +323,26 @@ def main():
     #sprint_report(jira, "2", "JE")
     #delete_sprint(jira, "6")
     # Get the velocity
-    completed_velocity, total_velocity = get_velocity(jira, project_key)
+   # completed_velocity, total_velocity = get_velocity(jira, project_key)
 
-    if completed_velocity is not None and total_velocity is not None:
-        print(f"Completed Velocity: {completed_velocity}")
-        print(f"Total Velocity: {total_velocity}")
-    else:
-        print("Error getting velocity.")
+    #if completed_velocity is not None and total_velocity is not None:
+      #  print(f"Completed Velocity: {completed_velocity}")
+       # print(f"Total Velocity: {total_velocity}")
+   # else:
+     #   print("Error getting velocity.")
+     # Call the function
+   # sprints = get_sprints_for_board(jira, "2")
+
+    # Print details of each sprint
+   # if sprints:
+       # for sprint in sprints:
+       #     print(f"Sprint ID: {sprint.id}, Name: {sprint.name}, State: {sprint.state}")
+   # else:
+     #   print("No sprints found.")
+
+    # Call the function
+    move_issue_to_sprint(jira,"JE-18" , "13")
+
     
 
 if __name__ == "__main__":
