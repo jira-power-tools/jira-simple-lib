@@ -4,6 +4,16 @@ import requests
 # Function to create a Jira connection
 def create_jira_connection(jira_url, user, api_token):
     return JIRA(server=jira_url, basic_auth=(user, api_token))
+#list of all projects
+def list_projects(jira):
+    try:
+        projects = jira.projects()
+        for project in projects:
+            print(f"Project Key: {project.key}, Name: {project.name}")
+        return projects
+    except JIRAError as e:
+        print(f"Error listing projects: {e}")
+        return None
 
 # Function to create a new story in Jira
 def create_story(jira, project_key, summary, description, goal):
@@ -199,6 +209,45 @@ def delete_sprint(jira, sprint_id):
     except JIRAError as e:
         print(f"Error deleting sprint: {e}")
         return False
+#sprint velocity
+def get_velocity(jira, project_key):
+    try:
+        completed_velocity = 0
+        total_velocity = 0
+
+        # Get the board ID for the project
+        boards = jira.boards()
+        board_id = next((board.id for board in boards if board.location.projectKey == project_key), None)
+
+        if board_id is None:
+            print(f"No board found for project {project_key}")
+            return None, None
+
+        # Get all sprints for the board
+        sprints = jira.sprints(board_id)
+
+        for sprint in sprints:
+            # Get the issues in the closed sprint
+            sprint_issues = jira.search_issues(f'project={project_key} AND Sprint={sprint.id}')
+
+            for issue in sprint_issues:
+                if issue.fields.status.name == "Done" and hasattr(issue.fields, "customfield_10031"):  # Assuming custom field for story points
+                    story_points = issue.fields.customfield_10031
+                    if story_points is not None:
+                        completed_velocity += story_points
+
+                if hasattr(issue.fields, "customfield_10031"):  # Assuming custom field for story points
+                    story_points = issue.fields.customfield_10031
+                    if story_points is not None:
+                        total_velocity += story_points
+
+        return completed_velocity, total_velocity
+
+    except Exception as e:
+        print(f"Error calculating velocity: {e}")
+        return None, None
+
+
 
 
 
@@ -214,6 +263,9 @@ def main():
     sprint_name = "Sprint test"
     sprint_goal = "Complete feature X"
 
+
+# Example usage:
+    #list_projects(jira)
 
     # Create a new story
     #new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
@@ -240,8 +292,17 @@ def main():
     #delete_story(jira, story_key)
     #sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
     #updated_sprint_summary = update_sprint_summary(jira, "2", "2New summary", "future", "2024-01-30","2024-02-10")
-    sprint_report(jira, "2", "JE")
+    #sprint_report(jira, "2", "JE")
     #delete_sprint(jira, "6")
+    # Get the velocity
+    completed_velocity, total_velocity = get_velocity(jira, project_key)
+
+    if completed_velocity is not None and total_velocity is not None:
+        print(f"Completed Velocity: {completed_velocity}")
+        print(f"Total Velocity: {total_velocity}")
+    else:
+        print("Error getting velocity.")
+    
 
 if __name__ == "__main__":
     main()
