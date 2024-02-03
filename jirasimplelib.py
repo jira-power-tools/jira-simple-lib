@@ -1,92 +1,42 @@
+import logging
 from jira import JIRA, JIRAError
 import requests
 
-# TODO so let's create group functions by resource
-# the type of resources we have are:
-# 1. project
-#    def list_projects(jira):
-#    def get_stories_for_project(jira, project_key):
-#    def create_story(jira, project_key, summary, description, goal):
-#    def sprint_report(jira, sprint_id, project_key):
-#    def get_velocity(jira, project_key):
-# 2. epic (I wonder if this is just a type of story)
-# 3. story
-#    def get_stories_for_project(jira, project_key):
-#    def create_story(jira, project_key, summary, description, goal):
-#    def read_story_details(jira, story_key):
-#    def update_story_summary(jira, story_key, new_summary):
-#    def update_story_description(jira, story_key, new_description):
-#    def update_story_status(jira, story_key, new_status):
-#    def update_story_assignee(jira, story_key, new_assignee):
-#    def update_story_reporter(jira, story_key, new_reporter):
-#    def delete_story(jira, story_key):
-# 4. sprint 
-#    def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
-#    def update_sprint_summary(
-#    def sprint_report(jira, sprint_id, project_key):
-#    def delete_sprint(jira, sprint_id):
-#    def get_sprints_for_board(jira, board_id):
-#    def move_issue_to_sprint(jira, issue_key, target_sprint_id):
-#
-#  you can also group functions that done fit in the above categories at the end
-#
-
-# TODO for each resource type you need to have functions that perform the following
-# 1. Create
-#   for example create_story_...
-# 2. Read
-#   list_stories_... these are read methods that return lists of objects
-#   read_story_... a read mothod reads one object
-# 3. Update
-#   update_story_... this will update one object
-#   move_story_... move methods allow one obect to be moved from one object to another
-#   detach_story_from_epic ... this will detach a story from an epic
-# 4. Delete
-#   this will delete an object
-# in the ideal case for each type of the resource (project, epic, story, sprint)
-#   you want to have CRUD type methods
-
-# TODO exception design
-# so typically exceptions should be caught, logged and thrown
-# 
-
-# TODO remove all prints from all functions and replace with https://docs.python.org/3/howto/logging.html
-
-
-
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='jira_operations.log'
+)
 
 # Function to create a Jira connection
 def create_jira_connection(jira_url, user, api_token):
-    return JIRA(server=jira_url, basic_auth=(user, api_token))
+    try:
+        return JIRA(server=jira_url, basic_auth=(user, api_token))
+    except Exception as e:
+        logging.error(f"Error creating Jira connection: {e}")
+        return None
 
-
-# list of all projects
+# Function to list all projects
 def list_projects(jira):
     try:
         projects = jira.projects()
         for project in projects:
-            print(f"Project Key: {project.key}, Name: {project.name}")
+            logging.info(f"Project Key: {project.key}, Name: {project.name}")
         return projects
     except JIRAError as e:
-        print(f"Error listing projects: {e}")
+        logging.error(f"Error listing projects: {e}")
         return None
 
-
-# get a list of stories in a project
+# Function to get a list of stories in a project
 def get_stories_for_project(jira, project_key):
     try:
-        # Define the JQL query to search for issues of type 'Story' in the specified project
         jql_query = f"project = {project_key} AND issuetype = Story"
-
-        # Search for issues using the JQL query
         issues = jira.search_issues(jql_query)
-
-        # Return the list of issues (stories)
         return issues
     except Exception as e:
-        print(f"Error retrieving stories for project: {e}")
+        logging.error(f"Error retrieving stories for project: {e}")
         return None
-
 
 # Function to create a new story in Jira
 def create_story(jira, project_key, summary, description, goal):
@@ -95,67 +45,56 @@ def create_story(jira, project_key, summary, description, goal):
             project=project_key,
             summary=summary,
             description=description,
-            # customfield_10030=goal,  # Using custom field 'Total forms' for story goal
             issuetype={"name": "Story"},
         )
-        print(f"Story created successfully. Story Key: {new_story.key}")
+        logging.info(f"Story created successfully. Story Key: {new_story.key}")
         return new_story
     except JIRAError as e:
-        print(f"Error creating story: {e}")
+        logging.error(f"Error creating story: {e}")
         return None
-
 
 # Function to read a story's details
 def read_story_details(jira, story_key):
     try:
         story = jira.issue(story_key)
-        print(f"Key: {story.key}")
-        print(f"Summary: {story.fields.summary}")
-        print(f"Description: {story.fields.description}")
-        print(f"Status: {story.fields.status.name}")
-
-        # Check if assignee is set before accessing displayName
+        logging.info(f"Key: {story.key}")
+        logging.info(f"Summary: {story.fields.summary}")
+        logging.info(f"Description: {story.fields.description}")
+        logging.info(f"Status: {story.fields.status.name}")
         if story.fields.assignee:
-            print(f"Assignee: {story.fields.assignee.displayName}")
+            logging.info(f"Assignee: {story.fields.assignee.displayName}")
         else:
-            print("Assignee: Unassigned")
-
-        # Check if reporter is set before accessing displayName
+            logging.info("Assignee: Unassigned")
         if story.fields.reporter:
-            print(f"Reporter: {story.fields.reporter.displayName}")
+            logging.info(f"Reporter: {story.fields.reporter.displayName}")
         else:
-            print("Reporter: Unassigned")
-
-        print(f"Created: {story.fields.created}")
-        print(f"Updated: {story.fields.updated}")
-
+            logging.info("Reporter: Unassigned")
+        logging.info(f"Created: {story.fields.created}")
+        logging.info(f"Updated: {story.fields.updated}")
     except JIRAError as e:
-        print(f"Error reading story: {e}")
-
+        logging.error(f"Error reading story: {e}")
 
 # Function to update a story's summary
 def update_story_summary(jira, story_key, new_summary):
     try:
         story = jira.issue(story_key)
         story.update(summary=new_summary)
-        print(f"Story summary updated successfully. Key: {story_key}")
+        logging.info(f"Story summary updated successfully. Key: {story_key}")
         return story
     except JIRAError as e:
-        print(f"Error updating story summary: {e}")
+        logging.error(f"Error updating story summary: {e}")
         return None
-
 
 # Function to update a story's description
 def update_story_description(jira, story_key, new_description):
     try:
         story = jira.issue(story_key)
         story.update(description=new_description)
-        print(f"Story description updated successfully. Key: {story_key}")
+        logging.info(f"Story description updated successfully. Key: {story_key}")
         return story
     except JIRAError as e:
-        print(f"Error updating story description: {e}")
+        logging.error(f"Error updating story description: {e}")
         return None
-
 
 # Function to update a story's status
 def update_story_status(jira, story_key, new_status):
@@ -165,185 +104,162 @@ def update_story_status(jira, story_key, new_status):
         for transition in transitions:
             if transition["to"]["name"] == new_status:
                 jira.transition_issue(story, transition["id"])
-                print(f"Story status updated successfully. Key: {story_key}")
+                logging.info(f"Story status updated successfully. Key: {story_key}")
                 return story
-        print(f"Invalid status: {new_status}")
+        logging.error(f"Invalid status: {new_status}")
         return None
     except JIRAError as e:
-        print(f"Error updating story status: {e}")
+        logging.error(f"Error updating story status: {e}")
         return None
-
 
 # Function to update a story's assignee
 def update_story_assignee(jira, story_key, new_assignee):
     try:
         story = jira.issue(story_key)
         story.update(assignee={"name": new_assignee})
-        print(f"Story assignee updated successfully. Key: {story_key}")
+        logging.info(f"Story assignee updated successfully. Key: {story_key}")
         return story
     except JIRAError as e:
-        print(f"Error updating story assignee: {e}")
+        logging.error(f"Error updating story assignee: {e}")
         return None
-
 
 # Function to update a story's reporter
 def update_story_reporter(jira, story_key, new_reporter):
     try:
         story = jira.issue(story_key)
         story.update(reporter={"name": new_reporter})
-        print(f"Story reporter updated successfully. Key: {story_key}")
+        logging.info(f"Story reporter updated successfully. Key: {story_key}")
         return story
     except JIRAError as e:
-        print(f"Error updating story reporter: {e}")
+        logging.error(f"Error updating story reporter: {e}")
         return None
-
 
 # Function to delete a story
 def delete_story(jira, story_key):
     try:
         issue = jira.issue(story_key)
         issue.delete()
-        print(f"Story deleted successfully. Key: {story_key}")
+        logging.info(f"Story deleted successfully. Key: {story_key}")
         return True
     except JIRAError as e:
-        print(f"Error deleting story: {e}")
+        logging.error(f"Error deleting story: {e}")
         return False
 
+# Move story to specific sprint
+def move_issue_to_sprint(jira, issue_key, target_sprint_id):
+    try:
+        issue = jira.issue(issue_key)
+        jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+        logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
+        return True
+    except Exception as e:
+        logging.error(f"Error moving issue to Sprint: {e}")
+        return False
+
+# Sprint-related functions
 
 # Function to create a new sprint
 def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
-    # API endpoint for creating a new sprint
     create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
-
-    # HTTP Basic Authentication
     auth = (jira_username, api_token)
-
-    # Sprint details
     sprint_data = {
         "name": sprint_name,
         "originBoardId": board_id,
     }
-
-    # Send a POST request to create the sprint
     response_create_sprint = requests.post(
         create_sprint_api_url, json=sprint_data, auth=auth
     )
-
-    # Check the response status for creating the sprint
     if response_create_sprint.status_code == 201:
         created_sprint_data = response_create_sprint.json()
         sprint_id = created_sprint_data.get("id")
-        print(f"New Sprint created with ID: {sprint_id}")
+        logging.info(f"New Sprint created with ID: {sprint_id}")
         return sprint_id
     else:
-        print(
+        logging.error(
             f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}"
         )
         return None
 
-
+# Function to update sprint summary
 def update_sprint_summary(
-    jira, sprint_id, new_summary, sprint_state, start_date, end_date
-):
+        jira, sprint_id, new_summary, sprint_state, start_date, end_date):
     try:
         sprint = jira.sprint(sprint_id)
         sprint.update(
             name=new_summary, state=sprint_state, startDate=start_date, endDate=end_date
         )
-        print(f"Sprint summary updated successfully. ID: {sprint_id}")
+        logging.info(f"Sprint summary updated successfully. ID: {sprint_id}")
         return sprint
     except JIRAError as e:
-        print(f"Error updating sprint summary: {e}")
+        logging.error(f"Error updating sprint summary: {e}")
         return None
 
-
-# sprint report
+# Sprint report
 def sprint_report(jira, sprint_id, project_key):
     try:
-        # Get detailed information about the sprint
         sprint_info = jira.sprint(sprint_id)
         if not sprint_info:
-            print(f"Sprint with ID {sprint_id} not found.")
+            logging.error(f"Sprint with ID {sprint_id} not found.")
             return
-
-        # Print all details of the sprint
-        print("Sprint Details:")
+        logging.info("Sprint Details:")
         for key, value in sprint_info.raw.items():
-            print(f"{key}: {value}")
-
-        # Define the JQL query to search for issues of type 'Story' in the sprint
+            logging.info(f"{key}: {value}")
         jql_query = (
             f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
         )
-
-        # Search for issues using the JQL query
         issues = jira.search_issues(jql_query)
-
-        # Count issue statuses
         status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
         for issue in issues:
             status = issue.fields.status.name
             if status in status_counts:
                 status_counts[status] += 1
-
-        # Print issue status distribution
-        print("Issue Status Distribution in Sprint:")
+        logging.info("Issue Status Distribution in Sprint:")
         for status, count in status_counts.items():
-            print(f"{status}: {count}")
+            logging.info(f"{status}: {count}")
 
     except Exception as e:
-        print(f"Error generating sprint report: {e}")
-    # delete a sprint
+        logging.error(f"Error generating sprint report: {e}")
 
-
+# Function to delete a sprint
 def delete_sprint(jira, sprint_id):
     try:
         sprint = jira.sprint(sprint_id)
         sprint.delete()
-        print(f"Sprint with ID {sprint_id} deleted successfully.")
+        logging.info(f"Sprint with ID {sprint_id} deleted successfully.")
         return True
     except JIRAError as e:
-        print(f"Error deleting sprint: {e}")
+        logging.error(f"Error deleting sprint: {e}")
         return False
 
-
-# sprint velocity
+# Get active sprint velocity
 def get_velocity(jira, project_key):
     try:
         completed_velocity = 0
         total_velocity = 0
-
-        # Get the board ID for the project
         boards = jira.boards()
         board_id = next(
             (board.id for board in boards if board.location.projectKey == project_key),
             None,
         )
-
         if board_id is None:
-            print(f"No board found for project {project_key}")
+            logging.error(f"No board found for project {project_key}")
             return None, None
-
-        # Get all sprints for the board
         sprints = jira.sprints(board_id)
-
         for sprint in sprints:
-            # Get the issues in the closed sprint
             sprint_issues = jira.search_issues(
                 f"project={project_key} AND Sprint={sprint.id}"
             )
-
             for issue in sprint_issues:
                 if issue.fields.status.name == "Done" and hasattr(
-                    issue.fields, "customfield_10031"
-                ):  # Assuming custom field for story points
+                        issue.fields, "customfield_10031"
+                ):
                     story_points = issue.fields.customfield_10031
                     if story_points is not None:
                         completed_velocity += story_points
 
                 if hasattr(
-                    issue.fields, "customfield_10031"
-                ):  # Assuming custom field for story points
+                        issue.fields, "customfield_10031"
+                ):
                     story_points = issue.fields.customfield_10031
                     if story_points is not None:
                         total_velocity += story_points
@@ -351,112 +267,83 @@ def get_velocity(jira, project_key):
         return completed_velocity, total_velocity
 
     except Exception as e:
-        print(f"Error calculating velocity: {e}")
+        logging.error(f"Error calculating velocity: {e}")
         return None, None
 
-
+# Get all sprints for the specified board
 def get_sprints_for_board(jira, board_id):
     try:
-
-        # Get all sprints for the specified board
         sprints = jira.sprints(board_id)
-
-        # Return the list of sprints
         return sprints
     except Exception as e:
-        print(f"Error retrieving sprints for board: {e}")
+        logging.error(f"Error retrieving sprints for board: {e}")
         return None
-
-
-def move_issue_to_sprint(jira, issue_key, target_sprint_id):
-    try:
-        # Get the issue
-        issue = jira.issue(issue_key)
-
-        # Move the issue to the target sprint
-        jira.add_issues_to_sprint(target_sprint_id, [issue.key])
-
-        print(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
-        return True
-    except Exception as e:
-        print(f"Error moving issue to Sprint: {e}")
-        return False
-
-
-# Driver function
 def main():
+   
+    # Jira credentials and parameters
     jira_url = "https://jtest-vl.atlassian.net"
     api_token = "ATATT3xFfGF0XxgsYvdpyIsMnMOeE9CdUPu75dO7Kh03II60Cg5KYf4d41LTubrshQFmTVCo24mxyYd07-flBqd6DIQHvuKdkWGDrlohGhNMew_hCMqTjgnaPnj2NYCXv4PtzxdzjNq8Vi0vg3NzJcFAQivkuvDjPVnqAs-BdN9PAHfSwGCYex8=7C73D52A"
     user = "rimsha.ashfaq@verituslabs.com"
-    jira = create_jira_connection(jira_url, user, api_token)
     project_key = "JE"
     story_key = "JE-187"
     board_id = "2"
     sprint_name = "Sprint test"
-    sprint_goal = "Complete feature X"
+    sprint_goal = "Complete feature"
 
-    # Example usage:
-    # list_projects(jira)
-    # get a list of stories in a projects
-    stories = get_stories_for_project(jira, "JE")
+    # Create Jira connection
+    jira = create_jira_connection(jira_url, user, api_token)
 
-    # Print details of each story
-    if stories:
-        for issue in stories:
-            print(f"Story Key: {issue.key}, Summary: {issue.fields.summary}")
-    else:
-        print("No stories found.")
+    # List all projects
+    projects = list_projects(jira)
+
+    # Get stories for a project
+    stories = get_stories_for_project(jira, project_key)
 
     # Create a new story
-    # new_story = create_story(jira, project_key, "Test Story", "This is a test story.", "Goal of the story")
+    new_story = create_story(jira, project_key, "New Story", "Description", "Goal")
 
-    # Read the newly created story
-    # story = read_story_details(jira, story_key)
+    # Read story details
+    read_story_details(jira, story_key)
 
-    # Update the story with new summary
-    # story = update_story_summary(jira, story_key, "Updated Test Story")
+    # Update story summary
+    #update_story_summary(jira, story_key, "New Summary")
 
-    # Update the story with new description
-    # story = update_story_description(jira, story_key, "This is an updated test story.")
+    # Update story description
+    #update_story_description(jira, story_key, "New Description")
 
-    # Update the story with new status
-    # story = update_story_status(jira, story_key, "In Progress")
+    # Update story status
+    #update_story_status(jira, story_key, "In Progress")
 
-    # Update the story with new assignee
-    # story = update_story_assignee(jira, story_key, "Arman")
+    # Update story assignee
+    #update_story_assignee(jira, story_key, "assignee_username")
 
-    # Update the story with new reporter
-    # story = update_story_reporter(jira, story_key, "Arman Anwar")
+    # Update story reporter
+   # update_story_reporter(jira, story_key, "reporter_username")
 
-    # Delete the story
-    # delete_story(jira, story_key)
-    # sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
-    # updated_sprint_summary = update_sprint_summary(jira, "2", "2New summary", "future", "2024-01-30","2024-02-10")
-    # sprint_report(jira, "2", "JE")
-    # delete_sprint(jira, "6")
-    # Get the velocity
+    # Delete a story
+   # delete_story(jira, story_key)
 
+    # Move issue to a specific sprint
+    move_issue_to_sprint(jira, story_key, "target_sprint_id")
 
-# completed_velocity, total_velocity = get_velocity(jira, project_key)
+    # Create a new sprint
+    create_sprint(jira_url, user, api_token, board_id, sprint_name)
 
-# if completed_velocity is not None and total_velocity is not None:
-#  print(f"Completed Velocity: {completed_velocity}")
-# print(f"Total Velocity: {total_velocity}")
-# else:
-#   print("Error getting velocity.")
-# Call the function
-# sprints = get_sprints_for_board(jira, "2")
+    # Update sprint summary
+    #update_sprint_summary(jira, "sprint_id", "New Summary", "state", "start_date", "end_date")
 
-# Print details of each sprint
-# if sprints:
-# for sprint in sprints:
-#     print(f"Sprint ID: {sprint.id}, Name: {sprint.name}, State: {sprint.state}")
-# else:
-#   print("No sprints found.")
+    # Sprint report
+    sprint_report(jira, "sprint_id", project_key)
 
-# Call the function
-# move_issue_to_sprint(jira,"JE-18" , "13")
+    # Delete a sprint
+    #delete_sprint(jira, "sprint_id")
 
+    # Get velocity
+    get_velocity(jira, project_key)
+
+    # Get sprints for board
+    get_sprints_for_board(jira, board_id)
 
 if __name__ == "__main__":
     main()
+
