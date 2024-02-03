@@ -50,6 +50,7 @@ import requests
 # so typically exceptions should be caught, logged and thrown
 # 
 
+# TODO remove all prints from all functions and replace with https://docs.python.org/3/howto/logging.html
 
 
 
