@@ -297,13 +297,13 @@ def main():
     projects = list_projects(jira)
 
     # Get stories for a project
-    stories = get_stories_for_project(jira, project_key)
+   # stories = get_stories_for_project(jira, project_key)
 
     # Create a new story
-    new_story = create_story(jira, project_key, "New Story", "Description", "Goal")
+   # new_story = create_story(jira, project_key, "New Story", "Description", "Goal")
 
     # Read story details
-    read_story_details(jira, story_key)
+   # read_story_details(jira, story_key)
 
     # Update story summary
     #update_story_summary(jira, story_key, "New Summary")
@@ -324,25 +324,25 @@ def main():
    # delete_story(jira, story_key)
 
     # Move issue to a specific sprint
-    move_issue_to_sprint(jira, story_key, "target_sprint_id")
+   # move_issue_to_sprint(jira, story_key, "target_sprint_id")
 
     # Create a new sprint
-    create_sprint(jira_url, user, api_token, board_id, sprint_name)
+   # create_sprint(jira_url, user, api_token, board_id, sprint_name)
 
     # Update sprint summary
     #update_sprint_summary(jira, "sprint_id", "New Summary", "state", "start_date", "end_date")
 
     # Sprint report
-    sprint_report(jira, "sprint_id", project_key)
+   # sprint_report(jira, "sprint_id", project_key)
 
     # Delete a sprint
     #delete_sprint(jira, "sprint_id")
 
     # Get velocity
-    get_velocity(jira, project_key)
+   # get_velocity(jira, project_key)
 
     # Get sprints for board
-    get_sprints_for_board(jira, board_id)
+   # get_sprints_for_board(jira, board_id)
 
 if __name__ == "__main__":
     main()
