@@ -278,6 +278,96 @@ def get_sprints_for_board(jira, board_id):
     except Exception as e:
         logging.error(f"Error retrieving sprints for board: {e}")
         return None
+           #Epic related functions
+# Function to create a new Epic
+def create_epic(jira, project_key, epic_name, epic_summary):
+    try:
+        new_epic = jira.create_issue(
+            project=project_key,
+            summary=epic_summary,
+            issuetype={"name": "Epic"},
+            #customfield_10000=epic_name  # Replace with the appropriate custom field ID for Epic name
+        )
+        logging.info(f"Epic created successfully. Epic Key: {new_epic.key}")
+        return new_epic
+    except JIRAError as e:
+        logging.error(f"Error creating epic: {e}")
+        return None
+# Function to list all Epics in a project
+def list_epics(jira, project_key):
+    try:
+        jql_query = f"project = {project_key} AND issuetype = Epic"
+        epics = jira.search_issues(jql_query)
+        return epics
+    except Exception as e:
+        logging.error(f"Error listing epics: {e}")
+        return None
+
+# Function to read the details of an Epic
+def read_epic_details(jira, epic_key):
+    try:
+        epic = jira.issue(epic_key)
+        logging.info(f"Epic Key: {epic.key}")
+        logging.info(f"Summary: {epic.fields.summary}")
+        # Add more fields as needed
+    except JIRAError as e:
+        logging.error(f"Error reading epic: {e}")
+
+# Function to update an epic
+def update_epic(jira, epic_key, new_summary, new_description):
+    try:
+        epic = jira.issue(epic_key)
+        epic.update(
+            summary=new_summary,
+            description=new_description,
+           # customfield_10012=new_status,  # Epic Status field
+           # customfield_10011=new_name  # Epic Name field
+            # Add more fields as needed, e.g., customfield_10013 for Epic Color, customfield_10014 for Epic Link
+        )
+        logging.info(f"Epic updated successfully. Key: {epic_key}")
+        return epic
+    except JIRAError as e:
+        logging.error(f"Error updating epic: {e}")
+        return None
+    # Function to delete an Epic
+def delete_epic(jira, epic_key):
+    try:
+        issue = jira.issue(epic_key)
+        issue.delete()
+        logging.info(f"Epic deleted successfully. Key: {epic_key}")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error deleting epic: {e}")
+        return False
+    #Add story to epic
+def add_story_to_epic(jira, epic_key, story_key):
+    try:
+        epic = jira.issue(epic_key)
+        story = jira.issue(story_key)
+        jira.add_issues_to_epic(epic.id, [story.id])
+        logging.info(f"Story {story_key} added to Epic {epic_key}")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error adding story to epic: {e}")
+        return False
+
+# Function to unlink a Story from an Epic
+def unlink_story_from_epic(jira, story_key):
+    try:
+        story = jira.issue(story_key)
+        
+        # Update the 'Epic Link' custom field of the story to remove its association with the epic
+        story.update(fields={'customfield_10014': None})  # Replace 'customfield_123456' with the actual Epic Link field ID
+        
+        logging.info(f"Story {story_key} unlinked from its Epic")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error unlinking story from epic: {e}")
+        return False
+  
+
+
+
 def main():
    
     # Jira credentials and parameters
@@ -343,6 +433,26 @@ def main():
 
     # Get sprints for board
    # get_sprints_for_board(jira, board_id)
+     # Create an Epic
+    #epic = create_epic(jira, "JE", "TEST EPIC", "THIS IS A TEST EPIC.")
+     # List all Epics in a project
+    #epics = list_epics(jira, project_key)
+    #if epics:
+       # for epic in epics:
+           # logging.info(f"Epic Key: {epic.key}, Summary: {epic.fields.summary}")
+
+     # Read the details of a specific Epic
+    #epic_key = "JE-123"  # Replace with the actual Epic key
+    #read_epic_details(jira, epic_key)
+    # Call the update_epic function
+    #update_epic(jira, 'JE-123', '1new summary', 'new_description')
+    #delete_epic(jira, 'JE-197')
+    #add_story_to_epic(jira, 'JE-123', 'JE-47')
+    unlink_story_from_epic(jira, 'JE-47')
+
+
+
+
 
 if __name__ == "__main__":
     main()
