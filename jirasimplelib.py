@@ -16,7 +16,7 @@ def create_jira_connection(jira_url, user, api_token):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         return None
-
+                            #functions related to project
 # Function to list all projects
 def list_projects(jira):
     try:
@@ -37,7 +37,7 @@ def get_stories_for_project(jira, project_key):
     except Exception as e:
         logging.error(f"Error retrieving stories for project: {e}")
         return None
-
+                                #function related to story
 # Function to create a new story in Jira
 def create_story(jira, project_key, summary, description, goal):
     try:
@@ -156,7 +156,7 @@ def move_issue_to_sprint(jira, issue_key, target_sprint_id):
         logging.error(f"Error moving issue to Sprint: {e}")
         return False
 
-# Sprint-related functions
+                            # Sprint-related functions
 
 # Function to create a new sprint
 def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
@@ -278,7 +278,7 @@ def get_sprints_for_board(jira, board_id):
     except Exception as e:
         logging.error(f"Error retrieving sprints for board: {e}")
         return None
-           #Epic related functions
+                                #Epic related functions
 # Function to create a new Epic
 def create_epic(jira, project_key, epic_name, epic_summary):
     try:
@@ -448,7 +448,7 @@ def main():
     #update_epic(jira, 'JE-123', '1new summary', 'new_description')
     #delete_epic(jira, 'JE-197')
     #add_story_to_epic(jira, 'JE-123', 'JE-47')
-    unlink_story_from_epic(jira, 'JE-47')
+    #unlink_story_from_epic(jira, 'JE-47')
 
 
 

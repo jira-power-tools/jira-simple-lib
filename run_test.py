@@ -21,3 +21,33 @@
 # delete all stories
 # delete all sptrints
 # delete all projects
+import logging
+from jira import JIRA, JIRAError
+import requests
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='jira_test.log'
+)
+
+# Function to create a Jira connection
+def create_jira_connection(jira_url, user, api_token):
+    try:
+        return JIRA(server=jira_url, basic_auth=(user, api_token))
+    except Exception as e:
+        logging.error(f"Error creating Jira connection: {e}")
+        return None
+
+def main():
+
+        # Jira credentials and parameters
+    jira_url = "https://jsl-test.atlassian.net/jira/your-work"
+    api_token = "ATATT3xFfGF0H-GarbaOXH5XrBh5TaLhnv-QZ9ygdWpuemV737fsZF7enXxQuV7uU0QLvpqWk3GYOAorlwMaujiCsgwfND5rqanZOMm9ac8BJUYQBqz3rVyX8xhu9sgvbZ-0E2jI3_nR_ePruAJdocVK9jIctyVeqWl5x1NSOYawM79lW9Yo-ak=B918462D"
+    user = "info@test01.verituslabs.net"
+
+
+if __name__ == "__main__":
+    main()
+
