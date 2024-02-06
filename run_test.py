@@ -5,8 +5,8 @@
 # create a project                              ~~DONE
 # create epics: ep-1, ep-2, ep-3                ~~DONE
 # create stories s-1 to s-30                    ~~DONE
-# move stories s-1 to s-15 to ep-1, s-16 to s-20 to ep-2 an s-21 to s-30 to ep-3
-# create sprints sp-1 tp sp-3
+# move stories s-1 to s-15 to ep-1, s-16 to s-20 to ep-2 an s-21 to s-30 to ep-3  ~~DONE
+# create sprints sp-1 to sp-3                   ~~DONE
 # add s-1 to s10 to sp-1
 # add s-11 to s20 to sp-2
 # add s-21 to s30 to sp-3
@@ -95,6 +95,36 @@ def add_story_to_epic(jira, epic_key, story_key):
         logging.error(f"Error adding story to epic: {e}")
         return False
 
+# Function to create a new sprint
+def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
+    create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
+    auth = (jira_username, api_token)
+    sprint_data = {
+        "name": sprint_name,
+        "originBoardId": board_id,
+    }
+    response_create_sprint = requests.post(
+        create_sprint_api_url, json=sprint_data, auth=auth
+    )
+    if response_create_sprint.status_code == 201:
+        created_sprint_data = response_create_sprint.json()
+        sprint_id = created_sprint_data.get("id")
+        logging.info(f"New Sprint created with ID: {sprint_id}")
+        return sprint_id
+    else:
+        logging.error(
+            f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}"
+        )
+        return None
+def move_issues_to_sprint(jira, start_issue_key, end_issue_key, target_sprint_id):
+    for i in range(int(start_issue_key.split('-')[1]), int(end_issue_key.split('-')[1]) + 1):
+        issue_key = f"JST-{i}"
+        try:
+            issue = jira.issue(issue_key)
+            jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+            logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
+        except Exception as e:
+            logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
 
 
 
@@ -128,17 +158,27 @@ def main():
       #  description = f"Test Story {i+1}"
        # new_story = create_story(jira, 'JST', summary, description)
      # Define the mapping between epic keys and story keys
-    epic_story_ranges = {
-        'JST-1': ['JST-7', 'JST-15'],
-        'JST-2': ['JST-16', 'JST-25'],
-        'JST-3': ['JST-23', 'JST-37'],
+    #epic_story_ranges = {
+     #  'JST-1': ['JST-7', 'JST-15'],
+      #  'JST-2': ['JST-16', 'JST-25'],
+       # 'JST-3': ['JST-23', 'JST-37'],
         # Add more mappings as needed
-    } 
+   # } 
       # Add stories to epics
-    for epic_key, (start_story, end_story) in epic_story_ranges.items():
-        for story_id in range(int(start_story.split('-')[1]), int(end_story.split('-')[1]) + 1):
-            story_key = f"JST-{story_id}"
-            add_story_to_epic(jira, epic_key, story_key)
+    #for epic_key, (start_story, end_story) in epic_story_ranges.items():
+     #   for story_id in range(int(start_story.split('-')[1]), int(end_story.split('-')[1]) + 1):
+      #      story_key = f"JST-{story_id}"
+       #     add_story_to_epic(jira, epic_key, story_key)
+    # Create three sprints
+    #for i in range(1, 4):
+     #   sprint_name = f"Sprint {i}"
+      #  create_sprint(jira_url, user, api_token, '1', sprint_name)
+    # Example usage:
+    #move_issues_to_sprint(jira, 'JST-7', 'JST-15', '1')
+    move_issues_to_sprint(jira, 'JST-16', 'JST-25', '2')
+    move_issues_to_sprint(jira, 'JST-26', 'JST-37', '3')
+
+
 
 
 
