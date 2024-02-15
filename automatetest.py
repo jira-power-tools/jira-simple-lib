@@ -1,7 +1,9 @@
 import unittest
+from datetime import datetime
+import requests
 from jira import JIRAError
-from unittest.mock import MagicMock, patch
-from run_test import create_jira_connection, create_jira_project, create_epic, create_story, add_story_to_epic
+from unittest.mock import MagicMock, patch, call
+from run_test import create_jira_connection, create_jira_project, create_epic, create_story, add_story_to_epic, create_sprint, move_issues_to_sprint, start_sprint
 import logging
 
 # Create JIRA connection test case
@@ -189,9 +191,144 @@ class TestAddStoryToEpic(unittest.TestCase):
         # Assert
         self.assertFalse(result)
         self.mock_jira.add_issues_to_epic.assert_not_called()
+#create sprint
+class TestCreateSprint(unittest.TestCase):
+    @patch('requests.post')
+    def test_create_sprint_success(self, mock_post):
+        # Arrange
+        jira_url = "https://jsl-test.atlassian.net"
+        api_token = "your_api_token"
+        jira_username = "your_username"
+        board_id = "your_board_id"
+        sprint_name = "Test Sprint"
+        expected_sprint_id = "123456"
 
+        mock_response = requests.Response()
+        mock_response.status_code = 201
+        mock_response.json = lambda: {"id": expected_sprint_id}  # Patching the json() method to return a predefined value
+        mock_post.return_value = mock_response
 
+        # Act
+        sprint_id = create_sprint(jira_url, jira_username, api_token, board_id, sprint_name)
 
+        # Assert
+        self.assertEqual(sprint_id, expected_sprint_id)
+        mock_post.assert_called_once_with(
+            f"{jira_url}/rest/agile/1.0/sprint",
+            json={"name": sprint_name, "originBoardId": board_id},
+            auth=(jira_username, api_token)
+        )
+
+    @patch('requests.post')
+    def test_create_sprint_failure(self, mock_post):
+        # Arrange
+        jira_url = "https://jsl-test.atlassian.net"
+        api_token = "your_api_token"
+        jira_username = "your_username"
+        board_id = "your_board_id"
+        sprint_name = "Test Sprint"
+
+        mock_response = requests.Response()
+        mock_response.status_code = 400
+        mock_response._content = b"Error message"  # Set the content directly instead of using the 'text' attribute
+        mock_post.return_value = mock_response
+
+        # Act
+        sprint_id = create_sprint(jira_url, jira_username, api_token, board_id, sprint_name)
+
+        # Assert
+        self.assertIsNone(sprint_id)
+        mock_post.assert_called_once_with(
+            f"{jira_url}/rest/agile/1.0/sprint",
+            json={"name": sprint_name, "originBoardId": board_id},
+            auth=(jira_username, api_token)
+        )
+#move issues to sprint
+
+class TestMoveIssuesToSprint(unittest.TestCase):
+    def setUp(self):
+        self.mock_jira = MagicMock()
+
+    def test_move_issues_to_sprint(self):
+        # Arrange
+        start_issue_key = "JST-1"
+        end_issue_key = "JST-3"
+        target_sprint_id = 12345
+
+        # Mock the issue method to return a MagicMock object
+        self.mock_jira.issue.side_effect = lambda x: MagicMock(key=x)
+
+        # Act
+        move_issues_to_sprint(self.mock_jira, start_issue_key, end_issue_key, target_sprint_id)
+
+        # Assert
+        expected_calls = [
+            call(target_sprint_id, ['JST-1']),
+            call(target_sprint_id, ['JST-2']),
+            call(target_sprint_id, ['JST-3'])
+        ]
+        self.assertEqual(self.mock_jira.add_issues_to_sprint.call_count, 3)
+        self.mock_jira.add_issues_to_sprint.assert_has_calls(expected_calls)
+
+    def test_move_issues_to_sprint_error(self):
+        # Arrange
+        start_issue_key = "JST-1"
+        end_issue_key = "JST-3"
+        target_sprint_id = 12345
+
+        # Mock the issue method to raise an exception
+        self.mock_jira.issue.side_effect = Exception("Issue not found")
+
+        # Act
+        move_issues_to_sprint(self.mock_jira, start_issue_key, end_issue_key, target_sprint_id)
+
+        # Assert
+        self.assertEqual(self.mock_jira.add_issues_to_sprint.call_count, 0)
+    #start sprint
+class TestStartSprint(unittest.TestCase):
+    def setUp(self):
+        self.mock_jira = MagicMock()
+
+    def test_start_sprint_success(self):
+        # Arrange
+        sprint_id = 123
+        new_summary = "New Sprint Summary"
+        start_date = datetime(2024, 2, 15)
+        end_date = datetime(2024, 2, 29)
+
+        # Mock the sprint method to return a MagicMock object
+        mock_sprint = MagicMock()
+        self.mock_jira.sprint.return_value = mock_sprint
+
+        # Act
+        result = start_sprint(self.mock_jira, sprint_id, new_summary, start_date, end_date)
+
+        # Assert
+        self.assertIsNotNone(result)
+        mock_sprint.update.assert_called_once_with(
+            name=new_summary,
+            state='active',
+            startDate=start_date,
+            endDate=end_date
+        )
+        self.assertTrue(mock_sprint.started)
+
+    def test_start_sprint_failure(self):
+        # Arrange
+        sprint_id = 123
+        new_summary = "New Sprint Summary"
+        start_date = datetime(2024, 2, 15)
+        end_date = datetime(2024, 2, 29)
+
+        # Mock the sprint method to raise a JIRAError
+        self.mock_jira.sprint.side_effect = JIRAError("Sprint not found")
+
+        # Act
+        result = start_sprint(self.mock_jira, sprint_id, new_summary, start_date, end_date)
+
+        # Assert
+        self.assertIsNone(result)
+        self.mock_jira.sprint.assert_called_once_with(sprint_id)
 
 
 if __name__ == "__main__":
