@@ -40,7 +40,7 @@ def create_jira_connection(jira_url, user, api_token):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         return None
-# Function to create a new project in Jira
+    # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
     if not jira:
         logging.error("Failed to create project: Jira connection not established.")
@@ -54,6 +54,10 @@ def create_jira_project(jira, project_name, project_key):
     except JIRAError as e:
         logging.error(f"Error creating project: {e}")
         return False
+    except Exception as e:
+        logging.error(f"Error creating project: {e}")
+        return False
+
              #Epic related functions
 # Function to create a new Epic
 def create_epic(jira, project_key, epic_name, epic_summary):
@@ -290,7 +294,7 @@ def main():
      # Create Jira connection
     jira = create_jira_connection(jira_url, user, api_token)
      # Create the project
-    #create_jira_project(jira, 'Jsl-Test', 'JST')
+    #create_jira_project(jira, 'Test1', 'T1')
 
     # Define names and summaries for the epics
     # epic_details = [
@@ -339,7 +343,7 @@ def main():
     #start_sprint(jira, '2', 'Sprint 12', '2024-02-06T00:00:00.000+0000', '2024-02-29T23:59:59.999+0000')
     #delete_all_stories_in_project(jira,'JST')
     #delete_all_sprints(jira,'1')
-    delete_all_projects(jira)
+    #delete_all_projects(jira)
 
 
 
