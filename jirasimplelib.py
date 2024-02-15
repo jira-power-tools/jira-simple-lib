@@ -181,8 +181,7 @@ def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
         return None
 
 # Function to update sprint summary
-def update_sprint_summary(
-        jira, sprint_id, new_summary, sprint_state, start_date, end_date):
+def update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date, end_date):
     try:
         sprint = jira.sprint(sprint_id)
         sprint.update(
