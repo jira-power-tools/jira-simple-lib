@@ -21,7 +21,7 @@
 # delete all stories                            ~~DONE
 # delete all sptrints                           ~~DONE
 # delete all projects                           ~~DONE
-import datetime
+from datetime import datetime
 import logging
 from jira import JIRA, JIRAError
 import requests
@@ -50,13 +50,13 @@ def create_jira_project(jira, project_name, project_key):
     try:
         project = jira.create_project(project_key, project_name)
         logging.info(f"Project '{project_name}' created successfully.")
-        return True
+        return project
     except JIRAError as e:
         logging.error(f"Error creating project: {e}")
-        return False
+        return None
     except Exception as e:
         logging.error(f"Error creating project: {e}")
-        return False
+        return None
 
              #Epic related functions
 # Function to create a new Epic
@@ -294,7 +294,7 @@ def main():
      # Create Jira connection
     jira = create_jira_connection(jira_url, user, api_token)
      # Create the project
-    #create_jira_project(jira, 'Test1', 'T1')
+    #create_jira_project(jira, 'DemoProject2', 'D2')
 
     # Define names and summaries for the epics
     # epic_details = [

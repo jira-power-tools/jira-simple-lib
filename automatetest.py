@@ -3,7 +3,7 @@ from datetime import datetime
 import requests
 from jira import JIRAError
 from unittest.mock import MagicMock, patch, call
-from run_test import create_jira_connection, create_jira_project, create_epic, create_story, add_story_to_epic, create_sprint, move_issues_to_sprint, start_sprint
+from run_test import create_jira_connection, create_jira_project, create_epic, create_story, add_story_to_epic, create_sprint, move_issues_to_sprint, start_sprint, add_comment_to_issues_in_range, get_stories_in_sprint,update_story_status,complete_stories_in_sprint,complete_sprint,delete_all_sprints,delete_all_stories_in_project,delete_all_projects
 import logging
 
 # Create JIRA connection test case
@@ -330,6 +330,281 @@ class TestStartSprint(unittest.TestCase):
         self.assertIsNone(result)
         self.mock_jira.sprint.assert_called_once_with(sprint_id)
 
+    #add comments in a stories
+class TestAddCommentToIssuesInRange(unittest.TestCase):
+    def test_add_comment_to_issues_in_range(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the issue object
+        issue_mock = MagicMock()
+
+        # Configure the return value of the jira.issue method
+        jira_mock.issue.return_value = issue_mock
+
+        # Call the function with mock objects
+        start_issue_num = 1
+        end_issue_num = 3
+        comment_body = "Test comment"
+        success_count = add_comment_to_issues_in_range(jira_mock, start_issue_num, end_issue_num, comment_body)
+
+        # Assertions
+        self.assertEqual(success_count, 3)  # We assume all issues are successfully commented
+        self.assertEqual(jira_mock.issue.call_count, 3)  # Ensure jira.issue is called for each issue
+        jira_mock.add_comment.assert_called_with(issue_mock, comment_body)  # Ensure add_comment is called with the correct arguments
+
+    def test_no_comment_added(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the issue object
+        issue_mock = MagicMock()
+
+        # Configure the return value of the jira.issue method
+        jira_mock.issue.return_value = issue_mock
+
+        # Configure the add_comment method to raise a JIRAError
+        jira_mock.add_comment.side_effect = JIRAError("Failed to add comment")
+
+        # Call the function with mock objects
+        start_issue_num = 1
+        end_issue_num = 3
+        comment_body = "Test comment"
+        success_count = add_comment_to_issues_in_range(jira_mock, start_issue_num, end_issue_num, comment_body)
+
+        # Assertions
+        self.assertEqual(success_count, 0)  # No issues should be successfully commented
+        self.assertEqual(jira_mock.issue.call_count, 3)  # Ensure jira.issue is called for each issue
+        jira_mock.add_comment.assert_called_with(issue_mock, comment_body)  # Ensure add_comment is called with the correct arguments
+
+#get stories in sprint
+class TestGetStoriesInSprint(unittest.TestCase):
+    def test_get_stories_in_sprint(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the search_issues method
+        jira_mock.search_issues.return_value = [
+            MagicMock(key="JST-1", fields=MagicMock(summary="Story 1")),
+            MagicMock(key="JST-2", fields=MagicMock(summary="Story 2"))
+        ]
+
+        # Call the function with mock objects
+        sprint_id = "SPRINT-1"
+        stories = get_stories_in_sprint(jira_mock, sprint_id)
+
+        # Assertions
+        self.assertIsNotNone(stories)  # Ensure that stories are not None
+        self.assertEqual(len(stories), 2)  # Ensure that two stories are returned
+        jira_mock.search_issues.assert_called_once_with(f'sprint = {sprint_id} AND issuetype = Task')  # Ensure search_issues is called with the correct JQL
+
+    def test_no_stories_in_sprint(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the search_issues method to return an empty list
+        jira_mock.search_issues.return_value = []
+
+        # Call the function with mock objects
+        sprint_id = "SPRINT-1"
+        stories = get_stories_in_sprint(jira_mock, sprint_id)
+
+        # Assertions
+        self.assertIsNotNone(stories)  # Ensure that stories are not None
+        self.assertEqual(len(stories), 0)  # Ensure that no stories are returned
+        jira_mock.search_issues.assert_called_once_with(f'sprint = {sprint_id} AND issuetype = Task')  # Ensure search_issues is called with the correct JQL
+#update story status
+class TestUpdateStoryStatus(unittest.TestCase):
+    def test_update_story_status_valid_status(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the issue object
+        issue_mock = MagicMock()
+
+        # Mock the transitions method to return a list of transitions
+        jira_mock.transitions.return_value = [
+            {'id': '1', 'to': {'name': 'In Progress'}},
+            {'id': '2', 'to': {'name': 'Done'}}
+        ]
+
+        # Configure the return value of the jira.issue method
+        jira_mock.issue.return_value = issue_mock
+
+        # Call the function with mock objects
+        story_key = "JST-1"
+        new_status = "In Progress"
+        result = update_story_status(jira_mock, story_key, new_status)
+
+        # Assertions
+        self.assertTrue(result)  # Update should be successful
+        jira_mock.transitions.assert_called_once_with(issue_mock)  # Ensure transitions method is called
+        jira_mock.transition_issue.assert_called_once_with(issue_mock, '1')  # Ensure transition_issue is called with the correct transition id
+
+    def test_update_story_status_invalid_status(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the issue object
+        issue_mock = MagicMock()
+
+        # Mock the transitions method to return a list of transitions
+        jira_mock.transitions.return_value = [
+            {'id': '1', 'to': {'name': 'In Progress'}},
+            {'id': '2', 'to': {'name': 'Done'}}
+        ]
+
+        # Configure the return value of the jira.issue method
+        jira_mock.issue.return_value = issue_mock
+
+        # Call the function with mock objects
+        story_key = "JST-1"
+        new_status = "Invalid Status"
+        result = update_story_status(jira_mock, story_key, new_status)
+
+        # Assertions
+        self.assertFalse(result)  # Update should fail due to invalid status
+        jira_mock.transitions.assert_called_once_with(issue_mock)  # Ensure transitions method is called
+        self.assertFalse(jira_mock.transition_issue.called)  # Ensure transition_issue is not called
+#complete stories in sprint
+def test_complete_stories_in_sprint_success(self):
+    # Mock the jira object
+    jira_mock = MagicMock()
+
+    # Mock the get_stories_in_sprint function to return a list of story keys
+    jira_mock.get_stories_in_sprint.return_value = ["JST-1", "JST-2", "JST-3"]
+
+    # Mock the update_story_status function to return True
+    jira_mock.update_story_status.return_value = True
+
+    # Call the function with mock objects
+    sprint_id = "SPRINT-1"
+    result = complete_stories_in_sprint(jira_mock, sprint_id)
+
+    # Assertions
+    self.assertTrue(result)  # Completion should be successful
+    jira_mock.get_stories_in_sprint.assert_called_once_with(sprint_id)  # Ensure get_stories_in_sprint is called
+    self.assertEqual(jira_mock.update_story_status.call_count, 3)  # Ensure update_story_status is called for each story
+#complete sprint
+class TestCompleteSprint(unittest.TestCase):
+    def test_complete_sprint_success(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the sprint object
+        sprint_mock = MagicMock()
+        sprint_mock.name = "Sprint 1"
+        jira_mock.sprint.return_value = sprint_mock
+
+        # Call the function with mock objects
+        sprint_id = "SPRINT-1"
+        start_date = "2024-02-20"
+        end_date = "2024-02-28"
+        result = complete_sprint(jira_mock, sprint_id, start_date, end_date)
+
+        # Assertions
+        self.assertTrue(result)  # Completion should be successful
+        jira_mock.sprint.assert_called_once_with(sprint_id)  # Ensure sprint method is called
+        sprint_mock.update.assert_called_once_with(name="Sprint 1", state='closed', startDate=start_date, endDate=end_date)  # Ensure sprint.update is called with correct arguments
+
+    def test_complete_sprint_failure(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the sprint object
+        sprint_mock = MagicMock()
+        sprint_mock.name = "Sprint 1"
+        jira_mock.sprint.return_value = sprint_mock
+
+        # Configure the sprint.update method to raise a JIRAError
+        sprint_mock.update.side_effect = JIRAError("Failed to update sprint")
+
+        # Call the function with mock objects
+        sprint_id = "SPRINT-1"
+        start_date = "2024-02-20"
+        end_date = "2024-02-28"
+        result = complete_sprint(jira_mock, sprint_id, start_date, end_date)
+
+        # Assertions
+        self.assertFalse(result)  # Completion should fail due to JIRAError
+        jira_mock.sprint.assert_called_once_with(sprint_id)  # Ensure sprint method is called
+        sprint_mock.update.assert_called_once_with(name="Sprint 1", state='closed', startDate=start_date, endDate=end_date)  # Ensure sprint.update is called with correct arguments
+#delete all stories in project
+def test_delete_all_stories_success(self):
+    # Mock the jira object
+    jira_mock = MagicMock()
+
+    # Mock the search_issues method to return a list of issues
+    issues_mock = [MagicMock(key=f"STORY-{i}") for i in range(1, 4)]
+    jira_mock.search_issues.return_value = issues_mock
+
+    # Call the function with mock objects
+    project_key = "PROJECT-1"
+    result = delete_all_stories_in_project(jira_mock, project_key)
+
+    # Assertions
+    self.assertTrue(result)  # Deletion should be successful
+    jira_mock.search_issues.assert_called_once_with(f'project={project_key}')  # Ensure search_issues is called with correct argument
+    # Ensure delete is called for each issue
+    self.assertEqual(jira_mock.delete.call_count, len(issues_mock))  
+    # Ensure delete is called with each issue
+    jira_mock.delete.assert_called_with(issues_mock[0])  
+    jira_mock.delete.assert_called_with(issues_mock[1])  
+    jira_mock.delete.assert_called_with(issues_mock[2])  
+#delete all sprints
+def test_delete_all_sprints_success(self):
+    # Mock the jira object
+    jira_mock = MagicMock()
+
+    # Mock the sprints method to return a list of sprints
+    sprints_mock = [MagicMock(id=f"SPRINT-{i}") for i in range(1, 4)]
+    jira_mock.sprints.return_value = sprints_mock
+
+    # Call the function with mock objects
+    board_id = "BOARD-1"
+    result = delete_all_sprints(jira_mock, board_id)
+
+    # Assertions
+    self.assertTrue(result)  # Deletion should be successful
+    jira_mock.sprints.assert_called_once_with(board_id)  # Ensure sprints is called with correct argument
+    # Ensure delete is called for each sprint
+    self.assertEqual(jira_mock.delete.call_count, len(sprints_mock))  
+    for sprint in sprints_mock:
+        jira_mock.delete.assert_called_with(sprint)  
+#delete all projects
+class TestDeleteAllProjects(unittest.TestCase):
+    def test_delete_all_projects_success(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Mock the projects method to return a list of projects
+        projects_mock = [MagicMock(key=f"PROJECT-{i}") for i in range(1, 4)]
+        jira_mock.projects.return_value = projects_mock
+
+        # Call the function with mock objects
+        result = delete_all_projects(jira_mock)
+
+        # Assertions
+        self.assertTrue(result)  # Deletion should be successful
+        jira_mock.projects.assert_called_once()  # Ensure projects is called
+
+        # Ensure delete_project is called for each project with correct arguments
+        expected_calls = [call(project.key) for project in projects_mock]
+        jira_mock.delete_project.assert_has_calls(expected_calls, any_order=True)
+
+    def test_delete_all_projects_failure(self):
+        # Mock the jira object
+        jira_mock = MagicMock()
+
+        # Configure the projects method to raise an exception
+        jira_mock.projects.side_effect = Exception("Failed to retrieve projects")
+
+        # Call the function with mock objects
+        result = delete_all_projects(jira_mock)
+
+        # Assertions
+        self.assertFalse(result)  # Deletion should fail due to exception
+        jira_mock.projects.assert_called_once()  # Ensure projects is called
 
 if __name__ == "__main__":
     unittest.main()
