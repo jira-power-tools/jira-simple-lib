@@ -1,44 +1,42 @@
 
-# this file should run a test script to exercise all the functions in 
-# jirasimplelib
-#
-# create a project                              ~~DONE
-# create epics: ep-1, ep-2, ep-3                ~~DONE
-# create stories s-1 to s-30                    ~~DONE
-# move stories s-1 to s-15 to ep-1, s-16 to s-20 to ep-2 an s-21 to s-30 to ep-3  ~~DONE
-# create sprints sp-1 to sp-3                   ~~DONE
-# add s-1 to s10 to sp-1                        ~~DONE
-# add s-11 to s20 to sp-2                       ~~DONE
-# add s-21 to s30 to sp-3                       ~~DONE
-# start sp-1                                    ~~DONE
-# add comments to s-1 to s-15                   ~~DONE
-# get list of stories in sp-1                   ~~DONE
-# move s-10 to s-15 to s-2                      ~~DONE
-# complete all stories in sp-1                  ~~DONE
-# complete sp-1                                 ~~DONE
-# start sp-2                                    ~~DONE
-# add comment to all stories in sp-2            ~~DONE
-# delete all stories                            ~~DONE
-# delete all sptrints                           ~~DONE
 from datetime import datetime
 import logging
 from jira import JIRA, JIRAError
 import requests
+import json
+import argparse 
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename='jira_test.log'
-)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
 
-# Function to create a Jira connection
-def create_jira_connection(jira_url, user, api_token):
+def read_config(filename):
+    with open(filename, 'r') as f:
+        config = json.load(f)
+    return config
+def create_jira_connection(config_file):
     try:
-        return JIRA(server=jira_url, basic_auth=(user, api_token))
+        with open(config_file, 'r') as file:
+            config_data = json.load(file)
+            jira_url = config_data['jira_url']
+            user = config_data['user']
+            api_token = config_data['api_token']
+
+            jira = JIRA(
+                basic_auth=(user, api_token),
+                options={'server': jira_url}
+            )
+            logging.info("Jira connection established successfully.")
+            return jira
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         return None
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Jira CLI Tool')
+    parser.add_argument('-c', '--config', metavar='CONFIG_FILE', type=str, default='config.json',
+                        help='Path to the configuration file (default: config.json)')
+    return parser.parse_args()
     # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
     if not jira:
@@ -55,6 +53,36 @@ def create_jira_project(jira, project_name, project_key):
         return None
     except Exception as e:
         logging.error(f"Error creating project: {e}")
+        return None
+def create_jira_board(jira, board_name, project_id):
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+    # Create the board payload
+    payload = {
+        "name": board_name,
+        "type": "scrum",  # or "kanban"
+        "filterId": project_id
+    }
+
+    # Make the POST request to create the board
+    try:
+        response = requests.post(
+            f"{jira.base_url}/rest/agile/1.0/board",
+            json=payload,
+            auth=(jira.user, jira.api_token)  # or use 'auth=(jira.username, jira.password)' for basic auth
+        )
+
+        if response.status_code == 200:
+            board_id = response.json()['id']
+            logger.info("Board created successfully! Board ID: %s", board_id)
+            return board_id
+        else:
+            logger.error("Failed to create board. Error: %s", response.text)
+            return None
+    except Exception as e:
+        logger.exception("An error occurred while creating the board: %s", str(e))
         return None
 
              #Epic related functions
@@ -269,79 +297,127 @@ def delete_all_projects(jira):
     except Exception as e:
         logging.error(f"Error deleting projects: {e}")
         return False
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Jira CLI Tool')
+    parser.add_argument('--config', help='Path to the configuration file', required=True)
+    return parser.parse_args()
 
-
-
-
-
+# Define function to display the menu
+def display_menu():
+    logging.info("Choose an option:")
+    logging.info("1: Create Jira Project ()")
+    logging.info("2: Create Jira Board")
+    logging.info("3: Create Epic")
+    logging.info("4: Create Story")
+    logging.info("5: Add Story to Epic")
+    logging.info("6: Create Sprint")
+    logging.info("7: Move Issues to Sprint")
+    logging.info("8: Start Sprint")
+    logging.info("9: Add Comments to Issues in Range")
+    logging.info("10: Get Stories in Sprint")
+    logging.info("11: Complete Stories in Sprint")
+    logging.info("12: Complete Sprint")
+    logging.info("13: Delete All Stories in Project")
+    logging.info("14: Delete All Sprints")
+    logging.info("15: Delete All Projects")
+    logging.info("16: Exit")
+# Define function to parse user input
+def get_user_input():
+    try:
+        choice = int(input("Enter the function number (1-16): "))
+        if 1 <= choice <= 16:
+            return choice
+        else:
+            logging.error("Invalid choice. Please enter a number between 1 and 16.")
+            return get_user_input()
+    except ValueError:
+        logging.error("Invalid input. Please enter a number.")
+        return get_user_input()
 
 def main():
+    # Parse command line arguments
+    args = parse_arguments()
 
-    # Jira credentials and parameters
-    jira_url = "https://jsl-test.atlassian.net"
-    api_token = "ATATT3xFfGF0H-GarbaOXH5XrBh5TaLhnv-QZ9ygdWpuemV737fsZF7enXxQuV7uU0QLvpqWk3GYOAorlwMaujiCsgwfND5rqanZOMm9ac8BJUYQBqz3rVyX8xhu9sgvbZ-0E2jI3_nR_ePruAJdocVK9jIctyVeqWl5x1NSOYawM79lW9Yo-ak=B918462D"
-    user = "info@test01.verituslabs.net"
-     # Create Jira connection
-    jira = create_jira_connection(jira_url, user, api_token)
-     # Create the project
-    #create_jira_project(jira, 'DemoProject2', 'D2')
+    # Create Jira connection
+    jira = create_jira_connection(args.config)
+    if not jira:
+        return
 
-    # Define names and summaries for the epics
-    # epic_details = [
-      #  {"name": "Test Epic 1", "summary": "This is a test epic 1."},
-      #  {"name": "Test Epic 2", "summary": "This is a test epic 2."},
-      #  {"name": "Test Epic 3", "summary": "This is a test epic 3."}
-   # ]
-    # Create 3 epics with different names and summaries
-   # for epic_detail in epic_details:
-       # epic_name = epic_detail["name"]
-       # epic_summary = epic_detail["summary"]
-       # create_epic(jira, 'JST', epic_name, epic_summary)
-    # Create a new story
-    # Create 30 stories
-    #for i in range(30):
-     #   summary = f"This is a test story {i+1}."
-      #  description = f"Test Story {i+1}"
-       # new_story = create_story(jira, 'JST', summary, description)
-     # Define the mapping between epic keys and story keys
-    #epic_story_ranges = {
-     #  'JST-1': ['JST-7', 'JST-15'],
-      #  'JST-2': ['JST-16', 'JST-25'],
-       # 'JST-3': ['JST-23', 'JST-37'],
-        # Add more mappings as needed
-   # } 
-      # Add stories to epics
-    #for epic_key, (start_story, end_story) in epic_story_ranges.items():
-     #   for story_id in range(int(start_story.split('-')[1]), int(end_story.split('-')[1]) + 1):
-      #      story_key = f"JST-{story_id}"
-       #     add_story_to_epic(jira, epic_key, story_key)
-    # Create three sprints
-    #for i in range(1, 4):
-     #   sprint_name = f"Sprint {i}"
-      #  create_sprint(jira_url, user, api_token, '1', sprint_name)
-    # Example usage:
-    #move_issues_to_sprint(jira, 'JST-7', 'JST-15', '1')
-   # move_issues_to_sprint(jira, 'JST-16', 'JST-25', '2')
-   # move_issues_to_sprint(jira, 'JST-26', 'JST-37', '3')
-        # Start the specified sprint
-     #start_sprint(jira, '1', 'Sprint 11', '2024-02-06T00:00:00.000+0000', '2024-02-29T23:59:59.999+0000')
-   # add_comment_to_issues_in_range(jira, 16, 25, 'this is a second test comment.')
-    #story_keys = get_stories_in_sprint(jira, '1')
-   # move_issues_to_sprint(jira, 'JST-7', 'JST-15', '1')
-    #complete_stories_in_sprint(jira, '1')
-   # complete_sprint(jira, '1','2024-02-06T00:00:00.000+0000','2024-02-29T23:59:59.999+0000')
-    #start_sprint(jira, '2', 'Sprint 12', '2024-02-06T00:00:00.000+0000', '2024-02-29T23:59:59.999+0000')
-    #delete_all_stories_in_project(jira,'JST')
-    #delete_all_sprints(jira,'1')
-    #delete_all_projects(jira)
+    while True:
+        display_menu()
+        choice = get_user_input()
 
-
-
-
-
-
-
+        if choice == 1:
+            project_name = input("Enter project name: ")
+            project_key = input("Enter project key: ")
+            create_jira_project(jira, project_name, project_key)
+        elif choice == 2:
+            board_name = input("Enter board name: ")
+            project_id = input("Enter project ID: ")
+            create_jira_board(jira, board_name, project_id)
+        elif choice == 3:
+            project_key = input("Enter project key: ")
+            epic_name = input("Enter epic name: ")
+            epic_summary = input("Enter epic summary: ")
+            create_epic(jira, project_key, epic_name, epic_summary)
+        elif choice == 4:
+            project_key = input("Enter project key: ")
+            summary = input("Enter story summary: ")
+            description = input("Enter story description: ")
+            create_story(jira, project_key, summary, description)
+        elif choice == 5:
+            epic_key = input("Enter epic key: ")
+            story_key = input("Enter story key: ")
+            add_story_to_epic(jira, epic_key, story_key)
+        elif choice == 6:
+            jira_url = input("Enter Jira URL: ")
+            username = input("Enter Jira username: ")
+            api_token = input("Enter Jira API token: ")
+            board_id = input("Enter board ID: ")
+            sprint_name = input("Enter sprint name: ")
+            create_sprint(jira_url, username, api_token, board_id, sprint_name)
+        elif choice == 7:
+            start_issue_key = input("Enter start issue key: ")
+            end_issue_key = input("Enter end issue key: ")
+            target_sprint_id = input("Enter target sprint ID: ")
+            move_issues_to_sprint(jira, start_issue_key, end_issue_key, target_sprint_id)
+        elif choice == 8:
+            sprint_id = input("Enter sprint ID: ")
+            new_summary = input("Enter new sprint summary: ")
+            start_date = input("Enter start date: ")
+            end_date = input("Enter end date: ")
+            start_sprint(jira, sprint_id, new_summary, start_date, end_date)
+        elif choice == 9:
+            start_issue_num = input("Enter start issue number: ")
+            end_issue_num = input("Enter end issue number: ")
+            comment_body = input("Enter comment body: ")
+            add_comment_to_issues_in_range(jira, start_issue_num, end_issue_num, comment_body)
+        elif choice == 10:
+            sprint_id = input("Enter sprint ID: ")
+            get_stories_in_sprint(jira, sprint_id)
+        elif choice == 11:
+            sprint_id = input("Enter sprint ID: ")
+            complete_stories_in_sprint(jira, sprint_id)
+        elif choice == 12:
+            sprint_id = input("Enter sprint ID: ")
+            start_date = input("Enter start date: ")
+            end_date = input("Enter end date: ")
+            complete_sprint(jira, sprint_id, start_date, end_date)
+        elif choice == 13:
+            project_key = input("Enter project key: ")
+            delete_all_stories_in_project(jira, project_key)
+        elif choice == 14:
+            board_id = input("Enter board ID: ")
+            delete_all_sprints(jira, board_id)
+        elif choice == 15:
+            delete_all_projects(jira)
+        elif choice == 16:
+            break
+        else:
+            logging.error("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
     main()
+
+
 
