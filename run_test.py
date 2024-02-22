@@ -279,7 +279,7 @@ def main():
 
     # Jira credentials and parameters
     jira_url = "https://jsl-test.atlassian.net"
-    api_token = "ATATT3xFfGF0H-GarbaOXH5XrBh5TaLhnv-QZ9ygdWpuemV737fsZF7enXxQuV7uU0QLvpqWk3GYOAorlwMaujiCsgwfND5rqanZOMm9ac8BJUYQBqz3rVyX8xhu9sgvbZ-0E2jI3_nR_ePruAJdocVK9jIctyVeqWl5x1NSOYawM79lW9Yo-ak=B918462D"
+    api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
     user = "info@test01.verituslabs.net"
      # Create Jira connection
     jira = create_jira_connection(jira_url, user, api_token)
@@ -315,10 +315,12 @@ def main():
      #   for story_id in range(int(start_story.split('-')[1]), int(end_story.split('-')[1]) + 1):
       #      story_key = f"JST-{story_id}"
        #     add_story_to_epic(jira, epic_key, story_key)
-    # Create three sprints
+    # Create three sprints6
+    
     #for i in range(1, 4):
      #   sprint_name = f"Sprint {i}"
-      #  create_sprint(jira_url, user, api_token, '1', sprint_name)
+    sprint_name = 'new sprint'
+    create_sprint(jira_url, user, api_token, '2', sprint_name)
     # Example usage:
     #move_issues_to_sprint(jira, 'JST-7', 'JST-15', '1')
    # move_issues_to_sprint(jira, 'JST-16', 'JST-25', '2')

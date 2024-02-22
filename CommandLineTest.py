@@ -31,12 +31,6 @@ def create_jira_connection(config_file):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         return None
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Jira CLI Tool')
-    parser.add_argument('-c', '--config', metavar='CONFIG_FILE', type=str, default='config.json',
-                        help='Path to the configuration file (default: config.json)')
-    return parser.parse_args()
     # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
     if not jira:
@@ -54,45 +48,14 @@ def create_jira_project(jira, project_name, project_key):
     except Exception as e:
         logging.error(f"Error creating project: {e}")
         return None
-def create_jira_board(jira, board_name, project_id):
-    # Set up logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-
-    # Create the board payload
-    payload = {
-        "name": board_name,
-        "type": "scrum",  # or "kanban"
-        "filterId": project_id
-    }
-
-    # Make the POST request to create the board
-    try:
-        response = requests.post(
-            f"{jira.base_url}/rest/agile/1.0/board",
-            json=payload,
-            auth=(jira.user, jira.api_token)  # or use 'auth=(jira.username, jira.password)' for basic auth
-        )
-
-        if response.status_code == 200:
-            board_id = response.json()['id']
-            logger.info("Board created successfully! Board ID: %s", board_id)
-            return board_id
-        else:
-            logger.error("Failed to create board. Error: %s", response.text)
-            return None
-    except Exception as e:
-        logger.exception("An error occurred while creating the board: %s", str(e))
-        return None
-
              #Epic related functions
 # Function to create a new Epic
 def create_epic(jira, project_key, epic_name, epic_summary):
     try:
         new_epic = jira.create_issue(
-            project=project_key,
-            summary=epic_summary,
-            issuetype={"name": "Epic"},
+        project=project_key,
+        summary=epic_summary,
+        issuetype={"name": "Epic"},
             #customfield_10000=epic_name  # Replace with the appropriate custom field ID for Epic name
         )
         logging.info(f"Epic created successfully. Epic Key: {new_epic.key}")
@@ -126,27 +89,27 @@ def add_story_to_epic(jira, epic_key, story_key):
     except JIRAError as e:
         logging.error(f"Error adding story to epic: {e}")
         return False
-
 # Function to create a new sprint
-def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
-    create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
-    auth = (jira_username, api_token)
+def create_sprint(jira_url,user, api_token, board_id, sprint_name):
+    # API endpoint for creating a new sprint
+    create_sprint_api_url = f'{jira_url}/rest/agile/1.0/sprint'
+    # HTTP Basic Authentication
+    auth = (user, api_token)
+    # Sprint details
     sprint_data = {
         "name": sprint_name,
         "originBoardId": board_id,
     }
-    response_create_sprint = requests.post(
-        create_sprint_api_url, json=sprint_data, auth=auth
-    )
+    # Send a POST request to create the sprint
+    response_create_sprint = requests.post(create_sprint_api_url, json=sprint_data, auth=auth)
+    # Check the response status for creating the sprint
     if response_create_sprint.status_code == 201:
         created_sprint_data = response_create_sprint.json()
-        sprint_id = created_sprint_data.get("id")
-        logging.info(f"New Sprint created with ID: {sprint_id}")
+        sprint_id = created_sprint_data.get('id')
+        print(f"New Sprint created with ID: {sprint_id}")
         return sprint_id
     else:
-        logging.error(
-            f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}"
-        )
+        print(f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}")
         return None
 def move_issues_to_sprint(jira, start_issue_key, end_issue_key, target_sprint_id):
     for i in range(int(start_issue_key.split('-')[1]), int(end_issue_key.split('-')[1]) + 1):
@@ -297,17 +260,68 @@ def delete_all_projects(jira):
     except Exception as e:
         logging.error(f"Error deleting projects: {e}")
         return False
+def delete_epic(jira, epic_key):
+    try:
+        issue = jira.issue(epic_key)
+        issue.delete()
+        logging.info(f"Epic deleted successfully. Key: {epic_key}")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error deleting epic: {e}")
+        return False
+# Function to list all Epics in a project
+def list_epics(jira, project_key):
+    try:
+        jql_query = f"project = {project_key} AND issuetype = Epic"
+        epics = jira.search_issues(jql_query)
+        return epics
+    except Exception as e:
+        logging.error(f"Error listing epics: {e}")
+        return None
+ #Function to get a list of stories in a project
+def get_stories_for_project(jira, project_key):
+    try:
+        jql_query = f"project = {project_key} AND issuetype = Task"
+        issues = jira.search_issues(jql_query)
+        stories = [{"key": issue.key, "summary": issue.fields.summary} for issue in issues]
+        return stories
+    except Exception as e:
+        logging.error(f"Error retrieving stories for project: {e}")
+        return None
+
+def create_board(jira_url, api_token, user_email, project_key, project_lead):
+    create_board_api_url = f"{jira_url}/rest/agile/1.0/board"
+    auth = (user_email, api_token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "type": "scrum",
+        "name": "My Scrum Board",
+        "projectKey": project_key,
+        "projectLeadAccountId": project_lead
+    }
+    response = requests.post(create_board_api_url, json=payload, auth=auth, headers=headers)
+    if response.status_code == 201:
+        board_data = response.json()
+        board_id = board_data.get("id")
+        print(f"Board created successfully. Board ID: {board_id}")
+        return board_id
+    else:
+        print(f"Failed to create board. Status code: {response.status_code}")
+        print(response.text)
+        return None
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', required=True)
     return parser.parse_args()
-
 # Define function to display the menu
 def display_menu():
     logging.info("Choose an option:")
     logging.info("1: Create Jira Project ()")
-    logging.info("2: Create Jira Board")
-    logging.info("3: Create Epic")
+    logging.info("2: Create Epic")
+    logging.info("3: Delete Epic")
     logging.info("4: Create Story")
     logging.info("5: Add Story to Epic")
     logging.info("6: Create Sprint")
@@ -320,12 +334,15 @@ def display_menu():
     logging.info("13: Delete All Stories in Project")
     logging.info("14: Delete All Sprints")
     logging.info("15: Delete All Projects")
-    logging.info("16: Exit")
+    logging.info("16: List All Epics")
+    logging.info("17: List All stories in a project")
+    logging.info("18: Create board")
+    logging.info("19: Exit")
 # Define function to parse user input
 def get_user_input():
     try:
-        choice = int(input("Enter the function number (1-16): "))
-        if 1 <= choice <= 16:
+        choice = int(input("Enter the function number (1-19): "))
+        if 1 <= choice <= 19:
             return choice
         else:
             logging.error("Invalid choice. Please enter a number between 1 and 16.")
@@ -352,30 +369,76 @@ def main():
             project_key = input("Enter project key: ")
             create_jira_project(jira, project_name, project_key)
         elif choice == 2:
-            board_name = input("Enter board name: ")
-            project_id = input("Enter project ID: ")
-            create_jira_board(jira, board_name, project_id)
+            project_key = input("Enter project key: ")
+            num_epics = int(input("Enter the number of epics to create (1 or more): "))
+            epic_details = []
+            for i in range(num_epics):
+                epic_name = input(f"Enter epic name for epic {i+1}: ")
+                epic_summary = input(f"Enter epic summary for epic {i+1}: ")
+                create_epic(jira, project_key, epic_name, epic_summary)
         elif choice == 3:
+            delete_choice = input("Do you want to delete any epics? (yes/no): ").lower()
+            if delete_choice == "yes":
+                delete_option = input("Choose the deletion option (single/range/all): ").lower()
+                
+                if delete_option == "single":
+                    epic_key = input("Enter the key of the epic to delete: ")
+                    delete_epic(jira, epic_key)
+                
+                elif delete_option == "range":
+                    range_input = input("Enter the range of epic keys to delete (e.g., 'np1-2,np1-5'): ")
+                    epic_keys = [key.strip() for key in range_input.split(',')]
+                    for epic_key in epic_keys:
+                        delete_epic(jira, epic_key)
+                
+                elif delete_option == "all":
+                    project_key = input("Enter the project key: ")
+                    epics = list_epics(jira, project_key)
+                    if epics:
+                        for epic in epics:
+                            delete_epic(jira, epic.key)
+                    else:
+                        print("Failed to retrieve epic list. No epics deleted.")
+                else:
+                    print("Invalid option. Please choose 'single', 'range', or 'all'.")    
+        elif choice == 4:            
             project_key = input("Enter project key: ")
-            epic_name = input("Enter epic name: ")
-            epic_summary = input("Enter epic summary: ")
-            create_epic(jira, project_key, epic_name, epic_summary)
-        elif choice == 4:
-            project_key = input("Enter project key: ")
-            summary = input("Enter story summary: ")
-            description = input("Enter story description: ")
-            create_story(jira, project_key, summary, description)
+            num_stories = int(input("Enter the number of stories to create: "))
+            stories = []
+            for i in range(num_stories):
+                print(f"Entering details for Story {i+1}:")
+                summary = input("Enter story summary: ")
+                description = input("Enter story description: ")
+                stories.append({"summary": summary, "description": description})
+            for story in stories:
+                create_story(jira, project_key, story["summary"], story["description"])
         elif choice == 5:
-            epic_key = input("Enter epic key: ")
-            story_key = input("Enter story key: ")
-            add_story_to_epic(jira, epic_key, story_key)
+            project_key = input("Enter project key: ")
+            epic_key = input("Enter epic key: ")           
+            add_option = input("Choose the option to add stories to the epic (single/range/all): ").lower()
+            if add_option == "single":
+                story_key = input("Enter the key of the story to add to the epic: ")
+                add_story_to_epic(jira, epic_key, story_key)           
+            elif add_option == "range":
+                range_input = input("Enter the range of story keys to add (e.g., 'NP1-14,NP1-16'): ")
+                start_story, end_story = map(str.strip, range_input.split(','))
+                for i in range(int(start_story.split('-')[1]), int(end_story.split('-')[1]) + 1):
+                    story_key = f"{start_story.split('-')[0]}-{i}"
+                    add_story_to_epic(jira, epic_key, story_key)                   
+            elif add_option == "all":
+                num_stories = int(input("Enter the total number of stories: "))
+                for i in range(num_stories):
+                    story_key = input(f"Enter the key of story {i+1} to add to the epic: ")
+                    add_story_to_epic(jira, epic_key, story_key)
+            else:
+                print("Invalid option. Please choose 'single', 'range', or 'all'.")
         elif choice == 6:
-            jira_url = input("Enter Jira URL: ")
-            username = input("Enter Jira username: ")
-            api_token = input("Enter Jira API token: ")
-            board_id = input("Enter board ID: ")
-            sprint_name = input("Enter sprint name: ")
-            create_sprint(jira_url, username, api_token, board_id, sprint_name)
+                jira_url = "https://jsl-test.atlassian.net"
+                user = "info@test01.verituslabs.net"
+                api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
+                sprint_name = input("enter sprint name :")
+                board_id = input("enter board id :")
+                sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
         elif choice == 7:
             start_issue_key = input("Enter start issue key: ")
             end_issue_key = input("Enter end issue key: ")
@@ -412,6 +475,28 @@ def main():
         elif choice == 15:
             delete_all_projects(jira)
         elif choice == 16:
+            project_key = input("Enter project key: ")
+            epics = list_epics(jira, project_key)
+            if epics:
+                for epic in epics:
+                  logging.info(f"Epic Key: {epic.key}, Summary: {epic.fields.summary}")
+        elif choice == 17 :
+           project_key = input("Enter project key: ")
+           stories = get_stories_for_project(jira, project_key)
+           if stories:
+                print("List of stories:")
+                for story in stories:
+                    print(f"Key: {story['key']}, Summary: {story['summary']}")
+           else:
+                print("No stories found for the project.")
+        elif choice == 18 :
+            jira_url = "https://jsl-test.atlassian.net"
+            api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
+            user_email = "info@test01.verituslabs.net"
+            project_key = "NP1"
+            project_lead = "JiraTest"
+            create_board(jira_url, api_token, user_email, project_key, project_lead)
+        elif choice == 19:
             break
         else:
             logging.error("Invalid choice. Please try again.")
