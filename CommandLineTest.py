@@ -5,6 +5,7 @@ from jira import JIRA, JIRAError
 import requests
 import json
 import argparse 
+from jira.exceptions import JIRAError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -291,18 +292,24 @@ def get_stories_for_project(jira, project_key):
 
 def create_board(jira_url, api_token, user_email, project_key, project_lead):
     create_board_api_url = f"{jira_url}/rest/agile/1.0/board"
-    auth = (user_email, api_token)
+
     headers = {
         "Accept": "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_token}"
     }
-    payload = {
-        "type": "scrum",
-        "name": "My Scrum Board",
-        "projectKey": project_key,
-        "projectLeadAccountId": project_lead
-    }
-    response = requests.post(create_board_api_url, json=payload, auth=auth, headers=headers)
+
+    payload = json.dumps({
+        "name": "scrum board",
+        "location": {
+            "projectKeyOrId": project_key,
+            "type": "project"
+        },
+        "type": "scrum"
+    })
+
+    response = requests.post(create_board_api_url, data=payload, headers=headers)
+
     if response.status_code == 201:
         board_data = response.json()
         board_id = board_data.get("id")
@@ -312,9 +319,49 @@ def create_board(jira_url, api_token, user_email, project_key, project_lead):
         print(f"Failed to create board. Status code: {response.status_code}")
         print(response.text)
         return None
+def update_epic(jira, epic_key, new_summary, new_description):
+    try:
+        epic = jira.issue(epic_key)
+        epic.update(
+            summary=new_summary,
+            description=new_description,
+           # customfield_10012=new_status,  # Epic Status field
+           # customfield_10011=new_name  # Epic Name field
+            # Add more fields as needed, e.g., customfield_10013 for Epic Color, customfield_10014 for Epic Link
+        )
+        logging.info(f"Epic updated successfully. Key: {epic_key}")
+        return epic
+    except JIRAError as e:
+        logging.error(f"Error updating epic: {e}")
+        return None
+# Function to read the details of an Epic
+def read_epic_details(jira, epic_key):
+    try:
+        epic = jira.issue(epic_key)
+        logging.info(f"Epic Key: {epic.key}")
+        logging.info(f"Summary: {epic.fields.summary}")
+        
+        # Read stories in the epic
+        stories = jira.search_issues(f"'Epic Link' = {epic_key}")
+        if stories:
+            logging.info("Stories in the Epic:")
+            for story in stories:
+                logging.info(f"Story Key: {story.key}")
+                logging.info(f"Summary: {story.fields.summary}")
+                logging.info(f"Status: {story.fields.status}")
+                logging.info(f"Assignee: {story.fields.assignee}")
+                logging.info(f"Due Date: {story.fields.duedate}")
+                logging.info(f"Start Date: {story.fields.customfield_10015}")  # Replace 'xxxxx' with the custom field ID for start date
+        else:
+            logging.info("No stories found in the Epic.")
+        
+    except JIRAError as e:
+        logging.error(f"Error reading epic: {e}")
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', required=True)
+    parser.add_argument('--epic_key', help='Key of the Epic to read details', required=True)
     return parser.parse_args()
 # Define function to display the menu
 def display_menu():
@@ -337,15 +384,17 @@ def display_menu():
     logging.info("16: List All Epics")
     logging.info("17: List All stories in a project")
     logging.info("18: Create board")
-    logging.info("19: Exit")
+    logging.info("19: update Epic")
+    logging.info("20: Read Epic")
+    logging.info("21: Exit")
 # Define function to parse user input
 def get_user_input():
     try:
-        choice = int(input("Enter the function number (1-19): "))
-        if 1 <= choice <= 19:
+        choice = int(input("Enter the function number (1-21): "))
+        if 1 <= choice <= 21:
             return choice
         else:
-            logging.error("Invalid choice. Please enter a number between 1 and 16.")
+            logging.error("Invalid choice. Please enter a number between 1 and 21.")
             return get_user_input()
     except ValueError:
         logging.error("Invalid input. Please enter a number.")
@@ -433,12 +482,13 @@ def main():
             else:
                 print("Invalid option. Please choose 'single', 'range', or 'all'.")
         elif choice == 6:
-                jira_url = "https://jsl-test.atlassian.net"
-                user = "info@test01.verituslabs.net"
-                api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
-                sprint_name = input("enter sprint name :")
-                board_id = input("enter board id :")
-                sprint = create_sprint(jira_url, user, api_token, board_id, sprint_name)
+            jira_url = "https://jiratest001.atlassian.net"
+            user = "info@jiratest001.verituslabs.net"
+            api_token = "ATATT3xFfGF0E5_ZYYCtygjRQRYfZakeAOrUDPWGCxmRyo0k8cTVm0TVPQzaGtKO6J2K7q-pYogVMU4hfxqv1daQgRQmXV2Z7ywbHYw4NHZTVdLkQfUS3DBwQhDnTdhC5pCH5aIdEcsImV7ZBu8QwPe6XFmJvVKZX8cDWYzaeLh8KXfmLlEbBp8=3FC2FE69"
+            board_id = input("ENter board id :")
+            sprint_name = input("ENter sprint name :")
+            create_sprint(jira_url,user, api_token, board_id, sprint_name)
+
         elif choice == 7:
             start_issue_key = input("Enter start issue key: ")
             end_issue_key = input("Enter end issue key: ")
@@ -490,13 +540,21 @@ def main():
            else:
                 print("No stories found for the project.")
         elif choice == 18 :
-            jira_url = "https://jsl-test.atlassian.net"
-            api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
-            user_email = "info@test01.verituslabs.net"
-            project_key = "NP1"
-            project_lead = "JiraTest"
+            jira_url = "https://jiratest001.atlassian.net"
+            api_token = "ATATT3xFfGF0E5_ZYYCtygjRQRYfZakeAOrUDPWGCxmRyo0k8cTVm0TVPQzaGtKO6J2K7q-pYogVMU4hfxqv1daQgRQmXV2Z7ywbHYw4NHZTVdLkQfUS3DBwQhDnTdhC5pCH5aIdEcsImV7ZBu8QwPe6XFmJvVKZX8cDWYzaeLh8KXfmLlEbBp8=3FC2FE69"
+            user_email = "info@jiratest001.verituslabs.net"
+            project_key = "JP"
+            project_lead = "Jira Test 001"
             create_board(jira_url, api_token, user_email, project_key, project_lead)
-        elif choice == 19:
+        elif choice == 19 :
+            epic_key = input("Enter epic key :")
+            new_summary = input("Enter new summary :")
+            new_description = input("Enter new description:")
+            update_epic(jira, epic_key, new_summary, new_description)
+        elif choice == 20 :
+             epic_key = input("Enter epic key :")
+             read_epic_details(jira, epic_key)
+        elif choice == 21 :
             break
         else:
             logging.error("Invalid choice. Please try again.")
