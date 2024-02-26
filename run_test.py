@@ -100,12 +100,17 @@ def add_story_to_epic(jira, epic_key, story_key):
         return False
 
 # Function to create a new sprint
-def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
+def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name,duration_days, start_date, end_date, sprint_goal):
     create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
     auth = (jira_username, api_token)
     sprint_data = {
         "name": sprint_name,
         "originBoardId": board_id,
+        "goal": sprint_goal,
+        "startDate": start_date,  # Format: "YYYY-MM-DD"
+        "endDate": end_date,      # Format: "YYYY-MM-DD"
+        "completeDate": end_date, # Optional, if you want to specify a complete date
+        "duration": f"{duration_days}d"  # Duration in days, e.g., "14d"
     }
     response_create_sprint = requests.post(
         create_sprint_api_url, json=sprint_data, auth=auth
@@ -278,9 +283,9 @@ def delete_all_projects(jira):
 def main():
 
     # Jira credentials and parameters
-    jira_url = "https://jsl-test.atlassian.net"
-    api_token = "ATATT3xFfGF0h7m9HE3DQGsJ_XQ1TbSYSKxCHlvuRHX0cFWuST5ANEM5UyX5AkWVzGBWDpOXAXJo7Kk4G3ulCJpB3AWEJMELIsdiyYj80Z_13Lv165GZMR7MelDtDKS9AJ0VW0GJCw1PJXbpxY2i46VbtTvGekTLCvFA5PjHsPrNB6uC3yXK8wM=1E97E388"
-    user = "info@test01.verituslabs.net"
+    jira_url = "https://jirasimplelib.atlassian.net"
+    api_token = "ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
+    user = "info@jiratest003.verituslabs.net"
      # Create Jira connection
     jira = create_jira_connection(jira_url, user, api_token)
      # Create the project
@@ -319,8 +324,13 @@ def main():
     
     #for i in range(1, 4):
      #   sprint_name = f"Sprint {i}"
-    sprint_name = 'new sprint'
-    create_sprint(jira_url, user, api_token, '2', sprint_name)
+    duration_days = input("Enter duration :")
+    start_date = "2024-02-26"
+    end_date = "2024-03-05"
+    sprint_goal = "new goal"
+    sprint_name = 'sprint 2'
+    create_sprint(jira_url, user, api_token, '1', sprint_name,duration_days, start_date, end_date, sprint_goal)
+
     # Example usage:
     #move_issues_to_sprint(jira, 'JST-7', 'JST-15', '1')
    # move_issues_to_sprint(jira, 'JST-16', 'JST-25', '2')

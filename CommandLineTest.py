@@ -5,9 +5,6 @@ from jira import JIRA, JIRAError
 import requests
 import json
 import argparse 
-from jira.exceptions import JIRAError
-
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -49,6 +46,31 @@ def create_jira_project(jira, project_name, project_key):
     except Exception as e:
         logging.error(f"Error creating project: {e}")
         return None
+def update_jira_project(jira, project_key, new_name=None, new_key=None):
+    if not jira:
+        logging.error("Failed to update project: Jira connection not established.")
+        return False
+
+    if not new_name and not new_key:
+        logging.error("Failed to update project: No new name or key provided.")
+        return False
+
+    try:
+        project = jira.project(project_key)
+        if new_name:
+            project.update(name=new_name)
+            logging.info(f"Project name updated to '{new_name}' successfully.")
+        if new_key:
+            project.update(key=new_key)
+            logging.info(f"Project key updated to '{new_key}' successfully.")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error updating project: {e}")
+        return False
+    except Exception as e:
+        logging.error(f"Error updating project: {e}")
+        return False
+
              #Epic related functions
 # Function to create a new Epic
 def create_epic(jira, project_key, epic_name, epic_summary):
@@ -90,31 +112,12 @@ def add_story_to_epic(jira, epic_key, story_key):
     except JIRAError as e:
         logging.error(f"Error adding story to epic: {e}")
         return False
-# Function to create a new sprint
-def create_sprint(jira_url,user, api_token, board_id, sprint_name):
-    # API endpoint for creating a new sprint
-    create_sprint_api_url = f'{jira_url}/rest/agile/1.0/sprint'
-    # HTTP Basic Authentication
-    auth = (user, api_token)
-    # Sprint details
-    sprint_data = {
-        "name": sprint_name,
-        "originBoardId": board_id,
-    }
-    # Send a POST request to create the sprint
-    response_create_sprint = requests.post(create_sprint_api_url, json=sprint_data, auth=auth)
-    # Check the response status for creating the sprint
-    if response_create_sprint.status_code == 201:
-        created_sprint_data = response_create_sprint.json()
-        sprint_id = created_sprint_data.get('id')
-        print(f"New Sprint created with ID: {sprint_id}")
-        return sprint_id
-    else:
-        print(f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}")
-        return None
-def move_issues_to_sprint(jira, start_issue_key, end_issue_key, target_sprint_id):
-    for i in range(int(start_issue_key.split('-')[1]), int(end_issue_key.split('-')[1]) + 1):
-        issue_key = f"JST-{i}"
+def move_issues_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
+    start_issue_number = int(start_issue_key.split('-')[1])
+    end_issue_number = int(end_issue_key.split('-')[1])
+
+    for i in range(start_issue_number, end_issue_number + 1):
+        issue_key = f"{project_key}-{i}"
         try:
             issue = jira.issue(issue_key)
             jira.add_issues_to_sprint(target_sprint_id, [issue.key])
@@ -358,11 +361,50 @@ def read_epic_details(jira, epic_key):
     except JIRAError as e:
         logging.error(f"Error reading epic: {e}")
 
+def get_board_id(jira, board_name):
+    # Make a GET request to retrieve the list of boards
+    response = jira._session.get(f'{jira._options["server"]}/rest/agile/1.0/board')
+    
+    if response.status_code == 200:
+        boards = response.json()['values']
+        for board in boards:
+            if board['name'] == board_name:
+                return board['id']
+        print(f"Board '{board_name}' not found.")
+        return None
+    else:
+        print(f"Failed to retrieve boards. Status code: {response.status_code}")
+        return None
+
+
+# Function to create a new sprint
+def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
+    create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
+    auth = (jira_username, api_token)
+    sprint_data = {
+        "name": sprint_name,
+        "originBoardId": board_id,
+    }
+    response_create_sprint = requests.post(
+        create_sprint_api_url, json=sprint_data, auth=auth
+    )
+    if response_create_sprint.status_code == 201:
+        created_sprint_data = response_create_sprint.json()
+        sprint_id = created_sprint_data.get("id")
+        logging.info(f"New Sprint created with ID: {sprint_id}")
+        return sprint_id
+    else:
+        logging.error(
+            f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}"
+        )
+        return None
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
-    parser.add_argument('--config', help='Path to the configuration file', required=True)
-    parser.add_argument('--epic_key', help='Key of the Epic to read details', required=True)
+    parser.add_argument('--config', help='Path to the configuration file', default='default_config.txt')
     return parser.parse_args()
+
 # Define function to display the menu
 def display_menu():
     logging.info("Choose an option:")
@@ -386,24 +428,25 @@ def display_menu():
     logging.info("18: Create board")
     logging.info("19: update Epic")
     logging.info("20: Read Epic")
-    logging.info("21: Exit")
+    logging.info("21: Update project information")
+    logging.info("22: Get board id ")
+    logging.info("23: Exit")
 # Define function to parse user input
 def get_user_input():
     try:
-        choice = int(input("Enter the function number (1-21): "))
-        if 1 <= choice <= 21:
+        choice = int(input("Enter the function number (1-23): "))
+        if 1 <= choice <= 23:
             return choice
         else:
-            logging.error("Invalid choice. Please enter a number between 1 and 21.")
+            logging.error("Invalid choice. Please enter a number between 1 and 23.")
             return get_user_input()
     except ValueError:
         logging.error("Invalid input. Please enter a number.")
         return get_user_input()
 
-def main():
-    # Parse command line arguments
+def main():   
+   # Parse command-line arguments
     args = parse_arguments()
-
     # Create Jira connection
     jira = create_jira_connection(args.config)
     if not jira:
@@ -482,24 +525,21 @@ def main():
             else:
                 print("Invalid option. Please choose 'single', 'range', or 'all'.")
         elif choice == 6:
-            jira_url = "https://jiratest001.atlassian.net"
-            user = "info@jiratest001.verituslabs.net"
-            api_token = "ATATT3xFfGF0E5_ZYYCtygjRQRYfZakeAOrUDPWGCxmRyo0k8cTVm0TVPQzaGtKO6J2K7q-pYogVMU4hfxqv1daQgRQmXV2Z7ywbHYw4NHZTVdLkQfUS3DBwQhDnTdhC5pCH5aIdEcsImV7ZBu8QwPe6XFmJvVKZX8cDWYzaeLh8KXfmLlEbBp8=3FC2FE69"
-            board_id = input("ENter board id :")
-            sprint_name = input("ENter sprint name :")
-            create_sprint(jira_url,user, api_token, board_id, sprint_name)
-
+             # Jira credentials and parameters
+            jira_url = "https://jirasimplelib.atlassian.net"
+            api_token = "ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
+            user = "info@jiratest003.verituslabs.net"
+            sprint_name = 'new sprint'
+            create_sprint(jira_url, user, api_token, '1', sprint_name)
         elif choice == 7:
-            start_issue_key = input("Enter start issue key: ")
-            end_issue_key = input("Enter end issue key: ")
-            target_sprint_id = input("Enter target sprint ID: ")
-            move_issues_to_sprint(jira, start_issue_key, end_issue_key, target_sprint_id)
+            project_key = input("Enter the project key: ")
+            start_issue_number = input("Enter the start issue number: ")
+            end_issue_number = input("Enter the end issue number: ")
+            target_sprint_id = input("Enter spritn id :")
+            # Assuming you have initialized 'jira' somewhere in your code
+            move_issues_to_sprint(jira, project_key, start_issue_number, end_issue_number, target_sprint_id)
         elif choice == 8:
-            sprint_id = input("Enter sprint ID: ")
-            new_summary = input("Enter new sprint summary: ")
-            start_date = input("Enter start date: ")
-            end_date = input("Enter end date: ")
-            start_sprint(jira, sprint_id, new_summary, start_date, end_date)
+          pass
         elif choice == 9:
             start_issue_num = input("Enter start issue number: ")
             end_issue_num = input("Enter end issue number: ")
@@ -540,12 +580,13 @@ def main():
            else:
                 print("No stories found for the project.")
         elif choice == 18 :
-            jira_url = "https://jiratest001.atlassian.net"
-            api_token = "ATATT3xFfGF0E5_ZYYCtygjRQRYfZakeAOrUDPWGCxmRyo0k8cTVm0TVPQzaGtKO6J2K7q-pYogVMU4hfxqv1daQgRQmXV2Z7ywbHYw4NHZTVdLkQfUS3DBwQhDnTdhC5pCH5aIdEcsImV7ZBu8QwPe6XFmJvVKZX8cDWYzaeLh8KXfmLlEbBp8=3FC2FE69"
-            user_email = "info@jiratest001.verituslabs.net"
-            project_key = "JP"
-            project_lead = "Jira Test 001"
-            create_board(jira_url, api_token, user_email, project_key, project_lead)
+            pass
+            # jira_url : "https://jirasimplelib.atlassian.net"
+            # api_token :"ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
+            # user_email :"info@jiratest003.verituslabs.net"
+            # project_key = "JSL"
+            # project_lead = "Jira Test 001"
+            # create_board(jira_url, api_token, user_email, project_key, project_lead)
         elif choice == 19 :
             epic_key = input("Enter epic key :")
             new_summary = input("Enter new summary :")
@@ -555,6 +596,16 @@ def main():
              epic_key = input("Enter epic key :")
              read_epic_details(jira, epic_key)
         elif choice == 21 :
+            project_key = input("Enter projects key :")
+            new_name = input("Enter new name :")
+            new_key = input("Enter new key :")
+            update_jira_project(jira, project_key, new_name, new_key)
+        elif choice == 22 :
+            board_name = input("Enter board name :")
+            board_id = get_board_id(jira, board_name)
+            if board_id:
+                logging.info(f"The Board ID of '{board_name}' is: {board_id}")
+        elif choice == 23 :
             break
         else:
             logging.error("Invalid choice. Please try again.")
