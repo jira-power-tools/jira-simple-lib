@@ -560,7 +560,7 @@ def get_board_id(jira, board_name):
         return None
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
-    parser.add_argument('--config', help='Path to the configuration file', default='default_config.txt')
+    parser.add_argument('--config', help='Path to the configuration file', default='config.json')
     return parser.parse_args()
 
 # Define function to display the menu
