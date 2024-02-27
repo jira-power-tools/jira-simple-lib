@@ -279,6 +279,19 @@ def add_story_to_epic(jira, epic_key, story_key):
     except JIRAError as e:
         logging.error(f"Error adding story to epic: {e}")
         return False
+# Function to unlink a Story from an Epic
+def unlink_story_from_epic(jira, story_key):
+    try:
+        story = jira.issue(story_key)
+
+        # Update the 'Epic Link' custom field of the story to remove its association with the epic
+        story.update(fields={'customfield_10014': None})  # Replace 'customfield_123456' with the actual Epic Link field ID
+
+        logging.info(f"Story {story_key} unlinked from its Epic")
+        return True
+    except JIRAError as e:
+        logging.error(f"Error unlinking story from epic: {e}")
+        return False
 
 def delete_epic(jira, epic_key):
     try:
@@ -553,37 +566,49 @@ def parse_arguments():
 # Define function to display the menu
 def display_menu():
     logging.info("Choose an option:")
-    logging.info("1: Create Jira Project ()")
-    logging.info("2: Create Epic")
-    logging.info("3: Delete Epic")
-    logging.info("4: Create Story")
-    logging.info("5: Add Story to Epic")
-    logging.info("6: Create Sprint")
-    logging.info("7: Move Issues to Sprint")
-    logging.info("8: Start Sprint")
-    logging.info("9: Add Comments to Issues in Range")
-    logging.info("10: Get Stories in Sprint")
-    logging.info("11: Complete Stories in Sprint")
-    logging.info("12: Complete Sprint")
-    logging.info("13: Delete All Stories in Project")
-    logging.info("14: Delete All Sprints")
-    logging.info("15: Delete All Projects")
-    logging.info("16: List All Epics")
-    logging.info("17: List All stories in a project")
-    logging.info("18: Create board")
-    logging.info("19: update Epic")
-    logging.info("20: Read Epic")
-    logging.info("21: Update project information")
-    logging.info("22: Get board id ")
-    logging.info("23: Exit")
+    logging.info("1: Create a jira project ")
+    logging.info("2: Update project ")
+    logging.info("3: Delete all projects ")
+    logging.info("4: Get stories in a project ")
+    logging.info("5: Delete all stories in a project ")
+    logging.info("6: Create story")
+    logging.info("7: Update story summary ")
+    logging.info("8: Update story status ")
+    logging.info("9: Update story description ")
+    logging.info("10: Add comments to issues in range")
+    logging.info("11: Read story info ")
+    logging.info("12: Delete a story ")
+    logging.info("13: Create epic ")
+    logging.info("14: Update epic ")
+    logging.info("15: Read epic ")
+    logging.info("16: Add story to epic ")
+    logging.info("17: Unlink story from an epic ")
+    logging.info("18: Delete an epic ")
+    logging.info("19: List all epics ")
+    logging.info("20: Create sprint ")
+    logging.info("21: Move issues to sprint ")
+    logging.info("22: Start sprint ")
+    logging.info("23: Get stories in sprint ")
+    logging.info("24: Complete stories in a sprint ")
+    logging.info("25: Complete sprint ")
+    logging.info("26: Get list of all sprint in board ")
+    logging.info("27: Update sprint summary ")
+    logging.info("28: Get sprint report ")
+    logging.info("29: Get sprint velocity ")
+    logging.info("30: Delete a sprint ")
+    logging.info("31: Delete all sprints ")
+    logging.info("32: Create a board ")
+    logging.info("33: Get board id ")
+    logging.info("34: Exit")
+
 # Define function to parse user input
 def get_user_input():
     try:
-        choice = int(input("Enter the function number (1-23): "))
-        if 1 <= choice <= 23:
+        choice = int(input("Enter the function number (1-34): "))
+        if 1 <= choice <= 34:
             return choice
         else:
-            logging.error("Invalid choice. Please enter a number between 1 and 23.")
+            logging.error("Invalid choice. Please enter a number between 1 and 34.")
             return get_user_input()
     except ValueError:
         logging.error("Invalid input. Please enter a number.")
@@ -607,55 +632,79 @@ def main():
             create_jira_project(jira, project_name, project_key)
         elif choice == 2:
             project_key = input("Enter project key: ")
+            new_name = input("Enter new name (leave empty if not updating): ")
+            new_key = input("Enter new key (leave empty if not updating): ")
+            update_jira_project(jira, project_key, new_name, new_key)
+        elif choice == 3:
+            delete_all_projects(jira)
+        elif choice == 4:
+           project_key = input("Enter project key: ")
+           stories = get_stories_for_project(jira, project_key)
+           if stories:
+                logging.info("List of stories:")
+                for story in stories:
+                    logging.info(f"Key: {story['key']}, Summary: {story['summary']}")
+           else:
+                logging.error("No stories found for the project.")        
+        elif choice == 5:
+            project_key = input("Enter project key: ")
+            delete_all_stories_in_project(jira, project_key)
+        elif choice == 6:
+            project_key = input("Enter project key: ")
+            num_stories = int(input("Enter the number of stories to create: "))
+            stories = []
+            for i in range(num_stories):
+                logging.info(f"Entering details for Story {i+1}:")
+                summary = input("Enter story summary: ")
+                description = input("Enter story description: ")
+                stories.append({"summary": summary, "description": description})
+            for story in stories:
+                create_story(jira, project_key, story["summary"], story["description"])
+        elif choice == 7:
+            story_key = input("Enter story key: ")
+            new_summary = input("Enter new summary: ")
+            update_story_summary(jira, story_key, new_summary)
+        elif choice == 8:
+            story_key = input("Enter story key: ")
+            new_status = input("Enter new status: ")
+            update_story_status(jira, story_key, new_status)
+        elif choice == 9:
+            story_key = input("Enter story key: ")
+            new_description = input("Enter new description: ")
+            update_story_description(jira, story_key, new_description)
+        elif choice == 10:
+            start_issue_num = int(input("Enter start issue number: "))
+            end_issue_num = int(input("Enter end issue number: "))
+            comment_body = input("Enter comment: ")
+            add_comment_to_issues_in_range(jira, start_issue_num, end_issue_num, comment_body)
+        elif choice == 11:
+            story_key = input("Enter the story key: ")
+            read_story_details(jira, story_key)
+        elif choice == 12:
+            story_key = input("Enter the story key: ")
+            delete_story(jira, story_key)
+        elif choice == 13:
+            project_key = input("Enter project key: ")
             num_epics = int(input("Enter the number of epics to create (1 or more): "))
             epic_details = []
             for i in range(num_epics):
                 epic_name = input(f"Enter epic name for epic {i+1}: ")
                 epic_summary = input(f"Enter epic summary for epic {i+1}: ")
                 create_epic(jira, project_key, epic_name, epic_summary)
-        elif choice == 3:
-            delete_choice = input("Do you want to delete any epics? (yes/no): ").lower()
-            if delete_choice == "yes":
-                delete_option = input("Choose the deletion option (single/range/all): ").lower()
-                
-                if delete_option == "single":
-                    epic_key = input("Enter the key of the epic to delete: ")
-                    delete_epic(jira, epic_key)
-                
-                elif delete_option == "range":
-                    range_input = input("Enter the range of epic keys to delete (e.g., 'np1-2,np1-5'): ")
-                    epic_keys = [key.strip() for key in range_input.split(',')]
-                    for epic_key in epic_keys:
-                        delete_epic(jira, epic_key)
-                
-                elif delete_option == "all":
-                    project_key = input("Enter the project key: ")
-                    epics = list_epics(jira, project_key)
-                    if epics:
-                        for epic in epics:
-                            delete_epic(jira, epic.key)
-                    else:
-                        print("Failed to retrieve epic list. No epics deleted.")
-                else:
-                    print("Invalid option. Please choose 'single', 'range', or 'all'.")    
-        elif choice == 4:            
-            project_key = input("Enter project key: ")
-            num_stories = int(input("Enter the number of stories to create: "))
-            stories = []
-            for i in range(num_stories):
-                print(f"Entering details for Story {i+1}:")
-                summary = input("Enter story summary: ")
-                description = input("Enter story description: ")
-                stories.append({"summary": summary, "description": description})
-            for story in stories:
-                create_story(jira, project_key, story["summary"], story["description"])
-        elif choice == 5:
+        elif choice == 14:
+            epic_key = input("Enter the epic key: ")
+            new_summary = input("Enter the new epic summary: ")
+            new_description = input("Enter the new epic description: ")
+            update_epic(jira, epic_key, new_summary, new_description)
+        elif choice == 15:
+            epic_key = input("Enter the epic key: ")
+            read_epic_details(jira, epic_key)
+        elif choice == 16:
             project_key = input("Enter project key: ")
             epic_key = input("Enter epic key: ")           
             add_option = input("Choose the option to add stories to the epic (single/range/all): ").lower()
             if add_option == "single":
                 story_key = input("Enter the key of the story to add to the epic: ")
-                add_story_to_epic(jira, epic_key, story_key)           
             elif add_option == "range":
                 range_input = input("Enter the range of story keys to add (e.g., 'NP1-14,NP1-16'): ")
                 start_story, end_story = map(str.strip, range_input.split(','))
@@ -668,89 +717,107 @@ def main():
                     story_key = input(f"Enter the key of story {i+1} to add to the epic: ")
                     add_story_to_epic(jira, epic_key, story_key)
             else:
-                print("Invalid option. Please choose 'single', 'range', or 'all'.")
-        elif choice == 6:
-             # Jira credentials and parameters
-            jira_url = "https://jirasimplelib.atlassian.net"
-            api_token = "ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
-            user = "info@jiratest003.verituslabs.net"
-            sprint_name = 'new sprint'
-            create_sprint(jira_url, user, api_token, '1', sprint_name)
-        elif choice == 7:
-            project_key = input("Enter the project key: ")
-            start_issue_number = input("Enter the start issue number: ")
-            end_issue_number = input("Enter the end issue number: ")
-            target_sprint_id = input("Enter spritn id :")
-            # Assuming you have initialized 'jira' somewhere in your code
-            move_issues_to_sprint(jira, project_key, start_issue_number, end_issue_number, target_sprint_id)
-        elif choice == 8:   
-          pass
-        elif choice == 9:
-            start_issue_num = input("Enter start issue number: ")
-            end_issue_num = input("Enter end issue number: ")
-            comment_body = input("Enter comment body: ")
-            add_comment_to_issues_in_range(jira, start_issue_num, end_issue_num, comment_body)
-        elif choice == 10:
-            sprint_id = input("Enter sprint ID: ")
-            get_stories_in_sprint(jira, sprint_id)
-        elif choice == 11:
-            sprint_id = input("Enter sprint ID: ")
-            complete_stories_in_sprint(jira, sprint_id)
-        elif choice == 12:
-            sprint_id = input("Enter sprint ID: ")
-            start_date = input("Enter start date: ")
-            end_date = input("Enter end date: ")
-            complete_sprint(jira, sprint_id, start_date, end_date)
-        elif choice == 13:
-            project_key = input("Enter project key: ")
-            delete_all_stories_in_project(jira, project_key)
-        elif choice == 14:
-            board_id = input("Enter board ID: ")
-            delete_all_sprints(jira, board_id)
-        elif choice == 15:
-            delete_all_projects(jira)
-        elif choice == 16:
+                logging.error("Invalid option. Please choose 'single', 'range', or 'all'.")
+       
+                add_story_to_epic(jira, epic_key, story_key)    
+        elif choice == 17:
+            story_key = input("Enter the story key: ")
+            unlink_story_from_epic(jira, story_key)   
+        elif choice == 18:
+            delete_choice = input("Do you want to delete any epics? (yes/no): ").lower()
+            if delete_choice == "yes":
+                delete_option = input("Choose the deletion option (single/range/all): ").lower()  
+                if delete_option == "single":
+                    epic_key = input("Enter the key of the epic to delete: ")
+                    delete_epic(jira, epic_key)               
+                elif delete_option == "range":
+                    range_input = input("Enter the range of epic keys to delete (e.g., 'np1-2,np1-5'): ")
+                    epic_keys = [key.strip() for key in range_input.split(',')]
+                    for epic_key in epic_keys:
+                        delete_epic(jira, epic_key)             
+                elif delete_option == "all":
+                    project_key = input("Enter the project key: ")
+                    epics = list_epics(jira, project_key)
+                    if epics:
+                        for epic in epics:
+                            delete_epic(jira, epic.key)
+                    else:
+                        logging.error("Failed to retrieve epic list. No epics deleted.")
+                else:
+                    logging.error("Invalid option. Please choose 'single', 'range', or 'all'.")  
+        elif choice == 19:
             project_key = input("Enter project key: ")
             epics = list_epics(jira, project_key)
             if epics:
                 for epic in epics:
                   logging.info(f"Epic Key: {epic.key}, Summary: {epic.fields.summary}")
-        elif choice == 17 :
-           project_key = input("Enter project key: ")
-           stories = get_stories_for_project(jira, project_key)
-           if stories:
-                print("List of stories:")
-                for story in stories:
-                    print(f"Key: {story['key']}, Summary: {story['summary']}")
-           else:
-                print("No stories found for the project.")
-        elif choice == 18 :
+        elif choice == 20:
+             # Jira credentials and parameters
+            jira_url = "https://jirasimplelib.atlassian.net"
+            api_token = "ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
+            user = "info@jiratest003.verituslabs.net"
+            sprint_name = 'new sprint'
+            create_sprint(jira_url, user, api_token, '1', sprint_name) 
+        elif choice == 21:
+            project_key = input("Enter project key: ")
+            start_issue_key = input("Enter start issue key: ")
+            end_issue_key = input("Enter end issue key: ")
+            target_sprint_id = input("Enter target sprint ID: ")
+            move_issues_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)
+        elif choice == 22:
+            sprint_id = input("Enter sprint ID: ")
+            new_summary = input("Enter new sprint summary: ")
+            start_date = input("Enter start date (YYYY-MM-DD): ")
+            end_date = input("Enter end date (YYYY-MM-DD): ")
+            start_sprint(jira, sprint_id, new_summary, start_date, end_date)
+        elif choice == 23:
+            sprint_id = input("Enter sprint ID: ")
+            get_stories_in_sprint(jira, sprint_id)
+        elif choice == 24:
+            sprint_id = input("Enter sprint ID: ")
+            complete_stories_in_sprint(jira, sprint_id)
+        elif choice == 25:
+            sprint_id = input("Enter sprint ID: ")
+            start_date = input("Enter start date: ")
+            end_date = input("Enter end date: ")
+            complete_sprint(jira, sprint_id, start_date, end_date)
+        elif choice == 26:
+            board_id = input("Enter board ID: ")
+            get_sprints_for_board(jira, board_id)
+        elif choice == 27:
+            sprint_id = input("Enter sprint ID: ")
+            new_summary = input("Enter new sprint summary: ")
+            sprint_state = input("Enter sprint state: ")
+            start_date = input("Enter start date (YYYY-MM-DD): ")
+            end_date = input("Enter end date (YYYY-MM-DD): ")
+            update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date, end_date)
+        elif choice == 28:
+            sprint_id = input("Enter sprint ID: ")
+            project_key = input("Enter project key: ")
+            sprint_report(jira, sprint_id, project_key)
+        elif choice == 29:
+            project_key = input("Enter project key: ")
+            get_velocity(jira, project_key)
+        elif choice == 30:
+            sprint_id = input("Enter sprint ID: ")
+            delete_sprint(jira, sprint_id)
+        elif choice == 31:
+            board_id = input("Enter board ID: ")
+            delete_all_sprints(jira, board_id)
+        elif choice == 32:
             pass
-            # jira_url : "https://jirasimplelib.atlassian.net"
-            # api_token :"ATATT3xFfGF0fw-ydjB26YylvNBhO2Xw9Wy2bHnEbU30EnIVxVbl1zP9ZACOcAj5Q1A7bF7Y8qhSYgeZ75Krct58L_6LHcWg3jTYJ-uTAS1e6F3RcC6AP9mWIzr6axZcXExFWSDBp5rPU6MECMuZIQHkqi2ai0Z60ihzXRxLUgnEHE-fMFyPH7g=AF5B8618"
-            # user_email :"info@jiratest003.verituslabs.net"
-            # project_key = "JSL"
-            # project_lead = "Jira Test 001"
+            # jira_url = input("Enter Jira URL: ")
+            # api_token = input("Enter API token: ")
+            # user_email = input("Enter user email: ")
+            # project_key = input("Enter project key: ")
+            # project_lead = input("Enter project lead: ")
             # create_board(jira_url, api_token, user_email, project_key, project_lead)
-        elif choice == 19 :
-            epic_key = input("Enter epic key :")
-            new_summary = input("Enter new summary :")
-            new_description = input("Enter new description:")
-            update_epic(jira, epic_key, new_summary, new_description)
-        elif choice == 20 :
-             epic_key = input("Enter epic key :")
-             read_epic_details(jira, epic_key)
-        elif choice == 21 :
-            project_key = input("Enter projects key :")
-            new_name = input("Enter new name :")
-            new_key = input("Enter new key :")
-            update_jira_project(jira, project_key, new_name, new_key)
-        elif choice == 22 :
+        elif choice == 33:
             board_name = input("Enter board name :")
             board_id = get_board_id(jira, board_name)
             if board_id:
-                logging.info(f"The Board ID of '{board_name}' is: {board_id}")
-        elif choice == 23 :
+                logging.info(f"The Board ID of '{board_name}' is: {board_id}")          
+        elif choice == 34 :
             break
         else:
             logging.error("Invalid choice. Please try again.")
