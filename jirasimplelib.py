@@ -5,9 +5,9 @@ from jira import JIRA, JIRAError
 import requests
 import json
 import argparse 
+
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
-
 def read_config(filename):
     with open(filename, 'r') as f:
         config = json.load(f)
@@ -16,9 +16,12 @@ def create_jira_connection(config_file):
     try:
         with open(config_file, 'r') as file:
             config_data = json.load(file)
-            jira_url = config_data['jira_url']
-            user = config_data['user']
-            api_token = config_data['api_token']
+            jira_url = config_data.get('jira_url')
+            user = config_data.get('user')
+            api_token = config_data.get('api_token')
+
+            if not all([jira_url, user, api_token]):
+                raise ValueError("Missing or incomplete configuration data")
 
             jira = JIRA(
                 basic_auth=(user, api_token),
@@ -26,9 +29,16 @@ def create_jira_connection(config_file):
             )
             logging.info("Jira connection established successfully.")
             return jira
+    except FileNotFoundError:
+        logging.error(f"Config file not found: {config_file}")
+    except ValueError as ve:
+        logging.error(f"Invalid configuration data: {ve}")
+    except JIRAError as je:
+        logging.error(f"JiraError: {je}")
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
-        return None
+    return None
+
     # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
     if not jira:
