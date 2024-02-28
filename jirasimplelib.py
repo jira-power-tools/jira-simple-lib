@@ -118,9 +118,9 @@ def delete_all_stories_in_project(jira, project_key):
 
         logging.info(f"All stories in Project {project_key} have been deleted.")
         return True
-    except JIRAError as e:
+    except Exception as e:
         logging.error(f"Error deleting stories in project: {e}")
-        return False
+        raise  # Re-raise the exception to propagate it further
 
 # Function to create a new story in Jira
 def create_story(jira, project_key, summary, description):
