@@ -96,6 +96,15 @@ def delete_all_projects(jira):
     except Exception as e:
         logging.error(f"Error deleting projects: {e}")
         return False
+def delete_project(jira, project_key):
+    try:
+        # Delete project
+        jira.delete_project(project_key)
+        logging.info(f"Project {project_key} deleted successfully.")
+        return True
+    except Exception as e:
+        logging.error(f"Error deleting project {project_key}: {e}")
+        return False
  #Function to get a list of stories in a project
 def get_stories_for_project(jira, project_key):
     try:
@@ -592,8 +601,8 @@ def update_user_story_status(jira, story_key, new_status, user_name):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-    parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),
-                        help="\nExample: --create-project MyProject MP")
+    parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\nExample: --create-project MyProject MP")
+    parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nExample: --update-project MP NewName NewKey")
     return parser.parse_args()
 
 def main():   
@@ -606,6 +615,10 @@ def main():
     if args.create_project:
         project_name, project_key = args.create_project
         create_jira_project(jira, project_name, project_key)
+    if args.update_project:
+        project_key, new_name, new_key = args.update_project
+        update_jira_project(jira, project_key, new_name, new_key)
+    
     
 if __name__ == "__main__":
     main()
