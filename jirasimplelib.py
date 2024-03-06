@@ -1,5 +1,7 @@
 
 from datetime import datetime
+import blessed
+from blessed import Terminal
 import logging
 from jira import JIRA, JIRAError
 import requests
@@ -652,6 +654,47 @@ def parse_arguments():
     return parser.parse_args()
 
 def main():   
+    
+        # Initialize blessed
+    term = Terminal()
+
+    # Define layout
+    main_display_height = term.height - 4
+    mini_buffer_height = 3
+    status_bar_height = 1
+
+    # Main loop
+    with term.fullscreen(), term.cbreak(), term.hidden_cursor():
+        while True:
+            # Render main display
+            with term.location(0, 0):
+                for i in range(main_display_height):
+                    print(term.move_yx(i, 0) + " " * term.width)
+
+                # Render tasks in main display area
+                with term.location(0, 0):
+                    print("Main Display Area")
+
+            # Render mini-buffer
+            with term.location(0, main_display_height):
+                for i in range(mini_buffer_height):
+                    print(term.move_yx(main_display_height + i, 0) + " " * term.width)
+
+                print("Mini-Buffer (Command Line): ", end='')
+                user_input = input()
+
+            # Render status bar
+            with term.location(0, main_display_height + mini_buffer_height):
+                for i in range(status_bar_height):
+                    print(term.move_yx(main_display_height + mini_buffer_height + i, 0) + " " * term.width)
+
+                # Update status bar based on application status
+                print("Status Bar")
+
+            # Refresh screen
+            term.clear()
+
+
     initialize()
    # Parse command-line arguments
     args = parse_arguments()
