@@ -125,16 +125,21 @@ def delete_project(jira, project_key):
     except Exception as e:
         logging.error(f"Error deleting project {project_key}: {e}")
         return False
- #Function to get a list of stories in a project
 def get_stories_for_project(jira, project_key):
     try:
         jql_query = f"project = {project_key} AND issuetype = Task"
         issues = jira.search_issues(jql_query)
-        stories = [{"key": issue.key, "summary": issue.fields.summary} for issue in issues]
+        stories = [{"key": issue.key, 
+                    "summary": issue.fields.summary, 
+                    "type": issue.fields.issuetype.name, 
+                    "status": issue.fields.status.name, 
+                    "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
+                    "due_date": issue.fields.duedate} for issue in issues]
         return stories
     except Exception as e:
         logging.error(f"Error retrieving stories for project: {e}")
         return None
+
 def delete_all_stories_in_project(jira, project_key):
     try:
         # Retrieve all issues (stories) in the project
@@ -607,6 +612,144 @@ def get_stories_for_user(jira, project_key, user):
         logging.error(f"Error retrieving stories for user: {e}")
         return None
 
+# def render_tui(issues):
+#     term = blessed.Terminal()
+#     headers = ["Issue Type", "Issue Key", "Summary", "Status", "Assignee", "Due Date"]
+    
+#     print("-" * (len(" | ".join(headers))))
+#     print(" | ".join(headers))
+#     print("-" * (len(" | ".join(headers))))
+    
+#     for issue in issues:
+#         # Convert None values to empty strings
+#         row = [
+#             issue.get("type", ""),
+#             issue.get("key", ""),
+#             issue.get("summary", ""),
+#             issue.get("status", ""),
+#             issue.get("assignee", ""),
+#             issue.get("due_date", "")
+#         ]
+#         print(" | ".join(str(field) for field in row))
+    
+#     with term.cbreak():
+#         inp = term.inkey()
+#         while inp.lower() != 'q':
+#             inp = term.inkey()
+# def render_tui(issues):
+#     term = blessed.Terminal()
+#     headers = ["Issue Type", "Issue Key", "Summary", "Status", "Assignee", "Due Date"]
+    
+#     # Calculate the width of each column
+#     col_widths = [max(len(header), max(len(str(issue.get(header, ""))) for issue in issues)) for header in headers]
+    
+#     # Print headers
+#     print("-" * sum(col_widths + [3] * (len(headers) - 1)))
+#     print(" | ".join(f"{header:<{col_widths[i]}}" for i, header in enumerate(headers)))
+#     print("-" * sum(col_widths + [3] * (len(headers) - 1)))
+
+#     # Print issues
+#     for issue in issues:
+#         row = [issue.get(header, "") for header in headers]
+#         print(" | ".join(f"{field:<{col_widths[i]}}" for i, field in enumerate(row)))
+    
+#     with term.cbreak():
+#         inp = term.inkey()
+#         while inp.lower() != 'q':
+#             inp = term.inkey()
+# def render_tui(issues):
+#     term = blessed.Terminal()
+#     headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
+
+#     # Set desired lengths for each header manually
+#     max_lengths = [10, 10, 15, 15, 30]
+
+#     for issue in issues:
+#         for i, header in enumerate(headers):
+#             max_lengths[i] = max(max_lengths[i], len(str(issue.get(header, ""))))
+
+
+#     def print_row(row):
+#         formatted_row = []
+#         for i, field in enumerate(row):
+#             if field is None:
+#                 formatted_row.append(" " * max_lengths[i])
+#             else:
+#                 formatted_row.append(f"{field:<{max_lengths[i]}}")
+#         print(" | ".join(formatted_row))
+
+
+#     print("-" * (sum(max_lengths) + len(headers)))
+#     print_row(headers)
+#     print("-" * (sum(max_lengths) + len(headers)))
+
+#     for issue in issues:
+#         row = [
+#             issue.get("type", ""),
+#             issue.get("key", ""),
+#             issue.get("status", ""),
+#             issue.get("assignee", ""),
+#             issue.get("summary", "")
+#         ]
+#         print_row(row)
+
+#     with term.cbreak():
+#         inp = term.inkey()
+#         while inp.lower() != 'q':
+#             inp = term.inkey()
+def render_tui(issues):
+    term = blessed.Terminal()
+    headers = [term.bold + term.orchid1 ("Issue Type"), term.bold + term.orchid1("Issue Key"), term.bold + term.orchid1("Status"), term.bold + term.orchid1("Assignee"), term.bold + term.orchid1("Summary")]
+
+
+    # Set desired lengths for each header manually
+    max_lengths = [10, 10, 15, 15, 30]
+
+    for issue in issues:
+        for i, header in enumerate(headers):
+            max_lengths[i] = max(max_lengths[i], len(str(issue.get(header, ""))))
+
+
+    def print_row(row):
+        formatted_row = []
+        for i, field in enumerate(row):
+            if field is None:
+                formatted_row.append(" " * max_lengths[i])
+            else:
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+        print(" | ".join(formatted_row))
+
+
+    def print_boundary():
+        boundary = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
+        print(term.green(boundary))
+
+    print_boundary()
+    print_row(headers)
+    print_boundary()
+
+    for issue in issues:
+        row = [
+            issue.get("type", ""),
+            issue.get("key", ""),
+            issue.get("status", ""),
+            issue.get("assignee", ""),
+            issue.get("summary", "")
+        ]
+        print_row(row)
+
+    print_boundary()
+
+    with term.cbreak():
+        inp = term.inkey()
+        while inp.lower() != 'q':
+            inp = term.inkey()
+
+
+
+
+
+
 
 
 
@@ -654,42 +797,9 @@ def parse_arguments():
     return parser.parse_args()
 
 def main():   
-        
-        # Initialize Blessed terminal
+    # Initialize Blessed terminal
     term = Terminal()
-
-    # Define screen layout
-    main_display_height = term.height - 5
-    main_display = term.window(height=main_display_height)
-    mini_buffer = term.window(height=3, top=term.height - 4)
-    status_bar = term.window(height=1, top=term.height - 1)
-
-    # Render main display
-    with main_display:
-        print("Main Display Area:")
-        print("- Task 1: [ID: 123] Title: Example Task 1 | Status: In Progress | Assignee: John Doe")
-        print("- Task 2: [ID: 124] Title: Example Task 2 | Status: To Do | Assignee: Jane Smith")
-        # Add more tasks as needed
-
-    # Render mini-buffer
-    with mini_buffer:
-        print("Mini-Buffer (Command Line):")
-        print("Type 'search <query>' to filter tasks")
-        print("Type 'status <id> <new_status>' to update task status")
-        print("Type 'comment <id> \"message\"' to add a comment to a task")
-
-    # Render status bar
-    with status_bar:
-        print("Status Bar: Ready")
-
-    # Run the event loop
-    with term.cbreak():
-        val = ""
-        while val.lower() != "q":
-            val = term.inkey(timeout=5)
-            if val:
-                with status_bar:
-                    print(f"Status Bar: Key pressed: {val!r}")
+    
 
     initialize()
    # Parse command-line arguments
@@ -723,15 +833,26 @@ def main():
             logging.info(f"Project '{args.delete_project}' deleted successfully.")
         else:
             logging.error(f"Failed to delete project '{args.delete_project}'.")
-
+    # if args.get_stories:
+    #     stories = get_stories_for_project(jira, args.get_stories)
+    #     if stories:
+    #         logging.info(f"Retrieved stories for project '{args.get_stories}'.")
+    #         for story in stories:
+    #             # Access the 'key' and 'summary' directly from the story dictionary
+    #             logging.info(f"Story Key: {story['key']}, Summary: {story['summary']}")
+    #     else:
+    #         logging.error(f"Failed to retrieve stories for project '{args.get_stories}'.")
+ 
     if args.get_stories:
-        stories = get_stories_for_project(jira, args.get_stories)
+        # Fetch stories for the project
+        stories = get_stories_for_project(jira, args.get_stories)  # Pass jira object and project key as arguments
         if stories:
             logging.info(f"Retrieved stories for project '{args.get_stories}'.")
-            for story in stories:
-                logging.info(f"Story Key: {story.key}, Summary: {story.fields.summary}")
+            render_tui(stories)
         else:
             logging.error(f"Failed to retrieve stories for project '{args.get_stories}'.")
+
+
 
     if args.delete_all_stories:
         if delete_all_stories_in_project(jira, args.delete_all_stories):
