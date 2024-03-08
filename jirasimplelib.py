@@ -699,7 +699,7 @@ def get_stories_for_user(jira, project_key, user):
 #             inp = term.inkey()
 def render_tui(issues):
     term = blessed.Terminal()
-    headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
+    headers = ["Issue Type", "Issue Key", "Status     ", "Assignee       ", "Summary"]
 
     # Set desired lengths for each header manually
     max_lengths = [len(header) for header in headers]
@@ -717,9 +717,19 @@ def render_tui(issues):
                 formatted_row.append(f"{field:<{max_lengths[i]}}")
         print(" | ".join(formatted_row))
 
+    # def print_boundary():
+    #     boundary = "-" * (sum(max_lengths) + len(max_lengths) * 10)
+    #     print(term.green(boundary))
     def print_boundary():
-        boundary = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
+        boundary = "▛" + "▀" * (sum(max_lengths) + len(max_lengths) * 10) + "▜"
         print(term.green(boundary))
+    def print_boundary2():
+        boundary = "▙" + "▄" * (sum(max_lengths) + len(max_lengths) * 10) + "▟"
+        print(term.green(boundary))
+        
+
+
+
 
     print_boundary()
     print_row(headers)
@@ -742,12 +752,15 @@ def render_tui(issues):
                 formatted_row.append(f"{field:<{max_lengths[i]}}")
         print(" | ".join(formatted_row))
 
-    print_boundary()
+    print_boundary2()
 
     with term.cbreak():
         inp = term.inkey()
         while inp.lower() != 'q':
             inp = term.inkey()
+
+
+
 
 
 
