@@ -699,16 +699,14 @@ def get_stories_for_user(jira, project_key, user):
 #             inp = term.inkey()
 def render_tui(issues):
     term = blessed.Terminal()
-    headers = [term.bold + term.orchid1 ("Issue Type"), term.bold + term.orchid1("Issue Key"), term.bold + term.orchid1("Status"), term.bold + term.orchid1("Assignee"), term.bold + term.orchid1("Summary")]
-
+    headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
 
     # Set desired lengths for each header manually
-    max_lengths = [10, 10, 15, 15, 30]
+    max_lengths = [len(header) for header in headers]
 
     for issue in issues:
         for i, header in enumerate(headers):
             max_lengths[i] = max(max_lengths[i], len(str(issue.get(header, ""))))
-
 
     def print_row(row):
         formatted_row = []
@@ -718,7 +716,6 @@ def render_tui(issues):
             else:
                 formatted_row.append(f"{field:<{max_lengths[i]}}")
         print(" | ".join(formatted_row))
-
 
     def print_boundary():
         boundary = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
@@ -736,7 +733,14 @@ def render_tui(issues):
             issue.get("assignee", ""),
             issue.get("summary", "")
         ]
-        print_row(row)
+        # Align the row according to the formatted_row alignment
+        formatted_row = []
+        for i, field in enumerate(row):
+            if field is None:
+                formatted_row.append(" " * max_lengths[i])
+            else:
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+        print(" | ".join(formatted_row))
 
     print_boundary()
 
@@ -744,8 +748,6 @@ def render_tui(issues):
         inp = term.inkey()
         while inp.lower() != 'q':
             inp = term.inkey()
-
-
 
 
 
