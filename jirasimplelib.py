@@ -697,6 +697,69 @@ def get_stories_for_user(jira, project_key, user):
 #         inp = term.inkey()
 #         while inp.lower() != 'q':
 #             inp = term.inkey()
+# def render_tui(issues):
+#     term = blessed.Terminal()
+#     headers = ["Issue Type", "Issue Key", "Status     ", "Assignee       ", "Summary"]
+
+    
+
+#     # Set desired lengths for each header manually
+#     max_lengths = [len(header) for header in headers]
+
+#     for issue in issues:
+#         for i, header in enumerate(headers):
+#             max_lengths[i] = max(max_lengths[i], len(str(issue.get(header, ""))))
+
+#     def print_row(row):
+#         formatted_row = []
+#         for i, field in enumerate(row):
+#             if field is None:
+#                 formatted_row.append(" " * max_lengths[i])
+#             else:
+#                 formatted_row.append(f"{field:<{max_lengths[i]}}")
+#         print(" | ".join(formatted_row))
+
+#     # def print_boundary():
+#     #     boundary = "-" * (sum(max_lengths) + len(max_lengths) * 10)
+#     #     print(term.green(boundary))
+#     def print_boundary():
+#         boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20) 
+#         print(term.green2(boundary))
+#     def print_boundary2():
+#         boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20) 
+#         print(term.green2(boundary))
+        
+
+
+
+
+#     print_boundary()
+#     print_row(headers)
+#     print_boundary()
+
+#     for issue in issues:
+#         row = [
+#             issue.get("type", ""),
+#             issue.get("key", ""),
+#             issue.get("status", ""),
+#             issue.get("assignee", ""),
+#             issue.get("summary", "")
+#         ]
+#         # Align the row according to the formatted_row alignment
+#         formatted_row = []
+#         for i, field in enumerate(row):
+#             if field is None:
+#                 formatted_row.append(" " * max_lengths[i])
+#             else:
+#                 formatted_row.append(f"{field:<{max_lengths[i]}}")
+#         print(" | ".join(formatted_row))
+
+#     print_boundary2()
+
+#     with term.cbreak():
+#         inp = term.inkey()
+#         while inp.lower() != 'q':
+#             inp = term.inkey()
 def render_tui(issues):
     term = blessed.Terminal()
     headers = ["Issue Type", "Issue Key", "Status     ", "Assignee       ", "Summary"]
@@ -717,47 +780,107 @@ def render_tui(issues):
                 formatted_row.append(f"{field:<{max_lengths[i]}}")
         print(" | ".join(formatted_row))
 
-    # def print_boundary():
-    #     boundary = "-" * (sum(max_lengths) + len(max_lengths) * 10)
-    #     print(term.green(boundary))
     def print_boundary():
-        boundary = "▛" + "▀" * (sum(max_lengths) + len(max_lengths) * 10) + "▜"
-        print(term.green(boundary))
+        boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20)
+        print(term.green2(boundary))
+
     def print_boundary2():
-        boundary = "▙" + "▄" * (sum(max_lengths) + len(max_lengths) * 10) + "▟"
-        print(term.green(boundary))
-        
+        boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20)
+        print(term.green2(boundary))
 
+    def print_main_display(issues):
+        # Assuming terminal height is 25 rows
+        # Adjust this value based on your terminal size
+        terminal_height = 25
+        for i, issue in enumerate(issues):
+            if i < terminal_height - 5:  # 5 rows reserved for other UI elements
+                row = [
+                    issue.get("type", ""),
+                    issue.get("key", ""),
+                    issue.get("status", ""),
+                    issue.get("assignee", ""),
+                    issue.get("summary", "")
+                ]
+                print_row(row)
 
+    def print_mini_buffer(status_bar_message):
+        print(term.move_y(term.height - 3) + term.clear_eol + term.black_on_white("Mini-Buffer: ") + status_bar_message)
 
+    def print_status_bar(status):
+        print(term.move_y(term.height - 1) + term.clear_eol + term.black_on_white(f"Status: {status}"))
+
+    def filter_issues(query):
+        # Filter issues based on query
+        filtered_issues = [issue for issue in issues if query.lower() in issue["summary"].lower()]
+        return filtered_issues
+
+    def update_status(issue_id, new_status):
+        # Update status of the specified issue
+        for issue in issues:
+            if issue["key"] == issue_id:
+                issue["status"] = new_status
+                return True
+        return False
+
+    def add_comment(issue_id, comment):
+        # Add comment to the specified issue
+        for issue in issues:
+            if issue["key"] == issue_id:
+                if "comments" not in issue:
+                    issue["comments"] = []
+                issue["comments"].append(comment)
+                return True
+        return False
 
     print_boundary()
     print_row(headers)
     print_boundary()
-
-    for issue in issues:
-        row = [
-            issue.get("type", ""),
-            issue.get("key", ""),
-            issue.get("status", ""),
-            issue.get("assignee", ""),
-            issue.get("summary", "")
-        ]
-        # Align the row according to the formatted_row alignment
-        formatted_row = []
-        for i, field in enumerate(row):
-            if field is None:
-                formatted_row.append(" " * max_lengths[i])
-            else:
-                formatted_row.append(f"{field:<{max_lengths[i]}}")
-        print(" | ".join(formatted_row))
-
+    print_main_display(issues)
     print_boundary2()
+    print_mini_buffer("Type your command here")
+    print_status_bar("Ready")
 
     with term.cbreak():
-        inp = term.inkey()
+        inp = ""
         while inp.lower() != 'q':
             inp = term.inkey()
+            if inp.startswith("search"):
+                query = inp.split('"')[1]
+                issues = filter_issues(query)
+                print(term.clear())
+                print_boundary()
+                print_row(headers)
+                print_boundary()
+                print_main_display(issues)
+                print_boundary2()
+                print_mini_buffer("Type your command here")
+                print_status_bar("Search results displayed")
+            elif inp.startswith("status"):
+                parts = inp.split()
+                if len(parts) == 3:
+                    issue_id = parts[1]
+                    new_status = parts[2]
+                    if update_status(issue_id, new_status):
+                        print_status_bar("Status updated successfully")
+                    else:
+                        print_status_bar("Issue not found")
+                else:
+                    print_status_bar("Invalid command format. Usage: status <id> <new_status>")
+            elif inp.startswith("comment"):
+                parts = inp.split('"')
+                if len(parts) == 3:
+                    issue_id = parts[1]
+                    comment = parts[2].strip()
+                    if add_comment(issue_id, comment):
+                        print_status_bar("Comment added successfully")
+                    else:
+                        print_status_bar("Issue not found")
+                else:
+                    print_status_bar("Invalid command format. Usage: comment <id> \"message\"")
+            else:
+                print_status_bar("Invalid command")
+
+
 
 
 
