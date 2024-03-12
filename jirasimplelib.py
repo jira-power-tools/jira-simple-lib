@@ -8,6 +8,7 @@ import requests
 import json
 import os
 import argparse 
+import sys
 
 # Load credentials from JSON file
 def load_credentials(file_path):
@@ -124,14 +125,15 @@ def delete_project(jira, project_key):
         return False
 def get_stories_for_project(jira, project_key):
     try:
-        jql_query = f"project = {project_key} AND issuetype = Task"
+        jql_query = f"project = {project_key} AND issuetype in (Bug, Task, Story)"
         issues = jira.search_issues(jql_query)
-        stories = [{"key": issue.key, 
-                    "summary": issue.fields.summary, 
-                    "type": issue.fields.issuetype.name, 
-                    "status": issue.fields.status.name, 
-                    "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
-                    "due_date": issue.fields.duedate} for issue in issues]
+        stories = [{
+            "Issue Type": issue.fields.issuetype.name,
+            "Issue Key": issue.key,
+            "Status": issue.fields.status.name,
+            "Assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
+            "Summary": issue.fields.summary,
+        } for issue in issues]
         return stories
     except Exception as e:
         logging.error(f"Error retrieving stories for project: {e}")
@@ -608,16 +610,22 @@ def get_stories_for_user(jira, project_key, user):
     except Exception as e:
         logging.error(f"Error retrieving stories for user: {e}")
         return None
-def render_tui(issues):
+def render_tui(issues, fetching_data=False):
     term = blessed.Terminal()
-    headers = ["Issue Type", "Issue Key", "Status     ", "Assignee       ", "Summary"]
+    headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
 
-    # Set desired lengths for each header manually
+    # Initialize max_lengths list with lengths of header names
     max_lengths = [len(header) for header in headers]
 
+    # Update max_lengths with the lengths of the longest entries in each column for each row
     for issue in issues:
         for i, header in enumerate(headers):
-            max_lengths[i] = max(max_lengths[i], len(str(issue.get(header, ""))))
+            entry_length = len(str(issue.get(header, "")))
+            max_lengths[i] = max(max_lengths[i], entry_length)
+
+    # Adjust the length of the "Summary" header based on the longest entry in the "Summary" column
+    max_summary_length = max(len(str(issue.get("Summary", ""))) for issue in issues)
+    max_lengths[headers.index("Summary")] = max(max_lengths[headers.index("Summary")], max_summary_length)
 
     def print_row(row):
         formatted_row = []
@@ -625,120 +633,41 @@ def render_tui(issues):
             if field is None:
                 formatted_row.append(" " * max_lengths[i])
             else:
-                formatted_row.append(f"{field:<{max_lengths[i]}}")
-        print(" | ".join(formatted_row))
+                formatted_row.append(f"{field:<{max_lengths[i]}}")  # No color for rows
+        print(f"| {' | '.join(formatted_row)} |")
 
     def print_boundary():
-        boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20)
-        print(term.green2(boundary))
+        boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+        print(term.green(boundary))  # Green boundary
+        
 
-    def print_boundary2():
-        boundary = "_" * (sum(max_lengths) + len(max_lengths) * 20)
-        print(term.green2(boundary))
-
-    def print_main_display(issues):
-        # Assuming terminal height is 25 rows
-        # Adjust this value based on your terminal size
-        terminal_height = 25
-        for i, issue in enumerate(issues):
-            if i < terminal_height - 5:  # 5 rows reserved for other UI elements
-                row = [
-                    issue.get("type", ""),
-                    issue.get("key", ""),
-                    issue.get("status", ""),
-                    issue.get("assignee", ""),
-                    issue.get("summary", "")
-                ]
-                print_row(row)
-
-    def print_mini_buffer(status_bar_message):
-        print(term.move_y(term.height - 3) + term.clear_eol + term.black_on_white("Mini-Buffer: ") + status_bar_message)
-
-    def print_status_bar(status):
-        print(term.move_y(term.height - 1) + term.clear_eol + term.black_on_white(f"Status: {status}"))
-
-    def filter_issues(query):
-        # Filter issues based on query
-        filtered_issues = [issue for issue in issues if query.lower() in issue["summary"].lower()]
-        return filtered_issues
-
-    def update_status(issue_id, new_status):
-        # Update status of the specified issue
-        for issue in issues:
-            if issue["key"] == issue_id:
-                issue["status"] = new_status
-                return True
-        return False
-
-    def add_comment(issue_id, comment):
-        # Add comment to the specified issue
-        for issue in issues:
-            if issue["key"] == issue_id:
-                if "comments" not in issue:
-                    issue["comments"] = []
-                issue["comments"].append(comment)
-                return True
-        return False
-
+    # Print header with green background and bold text
     print_boundary()
-    print_row(headers)
+    print_row([header for header in headers]) # Green background and bold text
     print_boundary()
-    print_main_display(issues)
-    print_boundary2()
-    print_mini_buffer("Type your command here")
-    print_status_bar("Ready")
 
+    # Print rows with alternating colors
+    for i, issue in enumerate(issues):
+        row = [
+            issue.get("Issue Type", ""),    # Green text for issue type
+            issue.get("Issue Key", ""),   # Dark pink text for issue key
+            issue.get("Status", ""),         # Blue text for status
+            issue.get("Assignee", ""),       # Cyan text for assignee
+            issue.get("Summary", "")
+        ]
+        print_row(row)  # Reverse colors for alternating rows
+        print_boundary()
+
+    # Print status bar with colored text
+    status_message = "Fetching..." if fetching_data else "Ready"
+    status_color = term.green if status_message == "Done" else term.magenta if status_message == "To Do" else term.blue  # Green for Done, Pink for To Do, Blue for In Progress
+    print(term.on_white(status_color(f"Status Bar: {status_message}")))
+
+    # Wait for user input and then exit
     with term.cbreak():
         inp = ""
         while inp.lower() != 'q':
             inp = term.inkey()
-            if inp.startswith("search"):
-                query = inp.split('"')[1]
-                issues = filter_issues(query)
-                print(term.clear())
-                print_boundary()
-                print_row(headers)
-                print_boundary()
-                print_main_display(issues)
-                print_boundary2()
-                print_mini_buffer("Type your command here")
-                print_status_bar("Search results displayed")
-            elif inp.startswith("status"):
-                parts = inp.split()
-                if len(parts) == 3:
-                    issue_id = parts[1]
-                    new_status = parts[2]
-                    if update_status(issue_id, new_status):
-                        print_status_bar("Status updated successfully")
-                    else:
-                        print_status_bar("Issue not found")
-                else:
-                    print_status_bar("Invalid command format. Usage: status <id> <new_status>")
-            elif inp.startswith("comment"):
-                parts = inp.split('"')
-                if len(parts) == 3:
-                    issue_id = parts[1]
-                    comment = parts[2].strip()
-                    if add_comment(issue_id, comment):
-                        print_status_bar("Comment added successfully")
-                    else:
-                        print_status_bar("Issue not found")
-                else:
-                    print_status_bar("Invalid command format. Usage: comment <id> \"message\"")
-            else:
-                print_status_bar("Invalid command")
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -782,7 +711,7 @@ def parse_arguments():
     parser.add_argument("--get-stories-for-user", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
     return parser.parse_args()
 
-def main():   
+def main():
     # Initialize Blessed terminal
     term = Terminal()
     
@@ -818,28 +747,15 @@ def main():
         if delete_project(jira, args.delete_project):
             logging.info(f"Project '{args.delete_project}' deleted successfully.")
         else:
-            logging.error(f"Failed to delete project '{args.delete_project}'.")
-    # if args.get_stories:
-    #     stories = get_stories_for_project(jira, args.get_stories)
-    #     if stories:
-    #         logging.info(f"Retrieved stories for project '{args.get_stories}'.")
-    #         for story in stories:
-    #             # Access the 'key' and 'summary' directly from the story dictionary
-    #             logging.info(f"Story Key: {story['key']}, Summary: {story['summary']}")
-    #     else:
-    #         logging.error(f"Failed to retrieve stories for project '{args.get_stories}'.")
- 
+            logging.error(f"Failed to delete project '{args.delete_project}'.")   
     if args.get_stories:
-        # Fetch stories for the project
-        stories = get_stories_for_project(jira, args.get_stories)  # Pass jira object and project key as arguments
+        project_key = args.get_stories
+        stories = get_stories_for_project(jira, project_key)
         if stories:
-            logging.info(f"Retrieved stories for project '{args.get_stories}'.")
-            render_tui(stories)
-        else:
-            logging.error(f"Failed to retrieve stories for project '{args.get_stories}'.")
-
-
-
+            render_tui(stories, fetching_data=False)  # Not fetching data when getting stories
+    else:
+        # Logic for other options if needed
+        pass
     if args.delete_all_stories:
         if delete_all_stories_in_project(jira, args.delete_all_stories):
             logging.info("All stories deleted successfully.")
