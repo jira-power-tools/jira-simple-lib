@@ -204,20 +204,6 @@ def update_story_description(jira, story_key, new_description):
     except JIRAError as e:
         logging.error(f"Error updating story description: {e}")
         return None
-#Add comments to issues
-def add_comment_to_issues_in_range(jira, start_issue_num, end_issue_num, comment_body):
-    success_count = 0
-    for issue_num in range(start_issue_num, end_issue_num + 1):
-        issue_key = f'JST-{issue_num}'
-        try:
-            issue = jira.issue(issue_key)
-            jira.add_comment(issue, comment_body)
-            logging.info(f"Comment added to issue {issue_key}")
-            success_count += 1
-        except JIRAError as e:
-            logging.error(f"Error adding comment to issue {issue_key}: {e}")
-    logging.info(f"Comments added to {success_count} issues in the range {start_issue_num} to {end_issue_num}")
-    return success_count
 # Function to read a story's details
 def read_story_details(jira, story_key):
     try:
@@ -248,8 +234,6 @@ def delete_story(jira, story_key):
     except JIRAError as e:
         logging.error(f"Error deleting story: {e}")
         return False
-             #Epic related functions
-# Function to create a new Epic
 def create_epic(jira, project_key, epic_name, epic_summary):
     try:
         new_epic = jira.create_issue(
@@ -278,9 +262,6 @@ def update_epic(jira, epic_key, new_summary, new_description):
         epic.update(
             summary=new_summary,
             description=new_description,
-           # customfield_10012=new_status,  # Epic Status field
-           # customfield_10011=new_name  # Epic Name field
-            # Add more fields as needed, e.g., customfield_10013 for Epic Color, customfield_10014 for Epic Link
         )
         logging.info(f"Epic updated successfully. Key: {epic_key}")
         return epic
@@ -610,6 +591,45 @@ def get_stories_for_user(jira, project_key, user):
     except Exception as e:
         logging.error(f"Error retrieving stories for user: {e}")
         return None
+# def search(jira, query):
+#     try:
+#         # Construct JQL query to search for issues based on various criteria
+#         jql_query = f'text ~ "{query}" OR summary ~ "{query}" OR assignee = "{query}" OR status = "{query}" OR description ~ "{query}"'
+#         search_results = jira.search_issues(jql_query)
+        
+#         tasks = []
+#         for issue in search_results:
+#             task = {
+#                 'key': issue.key,
+#                 'summary': issue.fields.summary,
+#                 'status': issue.fields.status.name,
+#                 'assignee': issue.fields.assignee.displayName if issue.fields.assignee else None,
+#                 'description': issue.fields.description
+#             }
+#             tasks.append(task)
+#         return tasks
+#     except Exception as e:
+#         print(f"Error searching tasks: {e}")
+#         return []
+
+
+
+
+
+
+def add_comment_to_issues_in_range(jira, start_issue_num, end_issue_num, comment_body):
+    success_count = 0
+    for issue_num in range(start_issue_num, end_issue_num + 1):
+        issue_key = f'JST-{issue_num}'
+        try:
+            issue = jira.issue(issue_key)
+            jira.add_comment(issue, comment_body)
+            logging.info(f"Comment added to issue {issue_key}")
+            success_count += 1
+        except JIRAError as e:
+            logging.error(f"Error adding comment to issue {issue_key}: {e}")
+    logging.info(f"Comments added to {success_count} issues in the range {start_issue_num} to {end_issue_num}")
+    return success_count
 def render_tui(issues, fetching_data=False):
     term = blessed.Terminal()
     headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
@@ -660,16 +680,143 @@ def render_tui(issues, fetching_data=False):
 
     # Print status bar with colored text
     status_message = "Fetching..." if fetching_data else "Ready"
-    status_color = term.green if status_message == "Done" else term.magenta if status_message == "To Do" else term.blue  # Green for Done, Pink for To Do, Blue for In Progress
-    print(term.on_white(status_color(f"Status Bar: {status_message}")))
-
+    print(term.green(f"Status Bar: {status_message}"))
+    
     # Wait for user input and then exit
     with term.cbreak():
         inp = ""
         while inp.lower() != 'q':
             inp = term.inkey()
+def read_story_details_tui(jira, story_key):
+    try:
+        term = blessed.Terminal()
+        story = jira.issue(story_key)
+
+        headers = ["Field", "Value"]
+
+        data = [
+            ("Key", story.key),
+            ("Summary", story.fields.summary),
+            ("Description", story.fields.description),
+            ("Status", story.fields.status.name),
+            ("Assignee", story.fields.assignee.displayName if story.fields.assignee else "Unassigned"),
+            ("Reporter", story.fields.reporter.displayName if story.fields.reporter else "Unassigned"),
+            ("Created", story.fields.created),
+            ("Updated", story.fields.updated)
+        ]
+
+        max_lengths = [len(header) for header in headers]
+        for row in data:
+            for i, value in enumerate(row):
+                max_lengths[i] = max(max_lengths[i], len(str(value)))
+
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+            print(f"| {' | '.join(formatted_row)} |")
+
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+            print(term.green(boundary))
+
+        print(term.bold("Story Details:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+        for row in data:
+            print_row(row)
+            print_boundary()
+    except JIRAError as e:
+        logging.error(f"Error reading story: {e}")
+
+def list_epics_tui(jira, project_key):
+    try:
+        term = blessed.Terminal()
+        jql_query = f"project = {project_key} AND issuetype = Epic"
+        epics = jira.search_issues(jql_query)
+
+        headers = ["Epic Key", "Summary"]
+
+        data = [(epic.key, epic.fields.summary) for epic in epics]
+
+        max_lengths = [len(header) for header in headers]
+        for row in data:
+            for i, value in enumerate(row):
+                max_lengths[i] = max(max_lengths[i], len(str(value)))
+
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+            print(f"| {' | '.join(formatted_row)} |")
+
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+            print(term.green(boundary))
+
+        print(term.bold("List of Epics:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+        for row in data:
+            print_row(row)
+            print_boundary()
+    except JIRAError as e:
+        logging.error(f"Error listing epics: {e}")
+def read_epic_details_tui(jira, epic_key):
+    try:
+        term = blessed.Terminal()
+        epic = jira.issue(epic_key)
+
+        headers = ["Field", "Value"]
+
+        epic_data = [
+            ("Epic Key", epic.key),
+            ("Summary", epic.fields.summary)
+        ]
+
+        stories = jira.search_issues(f"'Epic Link' = {epic_key}")
+        story_data = []
+        if stories:
+            for story in stories:
+                story_data.append(("Story Key", story.key))
+                story_data.append(("Summary", story.fields.summary))
+                story_data.append(("Status", story.fields.status.name))
+                story_data.append(("Assignee", story.fields.assignee.displayName if story.fields.assignee else "Unassigned"))
+               # story_data.append(("Due Date", story.fields.duedate))
+                #story_data.append(("Start Date", story.fields.customfield_10015 if hasattr(story.fields, "customfield_10015") else "N/A"))
+        else:
+            story_data.append(("No stories found in the Epic.", ""))
+
+        max_lengths = [len(header) for header in headers]
+        for row in epic_data + story_data:
+            for i, value in enumerate(row):
+                max_lengths[i] = max(max_lengths[i], len(str(value)))
+
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                if field is None:
+                    field = ""  # Replace None with an empty string
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+            print(f"| {' | '.join(formatted_row)} |")
 
 
+
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+            print(term.green(boundary))
+
+        print(term.bold("Epic Details:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+        for row in epic_data + story_data:
+            print_row(row)
+            print_boundary()
+    except JIRAError as e:
+        logging.error(f"Error reading epic: {e}")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -709,20 +856,19 @@ def parse_arguments():
     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
     parser.add_argument("--get-stories-for-user", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
+    # parser.add_argument('query', nargs='+', help='Search query to filter tasks by keywords, status, assignee, or any other field')
     return parser.parse_args()
 
 def main():
     # Initialize Blessed terminal
-    term = Terminal()
-    
-
-    initialize()
+    term = Terminal() 
    # Parse command-line arguments
     args = parse_arguments()
     # Create Jira connection
     jira = create_jira_connection(args.config)
     if not jira:
         return
+    initialize()
     if args.create_project:
         project_name, project_key = args.create_project
         if create_jira_project(jira, project_name, project_key):
@@ -761,13 +907,8 @@ def main():
             logging.info("All stories deleted successfully.")
         else:
             logging.error("Failed to delete all stories.")
-
     if args.create_story:
-        if create_story(jira, *args.create_story):
-            logging.info("Story created successfully.")
-        else:
-            logging.error("Failed to create story.")
-
+        create_story(jira, *args.create_story)
     if args.update_story_status:
         if update_story_status(jira, *args.update_story_status):
             logging.info("Story status updated successfully.")
@@ -790,9 +931,8 @@ def main():
             logging.info("Comments added to issues successfully.")
         else:
             logging.error("Failed to add comments to issues.")
-
     if args.read_story_details:
-        read_story_details(jira, args.read_story_details)
+        read_story_details_tui(jira, args.read_story_details)
 
     if args.delete_story:
         if delete_story(jira, args.delete_story):
@@ -813,7 +953,7 @@ def main():
             logging.error("Failed to create epic.")
 
     if args.list_epics:
-        epic_list = list_epics(jira, args.list_epics)
+        epic_list = list_epics_tui(jira, args.list_epics)
         if epic_list:
             logging.info("List of epics:")
             for epic in epic_list:
@@ -829,7 +969,7 @@ def main():
             logging.error("Failed to update epic.")
 
     if args.read_epic_details:
-        read_epic_details(jira, args.read_epic_details)
+        read_epic_details_tui(jira, args.read_epic_details)
 
     if args.add_story_to_epic:
         add_result = add_story_to_epic(jira, *args.add_story_to_epic)
@@ -946,6 +1086,17 @@ def main():
                 logging.info(f"Key: {story['key']}, Summary: {story['summary']}")
         else:
             logging.info(f"No stories found assigned to user {args.get_stories_for_user[1]}")
+    # tasks = search(jira, args.query)
+    # if tasks:
+    #     for task in tasks:
+    #         print(f"Key: {task['key']}")
+    #         print(f"Summary: {task['summary']}")
+    #         print(f"Status: {task['status']}")
+    #         print(f"Assignee: {task['assignee']}")
+    #         print("-------------------------")
+    # else:
+    #     print("No tasks found.")
+
         
     
 if __name__ == "__main__":
