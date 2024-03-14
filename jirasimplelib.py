@@ -355,7 +355,6 @@ def get_sprints_for_board(jira, board_id):
     except Exception as e:
         logging.error(f"Error retrieving sprints for board: {e}")
         return None
-
 def move_issues_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
     start_issue_number = int(start_issue_key.split('-')[1])
     end_issue_number = int(end_issue_key.split('-')[1])
@@ -913,7 +912,7 @@ def parse_arguments():
     parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
     parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
     parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-    parser.add_argument("--get-sprints-for-board", action="store_true", help="\nGet all sprints for the specified board")
+    parser.add_argument("--board-id", type=int, required=True, help="\nID of the board to retrieve sprints for")    
     parser.add_argument("--move-issues-to-sprint", nargs=3, metavar=("\tstart_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
     parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
     parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
@@ -1068,8 +1067,8 @@ def main():
             logging.info(f"Sprint created successfully with ID: {sprint_id}")
         else:
             logging.error("Failed to create sprint.")
-
-    if args.get_sprints_for_board:
+    sprints = None
+    try:
         sprints = get_sprints_for_board(jira, args.board_id)
         if sprints:
             logging.info("Sprints for the specified board:")
@@ -1077,7 +1076,8 @@ def main():
                 logging.info(f"Sprint ID: {sprint.id}, Name: {sprint.name}")
         else:
             logging.error("Failed to retrieve sprints for the board.")
-
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
     if args.move_issues_to_sprint:
         move_issues_to_sprint(jira, args.project_key, *args.move_issues_to_sprint)
 
