@@ -449,28 +449,37 @@ def update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date
         return None
 def sprint_report(jira, sprint_id, project_key):
     try:
+        # Get detailed information about the sprint
         sprint_info = jira.sprint(sprint_id)
         if not sprint_info:
-            logging.error(f"Sprint with ID {sprint_id} not found.")
+            print(f"Sprint with ID {sprint_id} not found.")
             return
-        logging.info("Sprint Details:")
+
+        # Print all details of the sprint
+        print("Sprint Details:")
         for key, value in sprint_info.raw.items():
-            logging.info(f"{key}: {value}")
-        jql_query = (
-            f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
-        )
+            print(f"{key}: {value}")
+
+        # Define the JQL query to search for issues of type 'Story' in the sprint
+        jql_query = f'project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}'
+
+        # Search for issues using the JQL query
         issues = jira.search_issues(jql_query)
-        status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
+
+        # Count issue statuses
+        status_counts = {'To Do': 0, 'In Progress': 0, 'Done': 0}
         for issue in issues:
             status = issue.fields.status.name
             if status in status_counts:
                 status_counts[status] += 1
-        logging.info("Issue Status Distribution in Sprint:")
+
+        # Print issue status distribution
+        print("Issue Status Distribution in Sprint:")
         for status, count in status_counts.items():
-            logging.info(f"{status}: {count}")
+            print(f"{status}: {count}")
 
     except Exception as e:
-        logging.error(f"Error generating sprint report: {e}")
+        print(f"Error generating sprint report: {e}")
 # Get active sprint velocity
 def get_velocity(jira, project_key):
     try:
@@ -919,6 +928,37 @@ def get_sprints_for_board_tui(jira, board_id):
             print_boundary()
     except Exception as e:
         logging.error(f"Error retrieving sprints for board: {e}")
+def sprint_report_tui(jira, sprint_id, project_key):
+    try:
+        term = blessed.Terminal()
+        sprint_info = jira.sprint(sprint_id)
+        
+        if not sprint_info:
+            logging.error(f"Sprint with ID {sprint_id} not found.")
+            return
+        
+        print(term.bold("Sprint Details:"))
+        print(f"ID: {sprint_info.id}")
+        print(f"Name: {sprint_info.name}")
+        print(f"State: {sprint_info.state}")
+        print(f"Start Date: {sprint_info.startDate}")
+        print(f"End Date: {sprint_info.endDate}")
+        
+        jql_query = f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
+        issues = jira.search_issues(jql_query)
+        
+        status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
+        for issue in issues:
+            status = issue.fields.status.name
+            if status in status_counts:
+                status_counts[status] += 1
+        
+        print(term.bold("\nIssue Status Distribution in Sprint:"))
+        for status, count in status_counts.items():
+            print(f"{status}: {count}")
+        
+    except Exception as e:
+        logging.error(f"Error generating sprint report: {e}")
 
 
 def parse_arguments():
@@ -945,7 +985,7 @@ def parse_arguments():
     parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
     parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
     parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-    parser.add_argument("--board-id", type=int, required=True, help="\nID of the board to retrieve sprints for")    
+    parser.add_argument("--board-id", metavar="\tBoard_id", help="\nID of the board to retrieve sprints. Example --board-id 1")    
     parser.add_argument("--move-issues-to-sprint", nargs=3, metavar=("\tstart_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
     parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
     parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
@@ -1148,7 +1188,7 @@ def main():
             logging.error("Failed to update sprint summary.")
 
     if args.sprint_report:
-        sprint_report(jira, *args.sprint_report)
+        sprint_report_tui(jira, *args.sprint_report)
 
     if args.get_velocity:
         completed_velocity, total_velocity = get_velocity(jira, *args.get_velocity)
