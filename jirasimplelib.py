@@ -764,12 +764,72 @@ def list_epics_tui(jira, project_key):
             print_boundary()
     except JIRAError as e:
         logging.error(f"Error listing epics: {e}")
+# def read_epic_details_tui(jira, epic_key):
+#     try:
+#         term = blessed.Terminal()
+#         epic = jira.issue(epic_key)
+
+#         headers = ["Field", "Value"]
+
+#         epic_data = [
+#             ("Epic Key", epic.key),
+#             ("Summary", epic.fields.summary)
+
+#         ]
+
+#         stories = jira.search_issues(f"'Epic Link' = {epic_key}")
+#         story_data = []
+#         if stories:
+#             for story in stories:
+#                 story_data.append(("Story Key", story.key))
+#                 story_data.append(("Summary", story.fields.summary))
+#                 story_data.append(("Status", story.fields.status.name))
+#                 story_data.append(("Assignee", story.fields.assignee.displayName if story.fields.assignee else "Unassigned"))
+#                # story_data.append(("Due Date", story.fields.duedate))
+#                 #story_data.append(("Start Date", story.fields.customfield_10015 if hasattr(story.fields, "customfield_10015") else "N/A"))
+#         else:
+#             story_data.append(("No stories found in the Epic.", ""))
+
+#         max_lengths = [len(header) for header in headers]
+#         for row in epic_data + story_data:
+#             for i, value in enumerate(row):
+#                 max_lengths[i] = max(max_lengths[i], len(str(value)))
+
+#         def print_row(row):
+#             formatted_row = []
+#             for i, field in enumerate(row):
+#                 if field is None:
+#                     field = ""  # Replace None with an empty string
+#                 if isinstance(field, tuple):
+#                     formatted_row.append(f"{field[0]:<{max_lengths[i]}}")
+#                 else:
+#                     formatted_row.append(f"{field:<{max_lengths[i]}}")
+#             print(f"| {' | '.join(formatted_row)} |")
+
+
+
+
+#         def print_boundary():
+#             boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+#             print(term.green(boundary))
+
+#         print(term.bold("Epic Details:"))
+#         print_boundary()
+#         print_row(headers)
+#         print_boundary()
+#         for row in epic_data + story_data:
+#             print_row(row)
+#             print_boundary()
+#     except JIRAError as e:
+#         logging.error(f"Error reading epic: {e}")
+
 def read_epic_details_tui(jira, epic_key):
     try:
         term = blessed.Terminal()
         epic = jira.issue(epic_key)
 
-        headers = ["Field", "Value"]
+        epic_headers = ["Field", "Value"]
+        story_headers = ["Issue Type", "Issue Key", "Status", "Assignee", "Summary"]
 
         epic_data = [
             ("Epic Key", epic.key),
@@ -780,43 +840,54 @@ def read_epic_details_tui(jira, epic_key):
         story_data = []
         if stories:
             for story in stories:
-                story_data.append(("Story Key", story.key))
-                story_data.append(("Summary", story.fields.summary))
-                story_data.append(("Status", story.fields.status.name))
-                story_data.append(("Assignee", story.fields.assignee.displayName if story.fields.assignee else "Unassigned"))
-               # story_data.append(("Due Date", story.fields.duedate))
-                #story_data.append(("Start Date", story.fields.customfield_10015 if hasattr(story.fields, "customfield_10015") else "N/A"))
+                story_data.append((
+                    story.fields.issuetype.name,
+                    story.key,
+                    story.fields.status.name,
+                    story.fields.assignee.displayName if story.fields.assignee else "Unassigned",
+                    story.fields.summary
+                ))
         else:
-            story_data.append(("No stories found in the Epic.", ""))
+            story_data.append(("No stories found in the Epic.", "", "", "", ""))
 
-        max_lengths = [len(header) for header in headers]
-        for row in epic_data + story_data:
+        epic_max_lengths = [len(header) for header in epic_headers]
+        story_max_lengths = [len(header) for header in story_headers]
+
+        for row in epic_data:
             for i, value in enumerate(row):
-                max_lengths[i] = max(max_lengths[i], len(str(value)))
+                epic_max_lengths[i] = max(epic_max_lengths[i], len(str(value)))
 
-        def print_row(row):
-            formatted_row = []
-            for i, field in enumerate(row):
-                if field is None:
-                    field = ""  # Replace None with an empty string
-                formatted_row.append(f"{field:<{max_lengths[i]}}")
-            print(f"| {' | '.join(formatted_row)} |")
+        for row in story_data:
+            for i, value in enumerate(row):
+                story_max_lengths[i] = max(story_max_lengths[i], len(str(value)))
 
+        def print_table(data, headers, max_lengths, table_title):
+            def print_boundary():
+                boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+                print(term.green(boundary))
 
-
-        def print_boundary():
-            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
-            print(term.green(boundary))
-
-        print(term.bold("Epic Details:"))
-        print_boundary()
-        print_row(headers)
-        print_boundary()
-        for row in epic_data + story_data:
-            print_row(row)
+            print(term.bold(table_title))
             print_boundary()
+            print_row(headers, max_lengths)
+            print_boundary()
+            for row in data:
+                print_row(row, max_lengths)
+                print_boundary()
+
+        print_table(epic_data, epic_headers, epic_max_lengths, "Epic Details:")
+        print_table(story_data, story_headers, story_max_lengths, "Stories Linked with Epic:")
+
     except JIRAError as e:
         logging.error(f"Error reading epic: {e}")
+
+def print_row(row, max_lengths):
+    formatted_row = []
+    for i, field in enumerate(row):
+        if field is None:
+            field = ""  # Replace None with an empty string
+        formatted_row.append(f"{field:<{max_lengths[i]}}")
+    print(f"| {' | '.join(formatted_row)} |")
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
