@@ -886,6 +886,39 @@ def print_row(row, max_lengths):
             field = ""  # Replace None with an empty string
         formatted_row.append(f"{field:<{max_lengths[i]}}")
     print(f"| {' | '.join(formatted_row)} |")
+def get_sprints_for_board_tui(jira, board_id):
+    try:
+        term = blessed.Terminal()
+        sprints = jira.sprints(board_id)
+
+        headers = ["ID", "Name", "State"]
+
+        sprint_data = [(sprint.id, sprint.name, sprint.state) for sprint in sprints]
+
+        max_lengths = [len(header) for header in headers]
+        for row in sprint_data:
+            for i, value in enumerate(row):
+                max_lengths[i] = max(max_lengths[i], len(str(value)))
+
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                formatted_row.append(f"{field:<{max_lengths[i]}}")
+            print(f"| {' | '.join(formatted_row)} |")
+
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+            print(term.green(boundary))
+
+        print(term.bold("Sprints for Board:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+        for row in sprint_data:
+            print_row(row)
+            print_boundary()
+    except Exception as e:
+        logging.error(f"Error retrieving sprints for board: {e}")
 
 
 def parse_arguments():
@@ -1069,7 +1102,7 @@ def main():
             logging.error("Failed to create sprint.")
     sprints = None
     try:
-        sprints = get_sprints_for_board(jira, args.board_id)
+        sprints = get_sprints_for_board_tui(jira, args.board_id)
         if sprints:
             logging.info("Sprints for the specified board:")
             for sprint in sprints:
