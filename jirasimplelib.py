@@ -960,6 +960,55 @@ def sprint_report_tui(jira, sprint_id, project_key):
     except Exception as e:
         logging.error(f"Error generating sprint report: {e}")
 
+def move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
+    try:
+        term = blessed.Terminal()
+
+        start_issue_number = int(start_issue_key.split('-')[1])
+        end_issue_number = int(end_issue_key.split('-')[1])
+
+        headers = ["Issue Key", "Status", "Info"]
+
+        print(term.bold("Moving Issues to Sprint:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+
+        for i in range(start_issue_number, end_issue_number + 1):
+            issue_key = f"{project_key}-{i}"
+            try:
+                issue = jira.issue(issue_key)
+                jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+                print_row([issue.key, "Moved", f"Issue {issue_key} moved to Sprint {target_sprint_id}"])
+                print_boundary()
+            except Exception as e:
+                print_row([issue_key, f"Error: {e}", ""])
+                print_boundary()
+                logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
+    except JIRAError as e:
+        logging.error(f"Error reading story: {e}")
+
+
+def print_row(row):
+    formatted_row = []
+    for i, field in enumerate(row):
+        if i == 2:
+            formatted_row.append(f"{field:<20}")
+        elif i == 3:  # Assuming "INFO" is the third column
+            formatted_row.append(f"{field:<20}")  # Adjust width as needed
+        else:
+            formatted_row.append(f"{field:<10}")
+    print(f"| {' | '.join(formatted_row)} |")        
+def print_boundary():
+    term = blessed.Terminal()
+    boundary = "+-" + "-+-".join("-" * 30 for _ in range(2)) + "-+"
+    print(term.green(boundary))
+
+
+
+   
+
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -985,8 +1034,8 @@ def parse_arguments():
     parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
     parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
     parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-    parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints', required=True)
-    parser.add_argument("--move-issues-to-sprint", nargs=3, metavar=("\tstart_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
+    parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints')
+    parser.add_argument('--move-issues-to-sprint', nargs=4, metavar=("\tproject_key", "start_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
     parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
     parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
     parser.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nComplete stories in a sprint")
@@ -1145,7 +1194,8 @@ def main():
     except Exception as e:
         logging.error(f"Error in main: {e}")
     if args.move_issues_to_sprint:
-        move_issues_to_sprint(jira, args.project_key, *args.move_issues_to_sprint)
+        project_key, start_issue_key, end_issue_key, target_sprint_id = args.move_issues_to_sprint
+        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)
     if args.start_sprint:
         sprint_id, new_summary, start_date, end_date = args.start_sprint
         if start_sprint(jira, sprint_id, new_summary, start_date, end_date):
