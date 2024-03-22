@@ -985,7 +985,7 @@ def parse_arguments():
     parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
     parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
     parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-    parser.add_argument("--board-id", metavar="\tBoard_id", help="\nID of the board to retrieve sprints. Example --board-id 1")    
+    parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints', required=True)
     parser.add_argument("--move-issues-to-sprint", nargs=3, metavar=("\tstart_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
     parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
     parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
@@ -1140,20 +1140,12 @@ def main():
             logging.info(f"Sprint created successfully with ID: {sprint_id}")
         else:
             logging.error("Failed to create sprint.")
-    sprints = None
     try:
-        sprints = get_sprints_for_board_tui(jira, args.board_id)
-        if sprints:
-            logging.info("Sprints for the specified board:")
-            for sprint in sprints:
-                logging.info(f"Sprint ID: {sprint.id}, Name: {sprint.name}")
-        else:
-            logging.error("Failed to retrieve sprints for the board.")
+        get_sprints_for_board_tui(jira,args.board_id)
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"Error in main: {e}")
     if args.move_issues_to_sprint:
         move_issues_to_sprint(jira, args.project_key, *args.move_issues_to_sprint)
-
     if args.start_sprint:
         sprint_id, new_summary, start_date, end_date = args.start_sprint
         if start_sprint(jira, sprint_id, new_summary, start_date, end_date):
