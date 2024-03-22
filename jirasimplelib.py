@@ -1,4 +1,4 @@
-
+import datetime
 from datetime import datetime
 import blessed
 from blessed import Terminal
@@ -367,22 +367,21 @@ def move_issues_to_sprint(jira, project_key, start_issue_key, end_issue_key, tar
             logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
         except Exception as e:
             logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
-#start sprint
+
 def start_sprint(jira, sprint_id, new_summary, start_date, end_date):
     try:
         sprint = jira.sprint(sprint_id)
         sprint.update(
             name=new_summary,
             state='active',
-            startDate=start_date,
-            endDate=end_date
+            startDate = start_date,
+            endDate = end_date
         )
         logging.info(f"Sprint {sprint_id} started successfully.")
         return sprint
     except JIRAError as e:
         logging.error(f"Error starting sprint {sprint_id}: {e}")
         return None
-
 #get list of stories in a sprint
 def get_stories_in_sprint(jira, sprint_id):
     try:
@@ -1006,9 +1005,9 @@ def print_boundary():
 
 
 
-   
 
 
+    
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -1195,13 +1194,15 @@ def main():
         logging.error(f"Error in main: {e}")
     if args.move_issues_to_sprint:
         project_key, start_issue_key, end_issue_key, target_sprint_id = args.move_issues_to_sprint
-        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)
+        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)  
     if args.start_sprint:
-        sprint_id, new_summary, start_date, end_date = args.start_sprint
-        if start_sprint(jira, sprint_id, new_summary, start_date, end_date):
-            logging.info(f"Sprint '{new_summary}' ({sprint_id}) started successfully.")
-        else:
-            logging.error("Failed to start sprint.")
+        sprint_id = int(args.start_sprint[0])
+        new_summary = args.start_sprint[1]
+        start_date = args.start_sprint[2]
+        end_date = args.start_sprint[3]
+        # start_date = datetime.datetime.strptime("2024-03-22", '%Y-%m-%d')  
+        # end_date = datetime.datetime.strptime(args.start_sprint[3], '%Y-%m-%d')    
+        start_sprint(jira, sprint_id, new_summary,start_date, end_date)
 
     if args.get_stories_in_sprint:
         stories = get_stories_in_sprint(jira, *args.get_stories_in_sprint)
