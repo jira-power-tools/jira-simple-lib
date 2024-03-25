@@ -1,4 +1,5 @@
 import datetime
+import argcomplete
 from datetime import datetime
 import blessed
 from blessed import Terminal
@@ -1080,7 +1081,7 @@ def parse_arguments():
     parser.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help="\nUpdate story status. Example: --update-story-status ST-1 \"In Progress\"")
     parser.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help="\nUpdate story summary. Example: --update-story-summary ST-1 \"New Summary\"")
     parser.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help="\nUpdate story description. Example: --update-story-description ST-1 \"New Description\"")
-    parser.add_argument("--add-comment", nargs=3, metavar=("\tstart_issue_num", "end_issue_num", "comment_body"), help="\nAdd comments to issues in a range. Example: --add-comment-to-issues 1 5 \"Comment body\"")
+    parser.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help="\nAdd comments to issue. Example: --add-comment \"issue-key\" \"Comment body\"")
     parser.add_argument("--read-story-details", metavar="\tstory_key", help="\nRead story details. Example: --read-story-details ST-1")
     parser.add_argument("--delete-story", metavar="\tstory_key", help="\nDelete a story. Example: --delete-story ST-1")
     parser.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help="\nCreate a new epic. Example: --create-epic PROJ-1 \"Epic Name\" \"Epic Summary\"")
@@ -1110,8 +1111,10 @@ def parse_arguments():
 def main():
     # Initialize Blessed terminal
     term = Terminal() 
+    parser = parse_arguments()
+    argcomplete.autocomplete(parser)
    # Parse command-line arguments
-    args = parse_arguments()
+    args = parse_arguments().parse_args()
     # Create Jira connection
     jira = create_jira_connection(args.config)
     if not jira:
