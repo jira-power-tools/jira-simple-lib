@@ -1106,15 +1106,14 @@ def parse_arguments():
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
     parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
     # parser.add_argument('query', nargs='+', help='Search query to filter tasks by keywords, status, assignee, or any other field')
-    return parser.parse_args()
+    return parser
 
 def main():
     # Initialize Blessed terminal
     term = Terminal() 
     parser = parse_arguments()
     argcomplete.autocomplete(parser)
-   # Parse command-line arguments
-    args = parse_arguments().parse_args()
+    args = parser.parse_args()
     # Create Jira connection
     jira = create_jira_connection(args.config)
     if not jira:
