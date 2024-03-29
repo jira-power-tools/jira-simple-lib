@@ -1,5 +1,6 @@
 import datetime
 import argcomplete
+from argcomplete.completers import EnvironCompleter
 from datetime import datetime
 import blessed
 from blessed import Terminal
@@ -1065,55 +1066,146 @@ def print_row(term, row):
 
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary))   
+    print(term.green(boundary))  
+def complete_create_project(prefix, parsed_args, **kwargs):
+    # Accessing parsed_args just for demonstration
+    project_name = parsed_args.project_name
+    project_key = parsed_args.project_key
+    possible_projects = ['Project1', 'Project2', 'Project3']  # Replace with actual project names/keys from Jira
+    completions = [project for project in possible_projects if project.startswith(prefix)]
+    return completions
+
+# Define a generic completion function for all commands
+def complete_command(prefix, parsed_args, **kwargs):
+    command = parsed_args.__dict__.get('__command__')
+    if command == 'create_project':
+        return complete_create_project(prefix, parsed_args)
+    elif command == 'update_project':
+        return complete_update_project(prefix, parsed_args)
+    elif command == 'delete_all_projects':
+        return complete_delete_all_projects(prefix, parsed_args)
+    elif command == 'delete_project':
+        return complete_delete_project(prefix, parsed_args)
+    elif command == 'get_stories':
+        return complete_get_stories(prefix, parsed_args)
+    elif command == 'delete_all_stories':
+        return complete_delete_all_stories(prefix, parsed_args)
+    elif command == 'create_story':
+        return complete_create_story(prefix, parsed_args)
+    elif command == 'update_story_status':
+        return complete_update_story_status(prefix, parsed_args)
+    elif command == 'update_story_summary':
+        return complete_update_story_summary(prefix, parsed_args)
+    elif command == 'update_story_description':
+        return complete_update_story_description(prefix, parsed_args)
+    elif command == 'add_comment':
+        return complete_add_comment(prefix, parsed_args)
+    elif command == 'read_story_details':
+        return complete_read_story_details(prefix, parsed_args)
+    elif command == 'delete_story':
+        return complete_delete_story(prefix, parsed_args)
+    elif command == 'create_epic':
+        return complete_create_epic(prefix, parsed_args)
+    elif command == 'list_epics':
+        return complete_list_epics(prefix, parsed_args)
+    elif command == 'update_epic':
+        return complete_update_epic(prefix, parsed_args)
+    elif command == 'read_epic_details':
+        return complete_read_epic_details(prefix, parsed_args)
+    elif command == 'add_story_to_epic':
+        return complete_add_story_to_epic(prefix, parsed_args)
+    elif command == 'unlink_story_from_epic':
+        return complete_unlink_story_from_epic(prefix, parsed_args)
+    elif command == 'delete_epic':
+        return complete_delete_epic(prefix, parsed_args)
+    elif command == 'create_sprint':
+        return complete_create_sprint(prefix, parsed_args)
+    elif command == 'get_sprints_for_board':
+        return complete_get_sprints_for_board(prefix, parsed_args)
+    elif command == 'move_issues_to_sprint':
+        return complete_move_issues_to_sprint(prefix, parsed_args)
+    elif command == 'start_sprint':
+        return complete_start_sprint(prefix, parsed_args)
+    elif command == 'get_stories_in_sprint':
+        return complete_get_stories_in_sprint(prefix, parsed_args)
+    elif command == 'complete_stories_in_sprint':
+        return complete_complete_stories_in_sprint(prefix, parsed_args)
+    elif command == 'complete_sprint':
+        return complete_complete_sprint(prefix, parsed_args)
+    elif command == 'update_sprint_summary':
+        return complete_update_sprint_summary(prefix, parsed_args)
+    elif command == 'sprint_report':
+        return complete_sprint_report(prefix, parsed_args)
+    elif command == 'delete_sprint':
+        return complete_delete_sprint(prefix, parsed_args)
+    elif command == 'delete_all_sprints':
+        return complete_delete_all_sprints(prefix, parsed_args)
+    elif command == 'create_board':
+        return complete_create_board(prefix, parsed_args)
+    elif command == 'get_board_id':
+        return complete_get_board_id(prefix, parsed_args)
+    elif command == 'my_stories':
+        return complete_my_stories(prefix, parsed_args)
+    else:
+        return []
+
+#  Register completion function dynamically for all commands
+def register_completion_functions(parser):
+    parser.set_defaults(__command__=None)  # Create a default command attribute
+
+    for action in parser._actions:
+        if action.dest.startswith("--"):
+            parser._registries[argcomplete.ACTION_REGISTRY].register(action.dest, complete_command)
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
-    parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-    parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
-    parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
-    parser.add_argument("--delete-all-projects",help="Delete all projects", action="store_true")
-    parser.add_argument("--delete-project",metavar="\tproject_key", help="\nDelete a specific project.Example: --delete-project MP")
-    parser.add_argument("--get-stories", metavar="\tproject_key", help="\nGet stories for a project. Example: --get-stories MP")
-    parser.add_argument("--delete-all-stories", metavar="\tproject_key", help="\nDelete all stories in a project. Example: --delete-all-stories MP")
-    parser.add_argument("--create-story", nargs=3, metavar=("\tproject_key", "summary", "description"), help="\nCreate a new story. Example: --create-story MP \"Summary\" \"Description\"")
-    parser.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help="\nUpdate story status. Example: --update-story-status ST-1 \"In Progress\"")
-    parser.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help="\nUpdate story summary. Example: --update-story-summary ST-1 \"New Summary\"")
-    parser.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help="\nUpdate story description. Example: --update-story-description ST-1 \"New Description\"")
-    parser.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help="\nAdd comments to issue. Example: --add-comment \"issue-key\" \"Comment body\"")
-    parser.add_argument("--read-story-details", metavar="\tstory_key", help="\nRead story details. Example: --read-story-details ST-1")
-    parser.add_argument("--delete-story", metavar="\tstory_key", help="\nDelete a story. Example: --delete-story ST-1")
-    parser.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help="\nCreate a new epic. Example: --create-epic PROJ-1 \"Epic Name\" \"Epic Summary\"")
-    parser.add_argument("--list-epics", metavar="\tproject_key", help="\nList all epics in a project. Example: --list-epics PROJ-1")
-    parser.add_argument("--update-epic", nargs=3, metavar=("\tepic_key", "new_summary", "new_description"), help="\nUpdate an existing epic. Example: --update-epic EPIC-1 \"New Summary\" \"New Description\"")
-    parser.add_argument("--read-epic-details", metavar="\tepic_key", help="\nRead epic details. Example: --read-epic-details EPIC-1")
-    parser.add_argument("--add-story-to-epic", nargs=2, metavar=("\tepic_key", "story_key"), help="\nAdd a story to an epic. Example: --add-story-to-epic EPIC-1 STORY-1")
-    parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
-    parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
-    parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-    parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints')
-    parser.add_argument('--move-issues-to-sprint', nargs=4, metavar=("\tproject_key", "start_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
-    parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
-    parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
-    parser.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nComplete stories in a sprint")
-    parser.add_argument("--complete-sprint", nargs=3, metavar=("\tsprint_id", "start_date", "end_date"), help="\nComplete a sprint")
-    parser.add_argument("--update-sprint-summary", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary")
-    parser.add_argument("--sprint-report", nargs=2, metavar=("\tsprint_id", "project_key"), help="\nGenerate sprint report")
-    parser.add_argument("--delete-sprint", nargs=1, metavar=("\tsprint_id"), help="\nDelete a sprint")
-    parser.add_argument("--delete-all-sprints", action="store_true", help="\nDelete all sprints")
-    parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
-    parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
-    parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
-    # parser.add_argument('query', nargs='+', help='Search query to filter tasks by keywords, status, assignee, or any other field')
-    return parser
+    parser.add_argument('--config', help='Path to the configuration file', default='config.json').completer = EnvironCompleter
+    parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP").completer = EnvironCompleter
+    parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey").completer = EnvironCompleter
+    parser.add_argument("--delete-all-projects",help="Delete all projects", action="store_true").completer = EnvironCompleter
+    parser.add_argument("--delete-project",metavar="\tproject_key", help="\nDelete a specific project.Example: --delete-project MP").completer = EnvironCompleter
+    parser.add_argument("--get-stories", metavar="\tproject_key", help="\nGet stories for a project. Example: --get-stories MP").completer = EnvironCompleter
+    parser.add_argument("--delete-all-stories", metavar="\tproject_key", help="\nDelete all stories in a project. Example: --delete-all-stories MP").completer = EnvironCompleter
+    parser.add_argument("--create-story", nargs=3, metavar=("\tproject_key", "summary", "description"), help="\nCreate a new story. Example: --create-story MP \"Summary\" \"Description\"").completer = EnvironCompleter
+    parser.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help="\nUpdate story status. Example: --update-story-status ST-1 \"In Progress\"").completer = EnvironCompleter
+    parser.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help="\nUpdate story summary. Example: --update-story-summary ST-1 \"New Summary\"").completer = EnvironCompleter
+    parser.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help="\nUpdate story description. Example: --update-story-description ST-1 \"New Description\"").completer = EnvironCompleter
+    parser.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help="\nAdd comments to issue. Example: --add-comment \"issue-key\" \"Comment body\"").completer = EnvironCompleter
+    parser.add_argument("--read-story-details", metavar="\tstory_key", help="\nRead story details. Example: --read-story-details ST-1").completer = EnvironCompleter
+    parser.add_argument("--delete-story", metavar="\tstory_key", help="\nDelete a story. Example: --delete-story ST-1").completer = EnvironCompleter
+    parser.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help="\nCreate a new epic. Example: --create-epic PROJ-1 \"Epic Name\" \"Epic Summary\"").completer = EnvironCompleter
+    parser.add_argument("--list-epics", metavar="\tproject_key", help="\nList all epics in a project. Example: --list-epics PROJ-1").completer = EnvironCompleter
+    parser.add_argument("--update-epic", nargs=3, metavar=("\tepic_key", "new_summary", "new_description"), help="\nUpdate an existing epic. Example: --update-epic EPIC-1 \"New Summary\" \"New Description\"").completer = EnvironCompleter
+    parser.add_argument("--read-epic-details", metavar="\tepic_key", help="\nRead epic details. Example: --read-epic-details EPIC-1").completer = EnvironCompleter
+    parser.add_argument("--add-story-to-epic", nargs=2, metavar=("\tepic_key", "story_key"), help="\nAdd a story to an epic. Example: --add-story-to-epic EPIC-1 STORY-1").completer = EnvironCompleter
+    parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1").completer = EnvironCompleter
+    parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1").completer = EnvironCompleter
+    parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint").completer = EnvironCompleter
+    parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints').completer = EnvironCompleter
+    parser.add_argument('--move-issues-to-sprint', nargs=4, metavar=("\tproject_key", "start_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint").completer = EnvironCompleter
+    parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint").completer = EnvironCompleter
+    parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint").completer = EnvironCompleter
+    parser.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nComplete stories in a sprint").completer = EnvironCompleter
+    parser.add_argument("--complete-sprint", nargs=3, metavar=("\tsprint_id", "start_date", "end_date"), help="\nComplete a sprint").completer = EnvironCompleter
+    parser.add_argument("--update-sprint-summary", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary").completer = EnvironCompleter
+    parser.add_argument("--sprint-report", nargs=2, metavar=("\tsprint_id", "project_key"), help="\nGenerate sprint report").completer = EnvironCompleter
+    parser.add_argument("--delete-sprint", nargs=1, metavar=("\tsprint_id"), help="\nDelete a sprint").completer = EnvironCompleter
+    parser.add_argument("--delete-all-sprints", action="store_true", help="\nDelete all sprints").completer = EnvironCompleter
+    parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board").completer = EnvironCompleter
+    parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name").completer = EnvironCompleter
+    parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user").completer = EnvironCompleter
+    argcomplete.autocomplete(parser)
+    return parser.parse_args()
 
 def main():
+    parser = parse_arguments()
+    args = parser.parse_args()
     # Initialize Blessed terminal
     term = Terminal() 
-    parser = parse_arguments()
+    # Register and enable tab completion
+    register_completion_functions(parser)
     argcomplete.autocomplete(parser)
-    args = parser.parse_args()
     # Create Jira connection
     jira = create_jira_connection(args.config)
     if not jira:

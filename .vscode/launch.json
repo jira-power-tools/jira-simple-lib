@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            // "args": "${command:pickArgs}"
-            "args": ["--start-sprint", "3", "startsprint", "2024-03-22", "2024-03-28"]
+            "args": "${command:pickArgs}"
+            // "args": ["--start-sprint", "3", "startsprint", "2024-03-22", "2024-03-28"]
 
         }
     ]
