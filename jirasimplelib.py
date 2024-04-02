@@ -100,6 +100,23 @@ def update_jira_project(jira, project_key, new_name=None, new_key=None):
     except Exception as e:
         logging.error(f"Error updating project: {e}")
         return False
+def get_all_projects(jira):
+    # Send a request to the projects endpoint
+    projects = jira.projects()
+
+    if isinstance(projects, list):
+        # If projects is a list, assume it's already the list of projects
+        return projects
+    elif hasattr(projects, 'status_code') and projects.status_code == 200:
+        # Check if the request was successful
+        # Extract project information
+        projects_info = [{'key': project.key, 'name': project.name} for project in projects]
+        return projects_info
+    else:
+        # If the request was not successful or the response is unexpected, log the error message
+        logging.error(f"Failed to retrieve projects: {projects}")
+        return None
+
 def delete_all_projects(jira):
     try:
         # Get all projects
@@ -1163,6 +1180,7 @@ def parse_arguments():
     parser.add_argument('--config', help='Path to the configuration file', default='config.json').completer = EnvironCompleter
     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP").completer = EnvironCompleter
     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey").completer = EnvironCompleter
+    parser.add_argument("--get-all-projects",help="list of all projects")
     parser.add_argument("--delete-all-projects",help="Delete all projects", action="store_true").completer = EnvironCompleter
     parser.add_argument("--delete-project",metavar="\tproject_key", help="\nDelete a specific project.Example: --delete-project MP").completer = EnvironCompleter
     parser.add_argument("--get-stories", metavar="\tproject_key", help="\nGet stories for a project. Example: --get-stories MP").completer = EnvironCompleter
@@ -1196,7 +1214,7 @@ def parse_arguments():
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name").completer = EnvironCompleter
     parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user").completer = EnvironCompleter
     argcomplete.autocomplete(parser)
-    return parser.parse_args()
+    return parser
 
 def main():
     parser = parse_arguments()
@@ -1224,7 +1242,15 @@ def main():
             logging.info(f"Project '{project_key}' updated successfully with new name '{new_name}' and key '{new_key}'.")
         else:
             logging.error(f"Failed to update project '{project_key}' with new name '{new_name}' and key '{new_key}'.")
-
+            projects = get_all_projects(jira)
+            if projects:
+                for project in projects:
+                    if isinstance(project, dict):
+                        logging.info(f"Project Key: {project['key']}, Name: {project['name']}")
+                    else:
+                        logging.error(f"Unexpected project format: {project}")
+            else:
+                logging.error("Failed to retrieve projects.")
     if args.delete_all_projects:
         if delete_all_projects(jira):
             logging.info("All projects deleted successfully.")
