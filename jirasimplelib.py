@@ -726,64 +726,48 @@ def list_epics_tui(jira, project_key):
             print_boundary()
     except JIRAError as e:
         logging.error(f"Error listing epics: {e}")
-# def read_epic_details_tui(jira, epic_key):
-#     try:
-#         term = blessed.Terminal()
-#         epic = jira.issue(epic_key)
-
-#         headers = ["Field", "Value"]
-
-#         epic_data = [
-#             ("Epic Key", epic.key),
-#             ("Summary", epic.fields.summary)
-
-#         ]
-
-#         stories = jira.search_issues(f"'Epic Link' = {epic_key}")
-#         story_data = []
-#         if stories:
-#             for story in stories:
-#                 story_data.append(("Story Key", story.key))
-#                 story_data.append(("Summary", story.fields.summary))
-#                 story_data.append(("Status", story.fields.status.name))
-#                 story_data.append(("Assignee", story.fields.assignee.displayName if story.fields.assignee else "Unassigned"))
-#                # story_data.append(("Due Date", story.fields.duedate))
-#                 #story_data.append(("Start Date", story.fields.customfield_10015 if hasattr(story.fields, "customfield_10015") else "N/A"))
-#         else:
-#             story_data.append(("No stories found in the Epic.", ""))
-
-#         max_lengths = [len(header) for header in headers]
-#         for row in epic_data + story_data:
-#             for i, value in enumerate(row):
-#                 max_lengths[i] = max(max_lengths[i], len(str(value)))
-
-#         def print_row(row):
-#             formatted_row = []
-#             for i, field in enumerate(row):
-#                 if field is None:
-#                     field = ""  # Replace None with an empty string
-#                 if isinstance(field, tuple):
-#                     formatted_row.append(f"{field[0]:<{max_lengths[i]}}")
-#                 else:
-#                     formatted_row.append(f"{field:<{max_lengths[i]}}")
-#             print(f"| {' | '.join(formatted_row)} |")
-
-
-
-
-#         def print_boundary():
-#             boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
-#             print(term.green(boundary))
-
-#         print(term.bold("Epic Details:"))
-#         print_boundary()
-#         print_row(headers)
-#         print_boundary()
-#         for row in epic_data + story_data:
-#             print_row(row)
-#             print_boundary()
-#     except JIRAError as e:
-#         logging.error(f"Error reading epic: {e}")
+def list_projects_tui(jira):
+    try:
+        term = blessed.Terminal()
+        projects = jira.projects()
+        
+        # Define headers for the table
+        headers = ["Project Key", "Project Name"]
+        
+        # Get project data
+        data = [(project.key, project.name) for project in projects]
+        
+        # Calculate maximum lengths for formatting
+        max_lengths = [len(header) for header in headers]
+        for row in data:
+            for i, value in enumerate(row):
+                max_lengths[i] = max(max_lengths[i], len(str(value)))
+        
+        # Function to print a row in the table
+        def print_row(row):
+            formatted_row = [f"{value:<{max_lengths[i]}}" for i, value in enumerate(row)]
+            print(f"| {' | '.join(formatted_row)} |")
+        
+        # Function to print the boundary of the table
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
+            print(term.green(boundary))
+        
+        # Print table header
+        print(term.bold("List of Projects:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+        
+        # Print project data
+        for row in data:
+            print_row(row)
+            print_boundary()
+        
+        return projects
+    except JIRAError as e:
+        logging.error(f"Error listing projects: {e}")
+        return None
 
 def read_epic_details_tui(jira, epic_key):
     try:
@@ -1077,9 +1061,36 @@ def print_row(term, row):
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
     print(term.green(boundary))  
+from collections import defaultdict
+
+def jira_teams(jira):
+    try:
+        # Retrieve all issues from Jira
+        issues = jira.search_issues(jql_str='', maxResults=False)
+        
+        # Initialize a defaultdict to store counts of teams
+        team_counts = defaultdict(int)
+        
+        # Iterate through each issue and count occurrences of teams
+        for issue in issues:
+            # Assuming teams are stored in a custom field named "Team"
+            team = getattr(issue.fields, 'customfield_10001', None)  # Replace XXXXX with the custom field ID for "Team"
+            if team:
+                team_counts[team] += 1
+        
+        # Calculate the total number of teams
+        total_teams = len(team_counts)
+        
+        return total_teams, team_counts
+        
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return None, None
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
+    parser.add_argument("--jira-teams", action='store_true',help="list of teams in jira")
     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
     parser.add_argument('--list-projects', action='store_true', help='Get all projects')
@@ -1118,7 +1129,6 @@ def parse_arguments():
     return parser
 
 def main():
-     # Initialize Blessed terminal
     term = Terminal() 
     parser = parse_arguments()
     args = parser.parse_args()
@@ -1141,7 +1151,7 @@ def main():
         else:
             logging.error(f"Failed to update project '{project_key}' with new name '{new_name}' and key '{new_key}'.")   
     if args.list_projects:
-        projects = list_projects(jira)   
+        projects = list_projects_tui(jira)   
     if args.delete_all_projects:
         if delete_all_projects(jira):
             logging.info("All projects deleted successfully.")
@@ -1305,20 +1315,18 @@ def main():
             logging.error("Failed to retrieve board ID.")
 
     if args.my_stories:
-        user_stories = my_stories_tui(jira, *args.my_stories)
-    # tasks = search(jira, args.query)
-    # if tasks:
-    #     for task in tasks:
-    #         print(f"Key: {task['key']}")
-    #         print(f"Summary: {task['summary']}")
-    #         print(f"Status: {task['status']}")
-    #         print(f"Assignee: {task['assignee']}")
-    #         print("-------------------------")
-    # else:
-    #     print("No tasks found.")
-
-        
-    
+        my_stories_tui(jira, *args.my_stories)
+    if jira_teams:
+        teams = jira_teams(jira)
+        if teams:
+            total_teams, team_counts = teams
+            if total_teams is not None:
+                logging.info(f"Total number of teams: {total_teams}")
+                logging.info("Team counts:")
+                for team, count in team_counts.items():
+                    logging.info(f"- {team}: {count}")
+            else:
+                logging.error("Failed to retrieve team information.")
 if __name__ == "__main__":
     main()
 
