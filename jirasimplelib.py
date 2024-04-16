@@ -1,6 +1,4 @@
 import datetime
-import argcomplete
-from argcomplete.completers import EnvironCompleter
 from datetime import datetime
 import blessed
 from blessed import Terminal
