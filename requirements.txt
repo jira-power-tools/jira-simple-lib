@@ -1,0 +1,4 @@
+argcomplete==3.2.2
+blessed==1.20.0
+jira==3.8.0
+Requests==2.31.0
