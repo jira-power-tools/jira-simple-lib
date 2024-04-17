@@ -1291,6 +1291,3 @@ def main():
         my_stories_tui(jira, *args.my_stories)
 if __name__ == "__main__":
     main()
-
-
-
