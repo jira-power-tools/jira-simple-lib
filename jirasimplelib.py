@@ -71,7 +71,7 @@ def create_jira_project(jira, project_name, project_key):
     # Attempt to create the project
     try:
         project = jira.create_project(project_key, project_name)
-        logging.info(f"Project '{project_name}' created successfully.")
+        logging.info(f"Project '{project_name}' created successfully with key '{project_key}'.")
         return project
     except JIRAError as e:
         logging.error(f"Error creating project: {e}")
@@ -1060,10 +1060,44 @@ def print_row(term, row):
 
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary))  
+    print(term.green(boundary)) 
+def get_members(jira, project_key):
+    try:
+        # Construct JQL query to search for issues in the project
+        jql_query = f'project="{project_key}"'
+
+        # Search for issues in the project
+        issues = jira.search_issues(jql_query, maxResults=False)
+
+        # Extract unique user names from the issues' assignees
+        user_names = set(issue.fields.assignee.displayName for issue in issues if issue.fields.assignee)
+
+        # Log the user names
+        logging.info(f"Users in project {project_key}: {', '.join(user_names)}")
+
+        return list(user_names)
+    except Exception as e:
+        # Log any exceptions that occur during the process
+        logging.error(f"Error fetching users for project {project_key}: {e}")
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
+    parser.add_argument("--get-members", metavar="project_key", help="\n Retrieve members in a Jira project.")
     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
     parser.add_argument('--list-projects', action='store_true', help='Get all projects')
@@ -1110,13 +1144,12 @@ def main():
     if not jira:
         return
     initialize()
+    if args.get_members:
+        project_key = args.get_members
+        members = get_members(jira, project_key)
     if args.create_project:
         project_name, project_key = args.create_project
-        if create_jira_project(jira, project_name, project_key):
-            logging.info(f"Project '{project_name}' created successfully with key '{project_key}'.")
-        else:
-            logging.error(f"Failed to create project '{project_name}' with key '{project_key}'.")
-
+        create_jira_project(jira, project_name, project_key)
     if args.update_project:
         project_key, new_name, new_key = args.update_project
         if update_jira_project(jira, project_key, new_name, new_key):
