@@ -1061,56 +1061,9 @@ def print_row(term, row):
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
     print(term.green(boundary))  
-from collections import defaultdict
-
-def jira_teams(jira):
-    try:
-        # Retrieve all issues from Jira
-        issues = jira.search_issues(jql_str='', maxResults=False)
-        
-        # Initialize a defaultdict to store counts of teams
-        team_counts = defaultdict(int)
-        
-        # Iterate through each issue and count occurrences of teams
-        for issue in issues:
-            # Assuming teams are stored in a custom field named "Team"
-            team = getattr(issue.fields, 'customfield_10001', None)  # Replace XXXXX with the custom field ID for "Team"
-            if team:
-                team_counts[team] += 1
-        
-        # Calculate the total number of teams
-        total_teams = len(team_counts)
-        
-        return total_teams, team_counts
-        
-    except Exception as e:
-        logging.error(f"Error: {e}")
-        return None, None
-def get_project_members(jira, project_key):
-    try:
-        project = jira.project(project_key)
-        members = []
-
-        # Retrieve project roles
-        roles = jira.project_roles(project_key)
-
-        # Iterate over roles to get members
-        for role_name, role_info in roles.items():
-            for member in role_info.actors:
-                # Append member's name and role to the list
-                members.append({'name': member.displayName, 'role': role_name})
-
-        logging.info(f"Project members retrieved successfully. Project key: {project_key}")
-        return members
-
-    except Exception as e:
-        logging.error(f"Error retrieving project members: {e}")
-        return None
-
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-    parser.add_argument("--jira-teams", action='store_true',help="list of teams in jira")
     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
     parser.add_argument('--list-projects', action='store_true', help='Get all projects')
@@ -1146,7 +1099,6 @@ def parse_arguments():
     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
     parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
-    parser.add_argument('project_key', type=str, help='The key of the project to retrieve members for')
     return parser
 
 def main():
@@ -1337,26 +1289,5 @@ def main():
 
     if args.my_stories:
         my_stories_tui(jira, *args.my_stories)
-    if jira_teams:
-        teams = jira_teams(jira)
-        if teams:
-            total_teams, team_counts = teams
-            if total_teams is not None:
-                logging.info(f"Total number of teams: {total_teams}")
-                logging.info("Team counts:")
-                for team, count in team_counts.items():
-                    logging.info(f"- {team}: {count}")
-            else:
-                logging.error("Failed to retrieve team information.")
-        members = get_project_members(jira, args.project_key)
-        if members:
-            for member in members:
-                print(f"Name: {member['name']}, Role: {member['role']}")
-        else:
-            print("Failed to retrieve project members.")
-
 if __name__ == "__main__":
     main()
-
-
-

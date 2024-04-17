@@ -1,0 +1,284 @@
+[33mcommit c52f5f8f612d4bd6bd81140d9786a8330cd31a7b[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 16 17:33:55 2024 +0500
+
+    changing to new branch for stable version
+
+[33mcommit 49d687da18252aab1b08b82d097f428048e73a0d[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: cf6f91e 5b7f940
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 16 12:23:41 2024 +0500
+
+    16-04-2024
+
+[33mcommit cf6f91ec88e95457b1e33c832f4d31a30c3a98c8[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 16 12:21:48 2024 +0500
+
+    16/04/2024
+
+[33mcommit 5b7f940fbbb9f5a320bf495beb3cd0707cfbfc21[m
+Author: Mubashir Rehman <mubashir.rehman@verituslabs.com>
+Date:   Wed Apr 3 05:24:55 2024 +0500
+
+    Updated Readme
+
+[33mcommit dd884329c47fb1f5e3c7c70947c743bb1694dcf5[m
+Author: Mubashir Rehman <mubashir.rehman@verituslabs.com>
+Date:   Wed Apr 3 03:30:48 2024 +0500
+
+    Updated requirements.txt and .gitignore for venv
+
+[33mcommit eb3e52953b87aa21a5c21086240e8a17142a068b[m
+Author: Mubashir Rehman <mubashir.rehman@verituslabs.com>
+Date:   Wed Apr 3 03:09:08 2024 +0500
+
+    Added requirements.txt
+
+[33mcommit f7544f0b80b9bacbec06aa90fca4cc702f07d625[m
+Author: Mubashir Rehman <mubashir.rehman@verituslabs.com>
+Date:   Wed Apr 3 02:48:22 2024 +0500
+
+    Updated keybook file extension to remove ambiguity
+
+[33mcommit 33542c1072fb02fc112df9c310fb9058d6a7812d[m
+Author: Mubashir Rehman <mubashir.rehman@verituslabs.com>
+Date:   Wed Apr 3 02:40:34 2024 +0500
+
+    Updated license to match company vision
+
+[33mcommit cfc0629dca61c32aefe12b32d1e0b6844630e176[m[33m ([m[1;32mstable[m[33m)[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 2 16:39:19 2024 +0500
+
+    02-04-2024
+
+[33mcommit d361925b98d075e47ed255f53c7a04976fbd807a[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 2 14:54:26 2024 +0500
+
+    02-04-2024
+
+[33mcommit a84eefb392c303bb5c49f8ca33de7dde0e709f88[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Apr 2 14:33:25 2024 +0500
+
+    2024-04-02
+
+[33mcommit 347f5445a4faa159440144b107ed2a3850ce10bd[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 29 14:38:39 2024 +0500
+
+    2024-03-29
+
+[33mcommit 769efaaf1c6b51d7e7e618977e736898ecfc3871[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Mon Mar 25 14:59:36 2024 +0500
+
+    25-03-2024
+
+[33mcommit 0930a8a7f6ad6e710b7a01bb5ab02822759cf2d8[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Mon Mar 25 14:35:34 2024 +0500
+
+    25-03-2024
+
+[33mcommit 4ba9d7c4abd0eacc63219882350e024fa6a06ee1[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Mon Mar 25 13:54:11 2024 +0500
+
+    2024-03-25
+
+[33mcommit 4ac3d773f3b7b2865fc8d2071aedce7afc8c542d[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 22 16:39:06 2024 +0500
+
+    2024/03/22
+
+[33mcommit 68183c94ccc0bed180890b890fce0610828dcb10[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 22 14:31:20 2024 +0500
+
+    2024/03/22
+
+[33mcommit 6176548ac3f1d44e7b5ac2c33b374d75b94ab189[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 22 13:41:54 2024 +0500
+
+    2024/03/22
+
+[33mcommit cf8510f465de26b36b5355f69c926e2309a27b78[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Mar 14 15:50:12 2024 +0500
+
+    jirasimplelib.py
+
+[33mcommit 03bda66be2f00579d61adb1841743ca7f6e47450[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Mar 14 14:45:19 2024 +0500
+
+    jirasimplelib.py
+
+[33mcommit 7514c8889ba2924f9a7478189b0547d1449c004b[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Mar 14 14:23:59 2024 +0500
+
+    jirasimplelib.py
+
+[33mcommit 93723fa50bff6abf7fab1630fd8dfbcedfa02e45[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Mar 14 13:21:16 2024 +0500
+
+    14/03/2024
+
+[33mcommit d80e3b56fcc9d9100955ff64b6757950e8542cd8[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 13 15:25:48 2024 +0500
+
+    13/03/2024
+
+[33mcommit a9f618605dd2bf54d9ea7b6d8796b0605003f3f2[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Mar 12 13:54:00 2024 +0500
+
+    12/03/2024
+
+[33mcommit ea8c6f49aa86b6ec9e68d0b91056b10b9ac5b590[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Mar 12 11:43:50 2024 +0500
+
+    12/03/2024
+
+[33mcommit 11dba878d9761176ac919d5b4050705585760245[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 8 17:30:27 2024 +0500
+
+    08/03/2024
+
+[33mcommit 73dce3641905e71f649fc048ffdd3ccf9575e4f4[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 8 16:33:07 2024 +0500
+
+    08/03/2024
+
+[33mcommit cb854da6d688a46ae1584a5adf7253446c3a3b75[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 8 15:59:14 2024 +0500
+
+    08/03/2024
+
+[33mcommit 9143ab8849cb361c2611a0eb2ee55c2b46700949[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Mar 7 17:02:40 2024 +0500
+
+    07/03/2024
+
+[33mcommit f0a4943e3e1617aa5e360c2dc90d8bf6220770c8[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 6 17:45:50 2024 +0500
+
+    06/03/2024
+
+[33mcommit 06bfabd375c36d10dff30ad4d86f8fa157dd0b5b[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 6 17:18:03 2024 +0500
+
+    06/03/2024
+
+[33mcommit c0f10e1a3d92a9bb85958a2ceda8bf5d010ee2ca[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 6 15:59:07 2024 +0500
+
+    06/03/2024
+
+[33mcommit 172adbdf64c1c5b0a2c98d19d5771e120d1206d6[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 6 13:38:10 2024 +0500
+
+    06/03/2024
+
+[33mcommit 2b9bdb2dcd706fa93e4ca294c6e2adc17a3a6866[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Mar 6 13:21:32 2024 +0500
+
+    06/03/2024
+
+[33mcommit 9b215949c9b2b108f125a437cc9ca7a553efc67e[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Mar 5 17:36:53 2024 +0500
+
+    05/03/2024
+
+[33mcommit 89f136d44f2a8ef5ae97601df6a734c4f1d83195[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 1 16:06:41 2024 +0500
+
+    CLI
+
+[33mcommit 608d7c1b8c60c43a672779d577fddec55187ec13[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Mar 1 15:02:34 2024 +0500
+
+    CLI
+
+[33mcommit e985ea64f288d6d759fe2ef64d5d7c102e14fdc8[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Wed Feb 28 16:35:58 2024 +0500
+
+    28/02/2024
+
+[33mcommit 870cb597603189bf8cc94b9c46248198761fa9c9[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Feb 27 16:48:10 2024 +0500
+
+    27/02/2024
+
+[33mcommit e61ebdbc6c7a8045a21fe140940948fa31e4f682[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Feb 27 14:41:37 2024 +0500
+
+    27/02/2024
+
+[33mcommit 13d074bfc6ba565dce3b4f0219cf88aa20118abd[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Feb 27 14:38:45 2024 +0500
+
+    27/02/2024
+
+[33mcommit 817e6e0462787ecbc1cfcbdd864d6b38ad4113c3[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Feb 27 14:32:18 2024 +0500
+
+    27/02/2024
+
+[33mcommit 5935cf3441c296fb8638424612b30bd5f5e5a683[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Tue Feb 27 13:10:08 2024 +0500
+
+    27/02/2024
+
+[33mcommit b8d16a2bae1f012cc693a4cc88b6f4a87e8dd276[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Mon Feb 26 16:55:13 2024 +0500
+
+    26/02/2024
+
+[33mcommit bac3f16bfdd0e69adb747f34e345aa1a6f2599b0[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Fri Feb 23 17:28:29 2024 +0500
+
+    23/02/2024
+
+[33mcommit 412c179b5e6d26fbe394bcbfffe9fc5a2fe4bdce[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Feb 22 17:02:52 2024 +0500
+
+    22/02/2024
+
+[33mcommit 647ef121d52317ee54aa4869aee2b7d383c59d40[m
+Author: rimshaveritus <rimsha.ashfaq@verituslabs.com>
+Date:   Thu Feb 22 10:42:56 2024 +0500
+
+    credential
+
+[33mcommit 45f8f1a8eab4c455c50e1d9f92b164c22df651fd
