@@ -1,4 +1,6 @@
 import datetime
+import argcomplete
+from argcomplete.completers import EnvironCompleter
 from datetime import datetime
 import blessed
 from blessed import Terminal
@@ -1084,26 +1086,6 @@ def jira_teams(jira):
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, None
-def get_project_members(jira, project_key):
-    try:
-        project = jira.project(project_key)
-        members = []
-
-        # Retrieve project roles
-        roles = jira.project_roles(project_key)
-
-        # Iterate over roles to get members
-        for role_name, role_info in roles.items():
-            for member in role_info.actors:
-                # Append member's name and role to the list
-                members.append({'name': member.displayName, 'role': role_name})
-
-        logging.info(f"Project members retrieved successfully. Project key: {project_key}")
-        return members
-
-    except Exception as e:
-        logging.error(f"Error retrieving project members: {e}")
-        return None
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -1144,7 +1126,6 @@ def parse_arguments():
     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
     parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
-    parser.add_argument('project_key', type=str, help='The key of the project to retrieve members for')
     return parser
 
 def main():
@@ -1346,15 +1327,5 @@ def main():
                     logging.info(f"- {team}: {count}")
             else:
                 logging.error("Failed to retrieve team information.")
-        members = get_project_members(jira, args.project_key)
-        if members:
-            for member in members:
-                print(f"Name: {member['name']}, Role: {member['role']}")
-        else:
-            print("Failed to retrieve project members.")
-
 if __name__ == "__main__":
     main()
-
-
-
