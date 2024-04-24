@@ -1,6 +1,7 @@
 import datetime
 import argcomplete
 from argcomplete.completers import EnvironCompleter
+from jira.exceptions import JIRAError
 from datetime import datetime
 import blessed
 from blessed import Terminal
@@ -11,7 +12,7 @@ import json
 import os
 import argparse 
 import sys
-
+import base64
 # Load credentials from JSON file
 def load_credentials(file_path):
     with open(file_path, 'r') as f:
@@ -217,6 +218,75 @@ def update_story_description(jira, story_key, new_description):
         return story
     except JIRAError as e:
         logging.error(f"Error updating story description: {e}")
+        return None
+# Function to update a story's assignee
+def update_story_assignee(jira, story_key, new_assignee):
+    try:
+        # Construct the API endpoint
+        endpoint = f"{jira._options['server']}/rest/api/3/issue/{story_key}"
+
+        # Prepare the request headers
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+
+        # Construct the request body with the new assignee or None
+        payload = {
+            "fields": {
+                "assignee": {"name": new_assignee} if new_assignee else None
+            }
+        }
+
+        # Send the PUT request to update the assignee
+        response = requests.put(
+            endpoint,
+            headers=headers,
+            json=payload,
+            auth=(jira._session.auth[0], jira._session.auth[1])  # HTTP Basic Authentication
+        )
+
+        # Check if the request was successful
+        if response.status_code == 204:
+            print(f"Story assignee updated successfully. Key: {story_key}")
+            return story_key
+        else:
+            print(f"Failed to update story assignee. Key: {story_key}. Status code: {response.status_code}")
+            return None
+
+    except JIRAError as e:
+        # Print error message if an exception occurs
+        print(f"Error updating story assignee: {e}")
+        return None
+
+
+
+def print_issue_assignee(jira, issue_key):
+    try:
+        # Retrieve the issue object
+        issue = jira.issue(issue_key)
+
+        # Get the assignee of the issue
+        assignee = issue.fields.assignee
+
+        if assignee is not None:
+            print(f"The assignee of issue {issue_key} is: {assignee.displayName}")
+        else:
+            print(f"Issue {issue_key} is currently unassigned.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+
+# Function to update a story's reporter
+def update_story_reporter(jira, story_key, new_reporter):
+    try:
+        story = jira.issue(story_key)
+        story.update(reporter={'name': new_reporter})
+        print(f"Story reporter updated successfully. Key: {story_key}")
+        return story
+    except JIRAError as e:
+        print(f"Error updating story reporter: {e}")
         return None
 # Function to read a story's details
 def read_story_details(jira, story_key):
@@ -1080,23 +1150,62 @@ def get_members(jira, project_key):
         # Log any exceptions that occur during the process
         logging.error(f"Error fetching users for project {project_key}: {e}")
         return None
+def get_members_tui(jira, project_key):
+    try:
+        term = blessed.Terminal()
 
+        # Construct JQL query to search for issues in the project
+        jql_query = f'project="{project_key}"'
 
+        # Search for issues in the project
+        issues = jira.search_issues(jql_query, maxResults=False)
 
+        # Extract unique user names from the issues' assignees
+        user_names = set(issue.fields.assignee.displayName for issue in issues if issue.fields.assignee)
 
+        # Check if any users are found
+        if not user_names:
+            print(f"No members found in project {project_key}")
+            return None
 
+        # Print members with TUI formatting
+        print(term.bold(f"Members in project {project_key}:"))
+        print_boundary(term)
+        for user in user_names:
+            print_row(term, [user])
+        print_boundary(term)
+    except Exception as e:
+        # Log any exceptions that occur during the process
+        logging.error(f"Error fetching users for project {project_key}: {e}")
+        return None
 
+def print_row(term, row):
+    formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
+    print(f"| {' | '.join(formatted_row)} |")
 
+def print_boundary(term):
+    boundary = "+-" + "-+-".join("-" * 30 for _ in range(1)) + "-+"
+    print(term.green(boundary))
+def assign_issue(jira, issue_key, assignee_username):
+    try:
+        # Retrieve the issue object
+        issue = jira.issue(issue_key)
+        print(issue)
 
+        issue.update(assignee={'name': assignee_username})
 
+        print(assignee_username)
+        print(issue.update)
 
-
-
-
+        logger.info(f"Issue {issue_key} assigned to user {assignee_username} successfully.")
+    except Exception as e:
+        logger.error(f"Error assigning issue {issue_key} to user {assignee_username}: {e}")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
+    parser.add_argument("--print-issue-assignee", dest="issue_key", type=str, help="Key of the Jira issue")
+    parser.add_argument("--assign-issue", nargs=2, metavar=("issue_key", "assignee_username"), help="\nAssign an issue to a user")
     parser.add_argument("--get-members", metavar="project_key", help="\n Retrieve members in a Jira project.")
     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
@@ -1109,6 +1218,8 @@ def parse_arguments():
     parser.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help="\nUpdate story status. Example: --update-story-status ST-1 \"In Progress\"")
     parser.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help="\nUpdate story summary. Example: --update-story-summary ST-1 \"New Summary\"")
     parser.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help="\nUpdate story description. Example: --update-story-description ST-1 \"New Description\"")
+    parser.add_argument("--update-assignee", nargs=2, metavar=("\tstory_key", "new_assignee"),help="\nUpdate story assignee. Example: --update-assignee ST-1 new_assignee_username")
+    parser.add_argument("--update-reporter", nargs=2, metavar=("\tstory_key", "new_reporter"),help="\nUpdate story reporter. Example: --update-reporter ST-1 new_reporter_username")
     parser.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help="\nAdd comments to issue. Example: --add-comment \"issue-key\" \"Comment body\"")
     parser.add_argument("--read-story-details", metavar="\tstory_key", help="\nRead story details. Example: --read-story-details ST-1")
     parser.add_argument("--delete-story", metavar="\tstory_key", help="\nDelete a story. Example: --delete-story ST-1")
@@ -1144,9 +1255,21 @@ def main():
     if not jira:
         return
     initialize()
+    if args.issue_key:
+        print_issue_assignee(jira, args.issue_key)
+    # Check if the --assign-issue argument is provided
+    if args.assign_issue:
+        issue_key, assignee_username = args.assign_issue
+        assign_issue(jira, issue_key, assignee_username)
     if args.get_members:
         project_key = args.get_members
-        members = get_members(jira, project_key)
+        members = get_members_tui(jira, project_key)
+    if args.update_assignee:
+        story_key, new_assignee = args.update_assignee
+        update_story_assignee(jira, story_key, new_assignee)
+    if args.update_reporter:
+        story_key, new_reporter = args.update_reporter
+        update_story_reporter(jira, story_key, new_reporter)
     if args.create_project:
         project_name, project_key = args.create_project
         create_jira_project(jira, project_name, project_key)
