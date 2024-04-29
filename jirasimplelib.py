@@ -1,6 +1,3 @@
-import datetime
-import argcomplete
-from argcomplete.completers import EnvironCompleter
 from jira.exceptions import JIRAError
 from datetime import datetime
 import blessed
@@ -11,8 +8,7 @@ import requests
 import json
 import os
 import argparse 
-import sys
-import base64
+
 # Load credentials from JSON file
 def load_credentials(file_path):
     with open(file_path, 'r') as f:
