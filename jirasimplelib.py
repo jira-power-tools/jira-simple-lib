@@ -1,3 +1,5 @@
+import argcomplete
+import getpass
 from jira.exceptions import JIRAError
 from datetime import datetime
 import blessed
@@ -7,59 +9,41 @@ from jira import JIRA, JIRAError
 import requests
 import json
 import os
-import argparse 
+import argparse
+import sys
+import base64
 
-# Load credentials from JSON file
-def load_credentials(file_path):
-    with open(file_path, 'r') as f:
-        credentials = json.load(f)
-    return credentials
-
-# Set environment variables from credentials
-def set_environment_variables(credentials):
-    os.environ["JIRA_URL"] = credentials["jira_url"]
-    os.environ["API_TOKEN"] = credentials["api_token"]
-    os.environ["USER"] = credentials["user"]
-
-# Call the function to load credentials and set environment variables
-def initialize():
-    credentials = load_credentials("config.json")
-    set_environment_variables(credentials)
-
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
 def read_config(filename):
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         config = json.load(f)
     return config
-def create_jira_connection(config_file):
+
+def create_jira_connection(jira_url, username, api_token):
     try:
-        with open(config_file, 'r') as file:
-            config_data = json.load(file)
-            jira_url = config_data.get('jira_url')
-            user = config_data.get('user')
-            api_token = config_data.get('api_token')
+        if not all([jira_url, username, api_token]):
+            raise ValueError("Missing username, API token, or Jira URL")
 
-            if not all([jira_url, user, api_token]):
-                raise ValueError("Missing or incomplete configuration data")
-
-            jira = JIRA(
-                basic_auth=(user, api_token),
-                options={'server': jira_url}
-            )
-            logging.info("Jira connection established successfully.")
-            return jira
-    except FileNotFoundError:
-        logging.error(f"Config file not found: {config_file}")
+        jira = JIRA(basic_auth=(username, api_token), options={"server": jira_url})
+        logging.info("Jira connection established successfully.")
+        return jira
     except ValueError as ve:
-        logging.error(f"Invalid configuration data: {ve}")
+        logging.error(f"Invalid input: {ve}")
     except JIRAError as je:
         logging.error(f"JiraError: {je}")
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
     return None
 
-    # Function to create a new project in Jira
+def get_user_credentials():
+    jira_url = input("Enter Jira URL: ")
+    username = input("Enter your username: ")
+    api_token = getpass.getpass("Enter your API token: ")
+    return jira_url, username, api_token   
+
+ # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
     if not jira:
         logging.error("Failed to create project: Jira connection not established.")
@@ -1243,14 +1227,33 @@ def parse_arguments():
     return parser
 
 def main():
-    term = Terminal() 
+    try:
+        config_file = "config.json"
+        if os.path.exists(config_file):
+            config_data = read_config(config_file)
+            jira_url = config_data.get("jira_url")
+            username = config_data.get("user")
+            api_token = config_data.get("api_token")
+
+            if not all([jira_url, username, api_token]):
+                logging.warning("Configuration file is missing required data. Asking for credentials...")
+                jira_url, username, api_token = get_user_credentials()
+        else:
+            logging.warning(f"Config file not found: {config_file}. Asking for credentials...")
+            jira_url, username, api_token = get_user_credentials()
+
+        jira = create_jira_connection(jira_url, username, api_token)
+        if jira:
+            # Continue with your script logic here using the 'jira' object
+            pass
+        else:
+            logging.error("Failed to establish Jira connection.")
+    except KeyboardInterrupt:
+        logging.error("Script execution interrupted.")
+        sys.exit(1)
+    term = Terminal()
     parser = parse_arguments()
     args = parser.parse_args()
-    # Create Jira connection
-    jira = create_jira_connection(args.config)
-    if not jira:
-        return
-    initialize()
     if args.issue_key:
         print_issue_assignee(jira, args.issue_key)
     # Check if the --assign-issue argument is provided
