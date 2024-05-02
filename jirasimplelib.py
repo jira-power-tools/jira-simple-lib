@@ -42,6 +42,15 @@ def get_user_credentials():
     username = input("Enter your username: ")
     api_token = getpass.getpass("Enter your API token: ")
     return jira_url, username, api_token   
+def save_credentials_to_config(config_file, jira_url, username, api_token):
+    config_data = {
+        "jira_url": jira_url,
+        "user": username,
+        "api_token": api_token
+    }
+    with open(config_file, "w") as f:
+        json.dump(config_data, f)
+    logging.info(f"Credentials saved to {config_file}")
 
  # Function to create a new project in Jira
 def create_jira_project(jira, project_name, project_key):
@@ -1235,19 +1244,26 @@ def main():
             username = config_data.get("user")
             api_token = config_data.get("api_token")
 
-            if not all([jira_url, username, api_token]):
-                logging.warning("Configuration file is missing required data. Asking for credentials...")
+            if all([jira_url, username, api_token]):
+                jira = create_jira_connection(jira_url, username, api_token)
+                if jira:
+                    # Continue with your script logic here using the 'jira' object
+                    pass
+                else:
+                    logging.error("Failed to establish Jira connection.")
+            else:
+                logging.warning("Configuration file is missing or incomplete. Asking for credentials...")
                 jira_url, username, api_token = get_user_credentials()
+                save_config = input("Do you want to save these credentials for future use? (y/n): ")
+                if save_config.lower() == 'y':
+                    save_credentials_to_config(config_file, jira_url, username, api_token)
         else:
             logging.warning(f"Config file not found: {config_file}. Asking for credentials...")
             jira_url, username, api_token = get_user_credentials()
+            save_config = input("Do you want to save these credentials for future use? (y/n): ")
+            if save_config.lower() == 'y':
+                save_credentials_to_config(config_file, jira_url, username, api_token)
 
-        jira = create_jira_connection(jira_url, username, api_token)
-        if jira:
-            # Continue with your script logic here using the 'jira' object
-            pass
-        else:
-            logging.error("Failed to establish Jira connection.")
     except KeyboardInterrupt:
         logging.error("Script execution interrupted.")
         sys.exit(1)
