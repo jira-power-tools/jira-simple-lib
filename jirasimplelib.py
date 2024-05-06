@@ -1,6 +1,4 @@
-import argcomplete
 from jira.exceptions import JIRAError
-from datetime import datetime
 import blessed
 from blessed import Terminal
 import logging
@@ -9,8 +7,6 @@ import requests
 import json
 import os
 import argparse
-import sys
-import base64
 
 
 # Load credentials from JSON file
