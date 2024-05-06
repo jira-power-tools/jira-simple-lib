@@ -1,4 +1,3 @@
-import argcomplete
 import getpass
 from jira.exceptions import JIRAError
 from datetime import datetime
@@ -11,7 +10,6 @@ import json
 import os
 import argparse
 import sys
-import base64
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -63,7 +61,7 @@ def create_jira_project(jira, project_name, project_key):
         project = jira.create_project(project_key, project_name)
         logging.info(f"Project '{project_name}' created successfully with key '{project_key}'.")
         return project
-    except JIRAError as e:
+    except JIRAError as e: 
         logging.error(f"Error creating project: {e}")
         return None
 def update_jira_project(jira, project_key, new_name=None, new_key=None):
@@ -1260,7 +1258,7 @@ def parse_arguments():
     parser.add_argument("--delete-all-sprints", action="store_true", help="\nDelete all sprints")
     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
-    parser.add_argument("--my-stories", action="store_true", help="Retrieve stories assigned to the current user")
+    parser.add_argument("--get-current-user-stories", action="store_true", help="Retrieve stories assigned to the current user")
     # parser.add_argument("--my-stories", nargs=1, metavar=("\tproject_key"), help="\nGet stories assigned to a user")
     return parser
 
@@ -1279,7 +1277,173 @@ def main():
             if all([jira_url, username, api_token]):
                 jira = create_jira_connection(jira_url, username, api_token)
                 if jira:
-                    # Continue with your script logic here using the 'jira' object
+                    if args.issue_key:
+                        print_issue_assignee(jira, args.issue_key)
+                    if args.assign_issue:
+                        issue_key, assignee_username = args.assign_issue
+                        assign_issue(jira, issue_key, assignee_username)
+                    if args.get_members:
+                        project_key = args.get_members
+                        members = get_members_tui(jira, project_key)
+                    if args.update_assignee:
+                        story_key, new_assignee = args.update_assignee
+                        update_story_assignee(jira, story_key, new_assignee)
+                    if args.update_reporter:
+                        story_key, new_reporter = args.update_reporter
+                        update_story_reporter(jira, story_key, new_reporter)
+                    if args.create_project:
+                        project_name, project_key = args.create_project
+                        create_jira_project(jira, project_name, project_key)
+                    if args.update_project:
+                        project_key, new_name, new_key = args.update_project
+                        if update_jira_project(jira, project_key, new_name, new_key):
+                            logging.info(f"Project '{project_key}' updated successfully with new name '{new_name}' and key '{new_key}'.")
+                        else:
+                            logging.error(f"Failed to update project '{project_key}' with new name '{new_name}' and key '{new_key}'.")   
+                    if args.list_projects:
+                        projects = list_projects_tui(jira)
+                    if args.delete_all_projects:
+                        if delete_all_projects(jira):
+                            logging.info("All projects deleted successfully.")
+                        else:
+                            logging.error("Failed to delete all projects.")
+                    if args.delete_project:
+                        if delete_project(jira, args.delete_project):
+                            logging.info(f"Project '{args.delete_project}' deleted successfully.")
+                        else:
+                            logging.error(f"Failed to delete project '{args.delete_project}'.")   
+                    if args.get_stories:
+                        project_key = args.get_stories
+                        stories = get_stories_for_project(jira, project_key)
+                        if stories:
+                            render_tui(stories, fetching_data=False)  # Not fetching data when getting stories
+                    if args.delete_all_stories:
+                        if delete_all_stories_in_project(jira, args.delete_all_stories):
+                            logging.info("All stories deleted successfully.")
+                        else:
+                            logging.error("Failed to delete all stories.")
+                    if args.create_story:
+                        create_story(jira, *args.create_story)
+                    if args.update_story_status:
+                        if update_story_status(jira, *args.update_story_status):
+                            logging.info("Story status updated successfully.")
+                        else:
+                            logging.error("Failed to update story status.")
+                    if args.update_story_summary:
+                        if update_story_summary(jira, *args.update_story_summary):
+                            logging.info("Story summary updated successfully.")
+                        else:
+                            logging.error("Failed to update story summary.")
+                    if args.update_story_description:
+                        if update_story_description(jira, *args.update_story_description):
+                            logging.info("Story description updated successfully.")
+                        else:
+                            logging.error("Failed to update story description.")
+                    if args.add_comment:
+                        add_comment(jira, args.issue_key, args.comment_body)
+                    if args.read_story_details:
+                        read_story_details_tui(jira, *args.read_story_details)
+                    if args.delete_story:
+                        if delete_story(jira, args.delete_story):
+                            logging.info(f"Story '{args.delete_story}' deleted successfully.")
+                        else:
+                            logging.error(f"Failed to delete story '{args.delete_story}'.")
+                    if args.create_epic:
+                        if create_epic(jira, *args.create_epic):
+                            logging.info("Epic created successfully.")
+                        else:
+                            logging.error("Failed to create epic.")
+                    if args.list_epics:
+                        epic_list = list_epics_tui(jira, args.list_epics)
+                        if epic_list:
+                            logging.info("List of epics:")
+                            for epic in epic_list:
+                                logging.info(f"Epic Key: {epic.key}, Summary: {epic.fields.summary}")
+                        else:
+                            logging.error("Failed to retrieve the list of epics.")
+                    if args.update_epic:
+                        update_result = update_epic(jira, *args.update_epic)
+                        if update_result:
+                            logging.info("Epic updated successfully.")
+                        else:
+                            logging.error("Failed to update epic.")
+                    if args.read_epic_details:
+                        read_epic_details_tui(jira, args.read_epic_details)
+                    if args.add_story_to_epic:
+                        add_result = add_story_to_epic(jira, *args.add_story_to_epic)
+                        if add_result:
+                            logging.info("Story added to epic successfully.")
+                        else:
+                            logging.error("Failed to add story to epic.")
+                    if args.unlink_story_from_epic:
+                        unlink_result = unlink_story_from_epic(jira, args.unlink_story_from_epic)
+                        if unlink_result:
+                            logging.info("Story unlinked from epic successfully.")
+                        else:
+                            logging.error("Failed to unlink story from epic.")
+                    if args.delete_epic:
+                        delete_result = delete_epic(jira, args.delete_epic)
+                        if delete_result:
+                            logging.info("Epic deleted successfully.")
+                        else:
+                            logging.error("Failed to delete epic.")
+                    if args.create_sprint:
+                        sprint_id = create_sprint(args.url, args.username, args.api_token, args.board_id, *args.create_sprint)
+                        if sprint_id:
+                            logging.info(f"Sprint created successfully with ID: {sprint_id}")
+                        else:
+                            logging.error("Failed to create sprint.")
+                            get_sprints_for_board_tui(jira,args.board_id)
+                    if args.move_issues_to_sprint:
+                        project_key, start_issue_key, end_issue_key, target_sprint_id = args.move_issues_to_sprint
+                        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)  
+                    if args.start_sprint:
+                        sprint_id, new_summary, start_date, end_date = args.start_sprint
+                        sprint = start_sprint(jira, *args.start_sprint)
+                    if args.get_stories_in_sprint:
+                        stories = get_stories_in_sprint_tui(jira, *args.get_stories_in_sprint)
+                    if args.complete_stories_in_sprint:
+                        complete_stories_in_sprint(jira, *args.complete_stories_in_sprint)
+                    if args.complete_sprint:
+                        if complete_sprint(jira, *args.complete_sprint):
+                            logging.info("Sprint completed successfully.")
+                        else:
+                            logging.error("Failed to complete sprint.")
+                    if args.update_sprint_summary:
+                        if update_sprint_summary(jira, *args.update_sprint_summary):
+                            logging.info("Sprint summary updated successfully.")
+                        else:
+                            logging.error("Failed to update sprint summary.")
+                    if args.sprint_report:
+                        sprint_report_tui(jira, *args.sprint_report)
+                    if args.delete_sprint:
+                        if delete_sprint(jira, *args.delete_sprint):
+                            logging.info("Sprint deleted successfully.")
+                        else:
+                            logging.error("Failed to delete sprint.")
+                    if args.delete_all_sprints:
+                        if delete_all_sprints(jira, args.board_id):
+                            logging.info("All sprints deleted successfully.")
+                        else:
+                            logging.error("Failed to delete all sprints.")
+                    if args.create_board:
+                        board_id = create_board(*args.create_board)
+                        if board_id is not None:
+                            logging.info(f"Board created successfully. Board ID: {board_id}")
+                        else:
+                            logging.error("Failed to create board.")
+                    if args.get_board_id:
+                        board_id = get_board_id(jira, args.get_board_id[0])
+                        if board_id is not None:
+                            logging.info(f"Board ID for '{args.get_board_id[0]}': {board_id}")
+                        else:
+                            logging.error("Failed to retrieve board ID.")
+                    if args.get_current_user_stories:
+                        stories = get_current_user_stories()
+                        if stories:
+                            print("Current user stories:")
+                            for story in stories:
+                                print(story)
                     pass
                 else:
                     logging.error("Failed to establish Jira connection.")
@@ -1299,199 +1463,5 @@ def main():
     except KeyboardInterrupt:
         logging.error("Script execution interrupted.")
         sys.exit(1)
-
-    if args.issue_key:
-        print_issue_assignee(jira, args.issue_key)
-    # Check if the --assign-issue argument is provided
-    if args.assign_issue:
-        issue_key, assignee_username = args.assign_issue
-        assign_issue(jira, issue_key, assignee_username)
-    if args.get_members:
-        project_key = args.get_members
-        members = get_members_tui(jira, project_key)
-    if args.update_assignee:
-        story_key, new_assignee = args.update_assignee
-        update_story_assignee(jira, story_key, new_assignee)
-    if args.update_reporter:
-        story_key, new_reporter = args.update_reporter
-        update_story_reporter(jira, story_key, new_reporter)
-    if args.create_project:
-        project_name, project_key = args.create_project
-        create_jira_project(jira, project_name, project_key)
-    if args.update_project:
-        project_key, new_name, new_key = args.update_project
-        if update_jira_project(jira, project_key, new_name, new_key):
-            logging.info(f"Project '{project_key}' updated successfully with new name '{new_name}' and key '{new_key}'.")
-        else:
-            logging.error(f"Failed to update project '{project_key}' with new name '{new_name}' and key '{new_key}'.")   
-    if args.list_projects:
-        projects = list_projects_tui(jira)   
-    if args.delete_all_projects:
-        if delete_all_projects(jira):
-            logging.info("All projects deleted successfully.")
-        else:
-            logging.error("Failed to delete all projects.")
-
-    if args.delete_project:
-        if delete_project(jira, args.delete_project):
-            logging.info(f"Project '{args.delete_project}' deleted successfully.")
-        else:
-            logging.error(f"Failed to delete project '{args.delete_project}'.")   
-    if args.get_stories:
-        project_key = args.get_stories
-        stories = get_stories_for_project(jira, project_key)
-        if stories:
-            render_tui(stories, fetching_data=False)  # Not fetching data when getting stories
-    else:
-        # Logic for other options if needed
-        pass
-    if args.delete_all_stories:
-        if delete_all_stories_in_project(jira, args.delete_all_stories):
-            logging.info("All stories deleted successfully.")
-        else:
-            logging.error("Failed to delete all stories.")
-    if args.create_story:
-        create_story(jira, *args.create_story)
-    if args.update_story_status:
-        if update_story_status(jira, *args.update_story_status):
-            logging.info("Story status updated successfully.")
-        else:
-            logging.error("Failed to update story status.")
-
-    if args.update_story_summary:
-        if update_story_summary(jira, *args.update_story_summary):
-            logging.info("Story summary updated successfully.")
-        else:
-            logging.error("Failed to update story summary.")
-    if args.update_story_description:
-        if update_story_description(jira, *args.update_story_description):
-            logging.info("Story description updated successfully.")
-        else:
-            logging.error("Failed to update story description.")
-    if args.add_comment:
-        add_comment(jira, args.issue_key, args.comment_body)
-
-    if args.read_story_details:
-        read_story_details_tui(jira, *args.read_story_details)
-
-    if args.delete_story:
-        if delete_story(jira, args.delete_story):
-            logging.info(f"Story '{args.delete_story}' deleted successfully.")
-        else:
-            logging.error(f"Failed to delete story '{args.delete_story}'.")
-
-    if args.create_epic:
-        if create_epic(jira, *args.create_epic):
-            logging.info("Epic created successfully.")
-        else:
-            logging.error("Failed to create epic.")
-    if args.create_epic:
-        epic_result = create_epic(jira, *args.create_epic)
-        if epic_result:
-            logging.info("Epic created successfully.")
-        else:
-            logging.error("Failed to create epic.")
-
-    if args.list_epics:
-        epic_list = list_epics_tui(jira, args.list_epics)
-        if epic_list:
-            logging.info("List of epics:")
-            for epic in epic_list:
-                logging.info(f"Epic Key: {epic.key}, Summary: {epic.fields.summary}")
-        else:
-            logging.error("Failed to retrieve the list of epics.")
-
-    if args.update_epic:
-        update_result = update_epic(jira, *args.update_epic)
-        if update_result:
-            logging.info("Epic updated successfully.")
-        else:
-            logging.error("Failed to update epic.")
-
-    if args.read_epic_details:
-        read_epic_details_tui(jira, args.read_epic_details)
-
-    if args.add_story_to_epic:
-        add_result = add_story_to_epic(jira, *args.add_story_to_epic)
-        if add_result:
-            logging.info("Story added to epic successfully.")
-        else:
-            logging.error("Failed to add story to epic.")
-
-    if args.unlink_story_from_epic:
-        unlink_result = unlink_story_from_epic(jira, args.unlink_story_from_epic)
-        if unlink_result:
-            logging.info("Story unlinked from epic successfully.")
-        else:
-            logging.error("Failed to unlink story from epic.")
-
-    if args.delete_epic:
-        delete_result = delete_epic(jira, args.delete_epic)
-        if delete_result:
-            logging.info("Epic deleted successfully.")
-        else:
-            logging.error("Failed to delete epic.")
-    if args.create_sprint:
-        sprint_id = create_sprint(args.url, args.username, args.api_token, args.board_id, *args.create_sprint)
-        if sprint_id:
-            logging.info(f"Sprint created successfully with ID: {sprint_id}")
-        else:
-            logging.error("Failed to create sprint.")
-            get_sprints_for_board_tui(jira,args.board_id)
-    if args.move_issues_to_sprint:
-        project_key, start_issue_key, end_issue_key, target_sprint_id = args.move_issues_to_sprint
-        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)  
-    if args.start_sprint:
-        sprint_id, new_summary, start_date, end_date = args.start_sprint
-        sprint = start_sprint(jira, *args.start_sprint)
-    if args.get_stories_in_sprint:
-        stories = get_stories_in_sprint_tui(jira, *args.get_stories_in_sprint)
-    if args.complete_stories_in_sprint:
-            complete_stories_in_sprint(jira, *args.complete_stories_in_sprint)
-    if args.complete_sprint:
-        if complete_sprint(jira, *args.complete_sprint):
-            logging.info("Sprint completed successfully.")
-        else:
-            logging.error("Failed to complete sprint.")
-
-    if args.update_sprint_summary:
-        if update_sprint_summary(jira, *args.update_sprint_summary):
-            logging.info("Sprint summary updated successfully.")
-        else:
-            logging.error("Failed to update sprint summary.")
-
-    if args.sprint_report:
-        sprint_report_tui(jira, *args.sprint_report)
-
-    if args.delete_sprint:
-        if delete_sprint(jira, *args.delete_sprint):
-            logging.info("Sprint deleted successfully.")
-        else:
-            logging.error("Failed to delete sprint.")
-
-    if args.delete_all_sprints:
-        if delete_all_sprints(jira, args.board_id):
-            logging.info("All sprints deleted successfully.")
-        else:
-            logging.error("Failed to delete all sprints.")
-    if args.create_board:
-        board_id = create_board(*args.create_board)
-        if board_id is not None:
-            logging.info(f"Board created successfully. Board ID: {board_id}")
-        else:
-            logging.error("Failed to create board.")
-
-    if args.get_board_id:
-        board_id = get_board_id(jira, args.get_board_id[0])
-        if board_id is not None:
-            logging.info(f"Board ID for '{args.get_board_id[0]}': {board_id}")
-        else:
-            logging.error("Failed to retrieve board ID.")
-    if args.my_stories:
-        stories = get_current_user_stories()
-        if stories:
-            print("Current user stories:")
-            for story in stories:
-                print(story)
 if __name__ == "__main__":
     main()
