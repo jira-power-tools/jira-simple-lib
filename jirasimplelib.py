@@ -1083,68 +1083,41 @@ def print_row(term, row):
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
     print(term.green(boundary))   
-# def my_stories_tui(jira, project_key, user):
-#     try:
-#         term = blessed.Terminal()
-
-#         # Construct JQL query to retrieve stories for the user
-#         jql_query = f"project = '{project_key}' AND assignee = '{user}' AND issuetype = Task"
-
-#         # Search for issues using the JQL query
-#         issues = jira.search_issues(jql_query)
-
-#         # Check if any issues are found
-#         if not issues:
-#             print(f"No stories found assigned to  {user}")
-#             return None
-
-#         # Print user stories with TUI formatting
-#         print(term.bold(f"Stories assigned to  {user}:"))
-#         print_boundary(term)
-#         for issue in issues:
-#             print_row(term, [issue.key, issue.fields.summary])
-#         print_boundary(term)
-
-#         # Return the list of user stories
-#         return [{"key": issue.key, "summary": issue.fields.summary} for issue in issues]
-
-#     except Exception as e:
-#         logging.error(f"Error retrieving stories for user: {e}")
-#         return None
-# def print_row(term, row):
-#     formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
-#     print(f"| {' | '.join(formatted_row)} |")
-
-# def print_boundary(term):
-#     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-#     print(term.green(boundary)) 
-def get_current_user_stories():
+def my_stories_tui(jira, project_key, user):
     try:
-        config_file = "config.json"
-        if os.path.exists(config_file):
-            config_data = read_config(config_file)
-            jira_url = config_data.get("jira_url")
-            username = config_data.get("user")
-            api_token = config_data.get("api_token")
-            if all([jira_url, username, api_token]):
-                jira = create_jira_connection(jira_url, username, api_token)
-                if jira:
-                    current_user = jira.current_user()
-                    if current_user:
-                        user = current_user.name
-                        jql_query = f"assignee = '{user}' AND issuetype = 'Task'"
-                        return jira.search_issues(jql_query)
-                    else:
-                        logging.error("Failed to retrieve current user.")
-                else:
-                    logging.error("Failed to establish Jira connection.")
-            else:
-                logging.warning("Configuration file is missing or incomplete.")
-        else:
-            logging.warning(f"Config file not found: {config_file}.")
+        term = blessed.Terminal()
+
+        # Construct JQL query to retrieve stories for the user
+        jql_query = f"project = '{project_key}' AND assignee = '{user}' AND issuetype = Task"
+
+        # Search for issues using the JQL query
+        issues = jira.search_issues(jql_query)
+
+        # Check if any issues are found
+        if not issues:
+            print(f"No stories found assigned to  {user}")
+            return None
+
+        # Print user stories with TUI formatting
+        print(term.bold(f"Stories assigned to  {user}:"))
+        print_boundary(term)
+        for issue in issues:
+            print_row(term, [issue.key, issue.fields.summary])
+        print_boundary(term)
+
+        # Return the list of user stories
+        return [{"key": issue.key, "summary": issue.fields.summary} for issue in issues]
+
     except Exception as e:
-        logging.error(f"Error retrieving current user stories: {e}")
-    return None
+        logging.error(f"Error retrieving stories for user: {e}")
+        return None
+def print_row(term, row):
+    formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
+    print(f"| {' | '.join(formatted_row)} |")
+
+def print_boundary(term):
+    boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
+    print(term.green(boundary)) 
 
 def get_members(jira, project_key):
     try:
@@ -1258,8 +1231,7 @@ def parse_arguments():
     parser.add_argument("--delete-all-sprints", action="store_true", help="\nDelete all sprints")
     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
-    parser.add_argument("--get-current-user-stories", action="store_true", help="Retrieve stories assigned to the current user")
-    # parser.add_argument("--my-stories", nargs=1, metavar=("\tproject_key"), help="\nGet stories assigned to a user")
+    parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
     return parser
 
 def main():
@@ -1438,12 +1410,8 @@ def main():
                             logging.info(f"Board ID for '{args.get_board_id[0]}': {board_id}")
                         else:
                             logging.error("Failed to retrieve board ID.")
-                    if args.get_current_user_stories:
-                        stories = get_current_user_stories()
-                        if stories:
-                            print("Current user stories:")
-                            for story in stories:
-                                print(story)
+                    if args.my_stories:
+                        my_stories_tui(jira, *args.my_stories)
                     pass
                 else:
                     logging.error("Failed to establish Jira connection.")
