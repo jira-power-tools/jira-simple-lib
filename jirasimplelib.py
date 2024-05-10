@@ -263,17 +263,6 @@ def assignee_name(jira, issue_key):
     except Exception as e:
         print(f"Error: {e}")
 
-
-# Function to update a story's reporter
-def update_story_reporter(jira, story_key, new_reporter):
-    try:
-        story = jira.issue(story_key)
-        story.update(reporter={'name': new_reporter})
-        print(f"Story reporter updated successfully. Key: {story_key}")
-        return story
-    except JIRAError as e:
-        print(f"Error updating story reporter: {e}")
-        return None
 # Function to read a story's details
 def read_story_details(jira, story_key):
     try:
@@ -1217,7 +1206,6 @@ def parse_arguments():
     project_group.add_argument("--update-story-summary", nargs=2, metavar=("story_key", "new_summary"), help="Update story summary.")
     project_group.add_argument("--update-story-description", nargs=2, metavar=("story_key", "new_description"), help="Update story description.")
     project_group.add_argument("--update-assignee", nargs=2, metavar=("story_key", "new_assignee"), help="Update story assignee.")
-    project_group.add_argument("--update-reporter", nargs=2, metavar=("story_key", "new_reporter"), help="Update story reporter.")
 
     # Epic Related
     epic_group = parser.add_argument_group('Epic Related')
@@ -1326,9 +1314,6 @@ def main():
                     if args.update_assignee:
                         story_key, new_assignee = args.update_assignee
                         update_story_assignee(jira, story_key, new_assignee)
-                    if args.update_reporter:
-                        story_key, new_reporter = args.update_reporter
-                        update_story_reporter(jira, story_key, new_reporter)
                     if args.create_project:
                         project_name, project_key = args.create_project
                         create_jira_project(jira, project_name, project_key)
