@@ -209,42 +209,30 @@ def update_story_description(jira, story_key, new_description):
 # Function to update a story's assignee
 def update_story_assignee(jira, story_key, new_assignee):
     try:
-        # Construct the API endpoint
-        endpoint = f"{jira._options['server']}/rest/api/3/issue/{story_key}"
-
-        # Prepare the request headers
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-
-        # Construct the request body with the new assignee or None
-        payload = {
-            "fields": {
-                "assignee": {"name": new_assignee} if new_assignee else None
-            }
-        }
-
-        # Send the PUT request to update the assignee
-        response = requests.put(
-            endpoint,
-            headers=headers,
-            json=payload,
-            auth=(jira._session.auth[0], jira._session.auth[1])  # HTTP Basic Authentication
-        )
-
-        # Check if the request was successful
-        if response.status_code == 204:
+        # Get the existing story details
+        story = jira.issue(story_key)
+        
+        # Get the current assignee
+        current_assignee = story.fields.assignee
+        
+        # Prepare the update data with the new assignee or None
+        update_data = {"fields": {"assignee": {"name": new_assignee}}}
+        
+        # If there is an existing assignee, update it with the new assignee
+        if current_assignee:
+            story.update(**update_data)
             print(f"Story assignee updated successfully. Key: {story_key}")
-            return story_key
         else:
-            print(f"Failed to update story assignee. Key: {story_key}. Status code: {response.status_code}")
-            return None
-
+            # If there is no existing assignee, update it to the new assignee
+            story.update(**update_data)
+            print(f"Story assignee set to {new_assignee} successfully. Key: {story_key}")
+        
+        return story_key
     except JIRAError as e:
         # Print error message if an exception occurs
         print(f"Error updating story assignee: {e}")
         return None
+
 
 
 
