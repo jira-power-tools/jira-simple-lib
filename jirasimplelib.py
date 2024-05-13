@@ -22,6 +22,7 @@ def read_config(filename):
 def create_jira_connection(jira_url, username, api_token):
     try:
         if not all([jira_url, username, api_token]):
+
             raise ValueError("Missing username, API token, or Jira URL")
 
         jira = JIRA(basic_auth=(username, api_token), options={"server": jira_url})
@@ -839,7 +840,6 @@ def read_epic_details_tui(jira, epic_key):
         for row in story_data:
             for i, value in enumerate(row):
                 story_max_lengths[i] = max(story_max_lengths[i], len(str(value)))
-
         def print_table(data, headers, max_lengths, table_title):
             def print_boundary():
                 boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
@@ -852,6 +852,7 @@ def read_epic_details_tui(jira, epic_key):
             for row in data:
                 print_row(row, max_lengths)
                 print_boundary()
+
 
         print_table(epic_data, epic_headers, epic_max_lengths, "Epic Details:")
         print_table(story_data, story_headers, story_max_lengths, "Stories Linked with Epic:")
