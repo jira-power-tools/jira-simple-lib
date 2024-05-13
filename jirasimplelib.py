@@ -1,8 +1,8 @@
-from jira.exceptions import JIRAError
 import blessed
 from blessed import Terminal
 import logging
 from jira import JIRA, JIRAError
+from jira.exceptions import JIRAError
 import requests
 import json
 import os
