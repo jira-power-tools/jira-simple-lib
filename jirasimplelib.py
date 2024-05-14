@@ -216,24 +216,29 @@ def update_story_assignee(jira, story_key, new_assignee):
         # Get the current assignee
         current_assignee = story.fields.assignee
         
-        # Prepare the update data with the new assignee or None
-        update_data = {"fields": {"assignee": {"name": new_assignee}}}
-        
-        # If there is an existing assignee, update it with the new assignee
-        if current_assignee:
+        # If the current assignee is different from the new assignee or is None, update it
+        if current_assignee is None or current_assignee.displayName != new_assignee:
+            # Prepare the update data with the new assignee
+            update_data = {"fields": {"assignee": {"name": new_assignee}}}
+            
+            # Update the assignee
             story.update(**update_data)
-            print(f"Story assignee updated successfully. Key: {story_key}")
+            
+            # Verify the updated assignee name
+            updated_assignee_name = assignee_name(jira, story_key)
+            
+            if updated_assignee_name == new_assignee:
+                print(f"Story assignee updated successfully to {new_assignee}. Key: {story_key}")
+            else:
+                print(f"Failed to update story assignee. Key: {story_key}")
         else:
-            # If there is no existing assignee, update it to the new assignee
-            story.update(**update_data)
-            print(f"Story assignee set to {new_assignee} successfully. Key: {story_key}")
+            print(f"Story assignee is already {new_assignee}. Key: {story_key}")
         
         return story_key
     except JIRAError as e:
         # Print error message if an exception occurs
         print(f"Error updating story assignee: {e}")
         return None
-
 
 
 
@@ -286,12 +291,13 @@ def delete_story(jira, story_key):
 def add_comment(jira, issue_key, comment_body):
     try:
         issue = jira.issue(issue_key)
+        # comment_body = jira.comment(comment_body)
         jira.add_comment(issue, comment_body)
         logging.info(f"Comment added to issue {issue_key}")
-        return 1  # Return 1 to indicate success
+        return 1
     except JIRAError as e:
         logging.error(f"Error adding comment to issue {issue_key}: {e}")
-        return 0  # Return 0 to indicate failure
+        return 0
 
 def create_epic(jira, project_key, epic_name, epic_summary):
     try:
@@ -712,6 +718,7 @@ def read_story_details_tui(jira, story_key):
                 formatted_row.append(f"{field:<{max_lengths[i]}}")
             print(f"| {' | '.join(formatted_row)} |")
 
+
         def print_boundary():
             boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
             print(term.green(boundary))
@@ -802,7 +809,6 @@ def list_projects_tui(jira):
     except JIRAError as e:
         logging.error(f"Error listing projects: {e}")
         return None
-
 def read_epic_details_tui(jira, epic_key):
     try:
         term = blessed.Terminal()
@@ -840,19 +846,15 @@ def read_epic_details_tui(jira, epic_key):
         for row in story_data:
             for i, value in enumerate(row):
                 story_max_lengths[i] = max(story_max_lengths[i], len(str(value)))
+
         def print_table(data, headers, max_lengths, table_title):
-            def print_boundary():
-                boundary = "+-" + "-+-".join("-" * length for length in max_lengths) + "-+"
-                print(term.green(boundary))
-
             print(term.bold(table_title))
-            print_boundary()
-            print_row(headers, max_lengths)
-            print_boundary()
+            print(term.green("+" + "+".join(["-" * (length + 2) for length in max_lengths]) + "+"))
+            print(term.green(f"| {' | '.join([header.center(max_lengths[i] + 2) for i, header in enumerate(headers)])} |"))
+            print(term.green("+" + "+".join(["-" * (length + 2) for length in max_lengths]) + "+"))
             for row in data:
-                print_row(row, max_lengths)
-                print_boundary()
-
+                print(term.green(f"| {' | '.join([str(value).ljust(max_lengths[i]) for i, value in enumerate(row)])} |"))
+                print(term.green("+" + "+".join(["-" * (length + 2) for length in max_lengths]) + "+"))
 
         print_table(epic_data, epic_headers, epic_max_lengths, "Epic Details:")
         print_table(story_data, story_headers, story_max_lengths, "Stories Linked with Epic:")
@@ -860,13 +862,6 @@ def read_epic_details_tui(jira, epic_key):
     except JIRAError as e:
         logging.error(f"Error reading epic: {e}")
 
-def print_row(row, max_lengths):
-    formatted_row = []
-    for i, field in enumerate(row):
-        if field is None:
-            field = ""  # Replace None with an empty string
-        formatted_row.append(f"{field:<{max_lengths[i]}}")
-    print(f"| {' | '.join(formatted_row)} |")
 def get_sprints_for_board_tui(jira, board_id):
     try:
         term = blessed.Terminal()
@@ -1151,20 +1146,20 @@ def print_row(term, row):
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 30 for _ in range(1)) + "-+"
     print(term.green(boundary))
-def assign_issue(jira, issue_key, assignee_username):
-    try:
-        # Retrieve the issue object
-        issue = jira.issue(issue_key)
-        print(issue)
+# def assign_issue(jira, issue_key, assignee_username):
+#     try:
+#         # Retrieve the issue object
+#         issue = jira.issue(issue_key)
+#         # print(issue,assignee_username)
 
-        issue.update(assignee={'name': assignee_username})
+#         issue.update(assignee={'name': assignee_username})
 
-        # print(assignee_username)
-        # print(issue.update)
+#         # print(assignee_username)
+#         # print(issue.update)
 
-        logger.info(f"Issue {issue_key} assigned to user {assignee_username} successfully.")
-    except Exception as e:
-        logger.error(f"Error assigning issue {issue_key} to user {assignee_username}: {e}")
+#         logger.info(f"Issue {issue_key} assigned to user {assignee_username} successfully.")
+#     except Exception as e:
+#         logger.error(f"Error assigning issue {issue_key} to user {assignee_username}: {e}")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -1175,7 +1170,7 @@ def parse_arguments():
     # Issue Related
     issue_group = parser.add_argument_group('Issue Related')
     issue_group.add_argument("--assignee-name", metavar="issue_key", dest="issue_key", type=str, help="Issue key for which to print the assignee name")
-    issue_group.add_argument("--assign-issue", nargs=2, metavar=("issue_key", "assignee_username"), help="Assign an issue to a user")
+    # issue_group.add_argument("--assign-issue", nargs=2, metavar=("issue_key", "assignee_username"), help="Assign an issue to a user")
     issue_group.add_argument("--get-members", metavar="project_key", help="Retrieve members in a Jira project.")
     issue_group.add_argument('--list-projects', action='store_true', help='Get all projects')
     issue_group.add_argument("--add-comment", nargs=2, metavar=("issue_key", "comment_body"), help="Add comments to issue.")
@@ -1294,15 +1289,16 @@ def main():
                 if jira:
                     if args.issue_key:
                         assignee_name(jira, args.issue_key)
-                    if args.assign_issue:
-                        issue_key, assignee_username = args.assign_issue
-                        assign_issue(jira, issue_key, assignee_username)
+                    # if args.assign_issue:
+                    #     issue_key, assignee_username = args.assign_issue
+                    #     assign_issue(jira, issue_key, assign_issue)
+
                     if args.get_members:
                         project_key = args.get_members
                         members = get_members_tui(jira, project_key)
                     if args.update_assignee:
                         story_key, new_assignee = args.update_assignee
-                        update_story_assignee(jira, story_key, new_assignee)
+                        update_story_assignee(jira,story_key, new_assignee)
                     if args.create_project:
                         project_name, project_key = args.create_project
                         create_jira_project(jira, project_name, project_key)
@@ -1352,9 +1348,13 @@ def main():
                         else:
                             logging.error("Failed to update story description.")
                     if args.add_comment:
-                        add_comment(jira, args.issue_key, args.comment_body)
+                        issue_key, comment_body = args.add_comment
+                        # comment_body = args.comment_body
+                        add_comment(jira, issue_key, comment_body)  # Use the assigned variables here
+                        # logging.info(f"Added comment '{comment_body}' to issue {issue_key}")
                     if args.read_story_details:
-                        read_story_details_tui(jira, *args.read_story_details)
+                        story_key = args.read_story_details
+                        read_story_details_tui(jira, story_key)
                     if args.delete_story:
                         if delete_story(jira, args.delete_story):
                             logging.info(f"Story '{args.delete_story}' deleted successfully.")
