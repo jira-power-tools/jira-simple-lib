@@ -577,37 +577,6 @@ def delete_all_sprints(jira, board_id):
     except JIRAError as e:
         logging.error(f"Error deleting sprints: {e}")
         return False
-def create_board(jira_url, api_token, user_email, project_key, project_lead):
-    create_board_api_url = f"{jira_url}/rest/agile/1.0/board"
-
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_token}"
-    }
-
-    payload = json.dumps({
-        "name": "scrum board",
-        "location": {
-            "projectKeyOrId": project_key,
-            "type": "project"
-        },
-        "type": "scrum"
-    })
-
-    response = requests.post(create_board_api_url, data=payload, headers=headers)
-
-    if response.status_code == 201:
-        board_data = response.json()
-        board_id = board_data.get("id")
-        print(f"Board created successfully. Board ID: {board_id}")
-        return board_id
-    else:
-        print(f"Failed to create board. Status code: {response.status_code}")
-        print(response.text)
-        return None
-
-
 def get_board_id(jira, board_name):
     # Make a GET request to retrieve the list of boards
     response = jira._session.get(f'{jira._options["server"]}/rest/agile/1.0/board')
@@ -1166,7 +1135,6 @@ def parse_arguments():
 
     # Configuration
     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-
     # Issue Related
     issue_group = parser.add_argument_group('Issue Related')
     issue_group.add_argument("--assignee-name", metavar="issue_key", dest="issue_key", type=str, help="Issue key for which to print the assignee name")
@@ -1176,6 +1144,8 @@ def parse_arguments():
     issue_group.add_argument("--add-comment", nargs=2, metavar=("issue_key", "comment_body"), help="Add comments to issue.")
     issue_group.add_argument("--read-story-details", metavar="story_key", help="Read story details.")
     issue_group.add_argument("--delete-story", metavar="story_key", help="Delete a story.")
+    # issue_group.add_argument("--field-id", nargs=3,metavar=("description", "name", "searchkey"),help="custom field id")
+
 
     # Project Related
     project_group = parser.add_argument_group('Project Related')
@@ -1203,7 +1173,6 @@ def parse_arguments():
 
     # Board Related
     board_group = parser.add_argument_group('Board Related')
-    board_group.add_argument("--create-board", nargs=3, metavar=("project_key", "project_lead", "user_email"), help="Create a new board")
     board_group.add_argument("--get-board-id", nargs=1, metavar=("board_name"), help="Get the ID of a board by name")
 
     # Sprint Related
@@ -1292,7 +1261,6 @@ def main():
                     # if args.assign_issue:
                     #     issue_key, assignee_username = args.assign_issue
                     #     assign_issue(jira, issue_key, assign_issue)
-
                     if args.get_members:
                         project_key = args.get_members
                         members = get_members_tui(jira, project_key)
@@ -1388,11 +1356,7 @@ def main():
                         else:
                             logging.error("Failed to add story to epic.")
                     if args.unlink_story_from_epic:
-                        unlink_result = unlink_story_from_epic(jira, args.unlink_story_from_epic)
-                        if unlink_result:
-                            logging.info("Story unlinked from epic successfully.")
-                        else:
-                            logging.error("Failed to unlink story from epic.")
+                        unlink_story_from_epic(jira, args.unlink_story_from_epic)
                     if args.delete_epic:
                         delete_result = delete_epic(jira, args.delete_epic)
                         if delete_result:
@@ -1438,12 +1402,6 @@ def main():
                             logging.info("All sprints deleted successfully.")
                         else:
                             logging.error("Failed to delete all sprints.")
-                    if args.create_board:
-                        board_id = create_board(*args.create_board)
-                        if board_id is not None:
-                            logging.info(f"Board created successfully. Board ID: {board_id}")
-                        else:
-                            logging.error("Failed to create board.")
                     if args.get_board_id:
                         board_id = get_board_id(jira, args.get_board_id[0])
                         if board_id is not None:
