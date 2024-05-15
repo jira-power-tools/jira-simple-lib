@@ -491,7 +491,7 @@ def complete_sprint(jira, sprint_id, start_date, end_date):
         logging.error(f"Error completing sprint: {e}")
         return False
 # Function to update sprint summary
-def update_sprint_summary(jira, sprint_id, new_summary, sprint_state, start_date, end_date):
+def update_sprint(jira, sprint_id, new_summary, sprint_state, start_date, end_date):
     try:
         sprint = jira.sprint(sprint_id)
         sprint.update(
@@ -1004,6 +1004,15 @@ def get_stories_in_sprint_tui(jira, sprint_id):
         
         # Extract issue keys and summaries from the search result
         story_info = [{'key': issue.key, 'summary': issue.fields.summary} for issue in issues]
+        def print_row(row):
+            term = blessed.Terminal()
+            formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
+            print(f"| {' | '.join(formatted_row)} |")
+
+        def print_boundary():
+            term = blessed.Terminal()
+            boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
+            print(term.green(boundary)) 
         
         print(term.bold(f"Stories in Sprint {sprint_id}:"))
         print_boundary()
@@ -1020,16 +1029,6 @@ def get_stories_in_sprint_tui(jira, sprint_id):
     except JIRAError as e:
         logging.error(f"Error retrieving stories in sprint: {e}")
         return None
-
-def print_row(row):
-    term = blessed.Terminal()
-    formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
-    print(f"| {' | '.join(formatted_row)} |")
-
-def print_boundary():
-    term = blessed.Terminal()
-    boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary)) 
 def sprint_report_tui(jira, sprint_id, project_key):
     try:
         term = blessed.Terminal()
@@ -1072,17 +1071,19 @@ def sprint_report_tui(jira, sprint_id, project_key):
 
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
-    print(f"| {' | '.join(formatted_row)} |")
-
-def print_boundary(term):
-    boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary))   
+    print(f"| {' | '.join(formatted_row)} |")   
+def print_boundary():
+            term = blessed.Terminal()
+            boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
+            print(term.green(boundary)) 
 def my_stories_tui(jira, project_key, user):
     try:
         term = blessed.Terminal()
 
         # Construct JQL query to retrieve stories for the user
-        jql_query = f"project = '{project_key}' AND assignee = '{user}' AND issuetype = Task"
+        jql_query = (
+            f"project = '{project_key}' AND assignee = '{user}' AND issuetype = Task"
+        )
 
         # Search for issues using the JQL query
         issues = jira.search_issues(jql_query)
@@ -1105,13 +1106,16 @@ def my_stories_tui(jira, project_key, user):
     except Exception as e:
         logging.error(f"Error retrieving stories for user: {e}")
         return None
+
+
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
     print(f"| {' | '.join(formatted_row)} |")
 
+
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary)) 
+    print(term.green(boundary))
 
 def get_members(jira, project_key):
     try:
@@ -1253,10 +1257,10 @@ def parse_arguments():
     sprint_group.add_argument("--get-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Get list of stories in a sprint")
     sprint_group.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Complete stories in a sprint")
     sprint_group.add_argument("--complete-sprint", nargs=3, metavar=("sprint_id", "start_date", "end_date"), help="Complete a sprint")
-    sprint_group.add_argument("--update-sprint-summary", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary")
+    sprint_group.add_argument("--update-sprint", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary")
     sprint_group.add_argument("--sprint-report", nargs=2, metavar=("sprint_id", "project_key"), help="Generate sprint report")
     sprint_group.add_argument("--delete-sprint", nargs=1, metavar=("sprint_id"), help="Delete a sprint")
-    sprint_group.add_argument("--delete-all-sprints", action="store_true", help="Delete all sprints")
+    sprint_group.add_argument("--delete-all-sprints", metavar="board_id",type=int, help="Delete all sprints")
 
     # User Related
     user_group = parser.add_argument_group('User Related')
@@ -1449,12 +1453,7 @@ def main():
                         move_issues_in_range_to_sprint_tui(jira,project_key, start_issue_key, end_issue_key, target_sprint_id)
                     elif args.move_all:
                         project_key,target_sprint_id = args.move_all # Assuming only one argument for sprint ID
-                        move_all_issues_to_sprint_tui(jira, project_key, target_sprint_id)
-                    else:
-                        print("Please specify one of the move options: --move-single-issue, --move-range, --move-all")
-                    # if args.move_issues_to_sprint:
-                    #     issue_keys,  target_sprint_id = args.move_issues_to_sprint
-                    #     move_issues_to_sprint(jira, issue_keys, target_sprint_id)  
+                        move_all_issues_to_sprint_tui(jira, project_key, target_sprint_id) 
                     if args.start_sprint:
                         sprint_id, new_summary, start_date, end_date = args.start_sprint
                         sprint = start_sprint(jira, *args.start_sprint)
@@ -1467,11 +1466,11 @@ def main():
                             logging.info("Sprint completed successfully.")
                         else:
                             logging.error("Failed to complete sprint.")
-                    if args.update_sprint_summary:
-                        if update_sprint_summary(jira, *args.update_sprint_summary):
-                            logging.info("Sprint summary updated successfully.")
+                    if args.update_sprint:
+                        if update_sprint(jira, *args.update_sprint):
+                            logging.info("Sprint updated successfully.")
                         else:
-                            logging.error("Failed to update sprint summary.")
+                            logging.error("Failed to update sprint.")
                     if args.sprint_report:
                         sprint_report_tui(jira, *args.sprint_report)
                     if args.delete_sprint:
@@ -1480,7 +1479,7 @@ def main():
                         else:
                             logging.error("Failed to delete sprint.")
                     if args.delete_all_sprints:
-                        if delete_all_sprints(jira, args.board_id):
+                        if delete_all_sprints(jira, args.delete_all_sprints):
                             logging.info("All sprints deleted successfully.")
                         else:
                             logging.error("Failed to delete all sprints.")
