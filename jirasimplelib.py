@@ -390,17 +390,15 @@ def delete_epic(jira, epic_key):
         return True
     except JIRAError as e:
         logging.error(f"Error deleting epic: {e}")
-        return False
-# Function to create a new sprint
-def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
-    create_sprint_api_url = f"{jira_url}/rest/agile/1.0/sprint"
-    auth = (jira_username, api_token)
+        return False   
+def create_sprint(jira, board_id, sprint_name):
+    create_sprint_api_url = f"{jira._options['server']}/rest/agile/1.0/sprint"
     sprint_data = {
         "name": sprint_name,
         "originBoardId": board_id,
     }
     response_create_sprint = requests.post(
-        create_sprint_api_url, json=sprint_data, auth=auth
+        create_sprint_api_url, json=sprint_data, auth=jira._session.auth
     )
     if response_create_sprint.status_code == 201:
         created_sprint_data = response_create_sprint.json()
@@ -412,7 +410,6 @@ def create_sprint(jira_url, jira_username, api_token, board_id, sprint_name):
             f"Failed to create a new Sprint. Status code: {response_create_sprint.status_code}, Error: {response_create_sprint.text}"
         )
         return None
-# Get all sprints for the specified board
 def get_sprints_for_board(jira, board_id):
     try:
         sprints = jira.sprints(board_id)
@@ -420,18 +417,6 @@ def get_sprints_for_board(jira, board_id):
     except Exception as e:
         logging.error(f"Error retrieving sprints for board: {e}")
         return None
-def move_issues_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
-    start_issue_number = int(start_issue_key.split('-')[1])
-    end_issue_number = int(end_issue_key.split('-')[1])
-
-    for i in range(start_issue_number, end_issue_number + 1):
-        issue_key = f"{project_key}-{i}"
-        try:
-            issue = jira.issue(issue_key)
-            jira.add_issues_to_sprint(target_sprint_id, [issue.key])
-            logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
-        except Exception as e:
-            logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
 
 def start_sprint(jira, sprint_id, new_summary, start_date, end_date):
     try:
@@ -895,20 +880,65 @@ def sprint_report_tui(jira, sprint_id, project_key):
         
     except Exception as e:
         logging.error(f"Error generating sprint report: {e}")
-
-def move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
+def move_single_issue_to_sprint_tui(jira, issue_key, target_sprint_id):
     try:
         term = blessed.Terminal()
-
-        start_issue_number = int(start_issue_key.split('-')[1])
-        end_issue_number = int(end_issue_key.split('-')[1])
-
         headers = ["Issue Key", "Status", "Info"]
+        
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                if i == 2:
+                    formatted_row.append(f"{field:<20}")
+                elif i == 3:
+                    formatted_row.append(f"{field:<20}")
+                else:
+                    formatted_row.append(f"{field:<10}")
+            print(f"| {' | '.join(formatted_row)} |")        
+        
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * 30 for _ in range(2)) + "-+"
+            print(term.green(boundary))
 
-        print(term.bold("Moving Issues to Sprint:"))
+        print(term.bold("Moving Single Issue to Sprint:"))
         print_boundary()
         print_row(headers)
         print_boundary()
+
+        issue = jira.issue(issue_key)
+        jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+        print_row([issue.key, "Moved", f"Issue {issue_key} moved to Sprint {target_sprint_id}"])
+        print_boundary()
+    except Exception as e:
+        logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
+
+def move_issues_in_range_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
+    try:
+        term = blessed.Terminal()
+        headers = ["Issue Key", "Status", "Info"]
+        
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                if i == 2:
+                    formatted_row.append(f"{field:<20}")
+                elif i == 3:
+                    formatted_row.append(f"{field:<20}")
+                else:
+                    formatted_row.append(f"{field:<10}")
+            print(f"| {' | '.join(formatted_row)} |")        
+        
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * 30 for _ in range(2)) + "-+"
+            print(term.green(boundary))
+
+        print(term.bold("Moving Issues in Range to Sprint:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+
+        start_issue_number = int(start_issue_key.split('-')[1])
+        end_issue_number = int(end_issue_key.split('-')[1])
 
         for i in range(start_issue_number, end_issue_number + 1):
             issue_key = f"{project_key}-{i}"
@@ -921,24 +951,47 @@ def move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key,
                 print_row([issue_key, f"Error: {e}", ""])
                 print_boundary()
                 logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
-    except JIRAError as e:
-        logging.error(f"Error reading story: {e}")
+    except Exception as e:
+        logging.error(f"Error moving issues in range to Sprint: {e}")
 
+def move_all_issues_to_sprint_tui(jira, project_key, target_sprint_id):
+    try:
+        term = blessed.Terminal()
+        headers = ["Issue Key", "Status", "Info"]
+        
+        def print_row(row):
+            formatted_row = []
+            for i, field in enumerate(row):
+                if i == 2:
+                    formatted_row.append(f"{field:<20}")
+                elif i == 3:
+                    formatted_row.append(f"{field:<20}")
+                else:
+                    formatted_row.append(f"{field:<10}")
+            print(f"| {' | '.join(formatted_row)} |")        
+        
+        def print_boundary():
+            boundary = "+-" + "-+-".join("-" * 30 for _ in range(2)) + "-+"
+            print(term.green(boundary))
 
-def print_row(row):
-    formatted_row = []
-    for i, field in enumerate(row):
-        if i == 2:
-            formatted_row.append(f"{field:<20}")
-        elif i == 3:  # Assuming "INFO" is the third column
-            formatted_row.append(f"{field:<20}")  # Adjust width as needed
-        else:
-            formatted_row.append(f"{field:<10}")
-    print(f"| {' | '.join(formatted_row)} |")        
-def print_boundary():
-    term = blessed.Terminal()
-    boundary = "+-" + "-+-".join("-" * 30 for _ in range(2)) + "-+"
-    print(term.green(boundary))
+        print(term.bold("Moving All Issues to Sprint:"))
+        print_boundary()
+        print_row(headers)
+        print_boundary()
+
+        issues = jira.search_issues(f'project={project_key}')
+        for issue in issues:
+            try:
+                jira.add_issues_to_sprint(target_sprint_id, [issue.key])
+                print_row([issue.key, "Moved", f"Issue {issue.key} moved to Sprint {target_sprint_id}"])
+                print_boundary()
+            except Exception as e:
+                print_row([issue.key, f"Error: {e}", ""])
+                print_boundary()
+                logging.error(f"Error moving issue {issue.key} to Sprint: {e}")
+    except Exception as e:
+        logging.error(f"Error moving all issues to Sprint: {e}")
+
 def get_stories_in_sprint_tui(jira, sprint_id):
     try:
         term = blessed.Terminal()
@@ -1115,20 +1168,34 @@ def print_row(term, row):
 def print_boundary(term):
     boundary = "+-" + "-+-".join("-" * 30 for _ in range(1)) + "-+"
     print(term.green(boundary))
-# def assign_issue(jira, issue_key, assignee_username):
-#     try:
-#         # Retrieve the issue object
-#         issue = jira.issue(issue_key)
-#         # print(issue,assignee_username)
+def move_single_issue_to_sprint(jira, issue_key, target_sprint_id):
+    try:
+        jira.add_issues_to_sprint(target_sprint_id, [issue_key])
+        logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
+    except Exception as e:
+        logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
 
-#         issue.update(assignee={'name': assignee_username})
+def move_issues_in_range_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
+    try:
+        start_issue_number = int(start_issue_key.split('-')[1])
+        end_issue_number = int(end_issue_key.split('-')[1])
 
-#         # print(assignee_username)
-#         # print(issue.update)
+        for i in range(start_issue_number, end_issue_number + 1):
+            issue_key = f"{project_key}-{i}"
+            jira.add_issues_to_sprint(target_sprint_id, [issue_key])
+        logging.info(f"Issues from {start_issue_key} to {end_issue_key} moved to Sprint {target_sprint_id}")
+    except Exception as e:
+        logging.error(f"Error moving issues in range to Sprint: {e}")
 
-#         logger.info(f"Issue {issue_key} assigned to user {assignee_username} successfully.")
-#     except Exception as e:
-#         logger.error(f"Error assigning issue {issue_key} to user {assignee_username}: {e}")
+def move_all_issues_to_sprint(jira, project_key, target_sprint_id):
+    try:
+        issues = jira.search_issues(f'project={project_key}')
+        issue_keys = [issue.key for issue in issues]
+        jira.add_issues_to_sprint(target_sprint_id, issue_keys)
+        logging.info(f"All issues moved to Sprint {target_sprint_id}")
+    except Exception as e:
+        logging.error(f"Error moving all issues to Sprint: {e}")
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Jira CLI Tool')
@@ -1177,9 +1244,11 @@ def parse_arguments():
 
     # Sprint Related
     sprint_group = parser.add_argument_group('Sprint Related')
-    sprint_group.add_argument("--create-sprint", nargs=1, metavar=("sprint_name"), help="Create a new sprint")
-    sprint_group.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints')
-    sprint_group.add_argument('--move-issues-to-sprint', nargs=4, metavar=("project_key", "start_issue_key", "end_issue_key", "target_sprint_id"), help="Move issues to a sprint")
+    sprint_group.add_argument("--create-sprint", nargs=2, metavar=("board_id","sprint_name"), help="Create a new sprint")
+    sprint_group.add_argument("--get-sprints-for-board", metavar="board_id",type=int, help='ID of the board for which to retrieve sprints')
+    sprint_group.add_argument('--move-single-issue', nargs=2, metavar=("issue_key", "target_sprint_id"), help="Move a single issue to a sprint")
+    sprint_group.add_argument('--move-range', nargs=4, metavar=("project_key","start_issue_key", "end_issue_key", "target_sprint_id"), help="Move issues in a range to a sprint")
+    sprint_group.add_argument('--move-all', nargs=2, metavar=("project_key","target_sprint_id"), help="Move all issues to a sprint")
     sprint_group.add_argument("--start-sprint", nargs=4, metavar=("sprint_id", "new_summary", "start_date", "end_date"), help="Start a sprint")
     sprint_group.add_argument("--get-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Get list of stories in a sprint")
     sprint_group.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Complete stories in a sprint")
@@ -1364,15 +1433,28 @@ def main():
                         else:
                             logging.error("Failed to delete epic.")
                     if args.create_sprint:
-                        sprint_id = create_sprint(args.url, args.username, args.api_token, args.board_id, *args.create_sprint)
+                        board_id, sprint_name = args.create_sprint
+                        sprint_id = create_sprint(jira, board_id, sprint_name)
                         if sprint_id:
                             logging.info(f"Sprint created successfully with ID: {sprint_id}")
                         else:
                             logging.error("Failed to create sprint.")
-                            get_sprints_for_board_tui(jira,args.board_id)
-                    if args.move_issues_to_sprint:
-                        project_key, start_issue_key, end_issue_key, target_sprint_id = args.move_issues_to_sprint
-                        move_issues_to_sprint_tui(jira, project_key, start_issue_key, end_issue_key, target_sprint_id)  
+                    if args.get_sprints_for_board:
+                        get_sprints_for_board_tui(jira, args.get_sprints_for_board)
+                    if args.move_single_issue:
+                        issue_key, target_sprint_id = args.move_single_issue
+                        move_single_issue_to_sprint_tui(jira, issue_key, target_sprint_id)
+                    elif args.move_range:
+                        project_key,start_issue_key, end_issue_key, target_sprint_id = args.move_range
+                        move_issues_in_range_to_sprint_tui(jira,project_key, start_issue_key, end_issue_key, target_sprint_id)
+                    elif args.move_all:
+                        project_key,target_sprint_id = args.move_all # Assuming only one argument for sprint ID
+                        move_all_issues_to_sprint_tui(jira, project_key, target_sprint_id)
+                    else:
+                        print("Please specify one of the move options: --move-single-issue, --move-range, --move-all")
+                    # if args.move_issues_to_sprint:
+                    #     issue_keys,  target_sprint_id = args.move_issues_to_sprint
+                    #     move_issues_to_sprint(jira, issue_keys, target_sprint_id)  
                     if args.start_sprint:
                         sprint_id, new_summary, start_date, end_date = args.start_sprint
                         sprint = start_sprint(jira, *args.start_sprint)
