@@ -565,7 +565,6 @@ def delete_all_sprints(jira, board_id):
 def get_board_id(jira, board_name):
     # Make a GET request to retrieve the list of boards
     response = jira._session.get(f'{jira._options["server"]}/rest/agile/1.0/board')
-    
     if response.status_code == 200:
         boards = response.json()['values']
         for board in boards:
@@ -1199,126 +1198,143 @@ def move_all_issues_to_sprint(jira, project_key, target_sprint_id):
         logging.info(f"All issues moved to Sprint {target_sprint_id}")
     except Exception as e:
         logging.error(f"Error moving all issues to Sprint: {e}")
+def summary(jira, project_key):
+    try:
+        term = blessed.Terminal()
+        print_boundary(term)
+        print(term.bold(f"Summary for Project {project_key}:"))
+        print_boundary(term)
+
+        # List projects
+        print(term.bold("Projects:"))
+        projects = jira.projects()
+        for project in projects:
+            if project.key == project_key:
+                print_row(term, [project.key, project.name])
+                print_boundary(term)
+
+        # Get board ID
+        board_name = f"Board for {project_key}"  # Adjust as per your board naming convention
+        board_id = get_board_id(jira, board_name="Dev")
+        if board_id is None:
+            return  # Stop execution if board ID retrieval fails
+
+        # Get sprints for board
+        print(term.bold("Sprints for Board:"))
+        sprints = get_sprints_for_board(jira, board_id)
+        if sprints:
+            for sprint in sprints:
+                print_row(term, [sprint.id, sprint.name])
+                print_boundary(term)
+
+        # List epics
+        print(term.bold("Epics:"))
+        epics = list_epics(jira, project_key)
+        if epics:
+            for epic in epics:
+                print_row(term, [epic.key, epic.fields.summary])
+                print_boundary(term)
+
+        # Get stories for project
+        print(term.bold("Issues:"))
+        issues = get_stories_for_project(jira, project_key)
+        if issues:
+            for issue in issues:
+                print_row(term, [
+                    issue["Issue Type"], issue["Issue Key"], 
+                    issue["Status"], issue["Assignee"], issue["Summary"]
+                ])
+                print_boundary(term)
+
+
+
+        # Get members
+        print(term.bold("Members:"))
+        members = get_members(jira, project_key)
+        if members:
+            for member in members:
+                print_row(term, [member])
+                print_boundary(term)
+
+    except Exception as e:
+        print(f"Error retrieving project summary: {e}")
+def print_boundary(term):
+    boundary = "+-" + "-+-".join("-" * 70 for _ in range(2)) + "-+"
+    print(term.green(boundary))
+
+def print_row(term, row):
+    formatted_row = [f"{field:<30}" for field in row]
+    print(f"| {' | '.join(formatted_row)} |")
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Jira CLI Tool')
-
+    term = blessed.Terminal()
+    parser = argparse.ArgumentParser(description=term.green('Jira CLI Tool'))
     # Configuration
-    parser.add_argument('--config', help='Path to the configuration file', default='config.json')
+    parser.add_argument('--config', help=term.blue('Path to the configuration file'), default='config.json')
     # Issue Related
-    issue_group = parser.add_argument_group('Issue Related')
-    issue_group.add_argument("--assignee-name", metavar="issue_key", dest="issue_key", type=str, help="Issue key for which to print the assignee name")
-    # issue_group.add_argument("--assign-issue", nargs=2, metavar=("issue_key", "assignee_username"), help="Assign an issue to a user")
-    issue_group.add_argument("--get-members", metavar="project_key", help="Retrieve members in a Jira project.")
-    issue_group.add_argument('--list-projects', action='store_true', help='Get all projects')
-    issue_group.add_argument("--add-comment", nargs=2, metavar=("issue_key", "comment_body"), help="Add comments to issue.")
-    issue_group.add_argument("--read-story-details", metavar="story_key", help="Read story details.")
-    issue_group.add_argument("--delete-story", metavar="story_key", help="Delete a story.")
-    # issue_group.add_argument("--field-id", nargs=3,metavar=("description", "name", "searchkey"),help="custom field id")
-
+    issue_group = parser.add_argument_group(term.green('Issue Related'))
+    issue_group.add_argument("--assignee-name", metavar="\tissue_key", dest="issue_key", type=str, help=term.blue("Issue key for which to print the assignee name"))
+    issue_group.add_argument("--get-members", metavar="\tproject_key", help=term.blue("Retrieve members in a Jira project."))
+    issue_group.add_argument('--list-projects', action='store_true', help=term.blue('Get all projects'))
+    issue_group.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help=term.blue("Add comments to issue."))
+    issue_group.add_argument("--read-story-details", metavar="\tstory_key", help=term.blue("Read story details."))
+    issue_group.add_argument("--delete-story", metavar="\tstory_key", help=term.blue("Delete a story."))
 
     # Project Related
-    project_group = parser.add_argument_group('Project Related')
-    project_group.add_argument("--create-project", nargs=2, metavar=("project_name", "project_key"), help="Create a new project.")
-    project_group.add_argument("--update-project", nargs=3, metavar=("project_key", "new_name", "new_key"), help="Update an existing project.")
-    project_group.add_argument("--delete-all-projects", help="Delete all projects", action="store_true")
-    project_group.add_argument("--delete-project", metavar="project_key", help="Delete a specific project.")
-    project_group.add_argument("--get-stories", metavar="project_key", help="Get stories for a project.")
-    project_group.add_argument("--delete-all-stories", metavar="project_key", help="Delete all stories in a project.")
-    project_group.add_argument("--create-story", nargs=3, metavar=("project_key", "summary", "description"), help="Create a new story.")
-    project_group.add_argument("--update-story-status", nargs=2, metavar=("story_key", "new_status"), help="Update story status.")
-    project_group.add_argument("--update-story-summary", nargs=2, metavar=("story_key", "new_summary"), help="Update story summary.")
-    project_group.add_argument("--update-story-description", nargs=2, metavar=("story_key", "new_description"), help="Update story description.")
-    project_group.add_argument("--update-assignee", nargs=2, metavar=("story_key", "new_assignee"), help="Update story assignee.")
+    project_group = parser.add_argument_group(term.green('Project Related'))
+    project_group.add_argument("--summary",metavar="\t\tproject_key", help=term.blue("Key of the project to generate the summary for."))
+    project_group.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"), help=term.blue("Create a new project."))
+    project_group.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help=term.blue("Update an existing project."))
+    project_group.add_argument("--delete-all-projects", help=term.blue("Delete all projects"), action="store_true")
+    project_group.add_argument("--delete-project", metavar="\tproject_key", help=term.blue("Delete a specific project."))
+    project_group.add_argument("--get-stories", metavar="\tproject_key", help=term.blue("Get stories for a project."))
+    project_group.add_argument("--delete-all-stories", metavar="\tproject_key", help=term.blue("Delete all stories in a project."))
+    project_group.add_argument("--create-story", nargs=3, metavar=("\tproject_key", "summary", "description"), help=term.blue("Create a new story."))
+    project_group.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help=term.blue("Update story status."))
+    project_group.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help=term.blue("Update story summary."))
+    project_group.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help=term.blue("Update story description."))
+    project_group.add_argument("--update-assignee", nargs=2, metavar=("\tstory_key", "new_assignee"), help=term.blue("Update story assignee."))
 
     # Epic Related
-    epic_group = parser.add_argument_group('Epic Related')
-    epic_group.add_argument("--create-epic", nargs=3, metavar=("project_key", "epic_name", "epic_summary"), help="Create a new epic.")
-    epic_group.add_argument("--list-epics", metavar="project_key", help="List all epics in a project.")
-    epic_group.add_argument("--update-epic", nargs=3, metavar=("epic_key", "new_summary", "new_description"), help="Update an existing epic.")
-    epic_group.add_argument("--read-epic-details", metavar="epic_key", help="Read epic details.")
-    epic_group.add_argument("--add-story-to-epic", nargs=2, metavar=("epic_key", "story_key"), help="Add a story to an epic.")
-    epic_group.add_argument("--unlink-story-from-epic", metavar="story_key", help="Unlink a story from its epic.")
-    epic_group.add_argument("--delete-epic", metavar="epic_key", help="Delete an epic.")
+    epic_group = parser.add_argument_group(term.green('Epic Related'))
+    epic_group.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help=term.blue("Create a new epic."))
+    epic_group.add_argument("--list-epics", metavar="\tproject_key", help=term.blue("List all epics in a project."))
+    epic_group.add_argument("--update-epic", nargs=3, metavar=("\tepic_key", "new_summary", "new_description"), help=term.blue("Update an existing epic."))
+    epic_group.add_argument("--read-epic-details", metavar="\tepic_key", help=term.blue("Read epic details."))
+    epic_group.add_argument("--add-story-to-epic", nargs=2, metavar=("\tepic_key", "story_key"), help=term.blue("Add a story to an epic."))
+    epic_group.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help=term.blue("Unlink a story from its epic."))
+    epic_group.add_argument("--delete-epic", metavar="\tepic_key", help=term.blue("Delete an epic."))
 
     # Board Related
-    board_group = parser.add_argument_group('Board Related')
-    board_group.add_argument("--get-board-id", nargs=1, metavar=("board_name"), help="Get the ID of a board by name")
+    board_group = parser.add_argument_group(term.green('Board Related'))
+    board_group.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help=term.blue("Get the ID of a board by name"))
 
     # Sprint Related
-    sprint_group = parser.add_argument_group('Sprint Related')
-    sprint_group.add_argument("--create-sprint", nargs=2, metavar=("board_id","sprint_name"), help="Create a new sprint")
-    sprint_group.add_argument("--get-sprints-for-board", metavar="board_id",type=int, help='ID of the board for which to retrieve sprints')
-    sprint_group.add_argument('--move-single-issue', nargs=2, metavar=("issue_key", "target_sprint_id"), help="Move a single issue to a sprint")
-    sprint_group.add_argument('--move-range', nargs=4, metavar=("project_key","start_issue_key", "end_issue_key", "target_sprint_id"), help="Move issues in a range to a sprint")
-    sprint_group.add_argument('--move-all', nargs=2, metavar=("project_key","target_sprint_id"), help="Move all issues to a sprint")
-    sprint_group.add_argument("--start-sprint", nargs=4, metavar=("sprint_id", "new_summary", "start_date", "end_date"), help="Start a sprint")
-    sprint_group.add_argument("--get-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Get list of stories in a sprint")
-    sprint_group.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("sprint_id"), help="Complete stories in a sprint")
-    sprint_group.add_argument("--complete-sprint", nargs=3, metavar=("sprint_id", "start_date", "end_date"), help="Complete a sprint")
-    sprint_group.add_argument("--update-sprint", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary")
-    sprint_group.add_argument("--sprint-report", nargs=2, metavar=("sprint_id", "project_key"), help="Generate sprint report")
-    sprint_group.add_argument("--delete-sprint", nargs=1, metavar=("sprint_id"), help="Delete a sprint")
-    sprint_group.add_argument("--delete-all-sprints", metavar="board_id",type=int, help="Delete all sprints")
+    sprint_group = parser.add_argument_group(term.green('Sprint Related'))
+    sprint_group.add_argument("--create-sprint", nargs=2, metavar=("\tboard_id","sprint_name"), help=term.blue("Create a new sprint"))
+    sprint_group.add_argument("--get-sprints-for-board", metavar="\tboard_id",type=int, help=term.blue('ID of the board for which to retrieve sprints'))
+    sprint_group.add_argument('--move-single-issue', nargs=2, metavar=("\tissue_key", "target_sprint_id"), help=term.blue("Move a single issue to a sprint"))
+    sprint_group.add_argument('--move-range', nargs=4, metavar=("\tproject_key","start_issue_key", "end_issue_key", "target_sprint_id"), help=term.blue("Move issues in a range to a sprint"))
+    sprint_group.add_argument('--move-all', nargs=2, metavar=("\tproject_key","target_sprint_id"), help=term.blue("Move all issues to a sprint"))
+    sprint_group.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help=term.blue("Start a sprint"))
+    sprint_group.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help=term.blue("Get list of stories in a sprint"))
+    sprint_group.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help=term.blue("Complete stories in a sprint"))
+    sprint_group.add_argument("--complete-sprint", nargs=3, metavar=("\tsprint_id", "start_date", "end_date"), help=term.blue("Complete a sprint"))
+    sprint_group.add_argument("--update-sprint", nargs=5, metavar=("\tsprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help=term.blue("Update sprint summary"))
+    sprint_group.add_argument("--sprint-report", nargs=2, metavar=("\tsprint_id", "project_key"), help=term.blue("Generate sprint report"))
+    sprint_group.add_argument("--delete-sprint", nargs=1, metavar=("\tsprint_id"), help=term.blue("Delete a sprint"))
+    sprint_group.add_argument("--delete-all-sprints", metavar="\tboard_id",type=int, help=term.blue("Delete all sprints"))
 
     # User Related
-    user_group = parser.add_argument_group('User Related')
-    user_group.add_argument("--my-stories", nargs=2, metavar=("project_key", "user"), help="Get stories assigned to a user")
-
+    user_group = parser.add_argument_group(term.green('User Related'))
+    user_group.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help=term.blue("Get stories assigned to a user"))
     return parser
-
-
-# def parse_arguments():
-#     parser = argparse.ArgumentParser(description='Jira CLI Tool')
-#     parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-#     parser.add_argument("--print-issue-assignee", dest="issue_key", type=str, help="print assignee name of Jira story")
-#     parser.add_argument("--assign-issue", nargs=2, metavar=("issue_key", "assignee_username"), help="\nAssign an issue to a user")
-#     parser.add_argument("--get-members", metavar="project_key", help="\n Retrieve members in a Jira project.")
-#     parser.add_argument("--create-project", nargs=2, metavar=("\tproject_name", "project_key"),help="\n Create a new project. Example: --create-project MyProject MP")
-#     parser.add_argument("--update-project", nargs=3, metavar=("\tproject_key", "new_name", "new_key"), help="\nUpdate an existing project.Example: --update-project MP NewName NewKey")
-#     parser.add_argument('--list-projects', action='store_true', help='Get all projects')
-#     parser.add_argument("--delete-all-projects",help="Delete all projects", action="store_true")
-#     parser.add_argument("--delete-project",metavar="\tproject_key", help="\nDelete a specific project.Example: --delete-project MP")
-#     parser.add_argument("--get-stories", metavar="\tproject_key", help="\nGet stories for a project. Example: --get-stories MP")
-#     parser.add_argument("--delete-all-stories", metavar="\tproject_key", help="\nDelete all stories in a project. Example: --delete-all-stories MP")
-#     parser.add_argument("--create-story", nargs=3, metavar=("\tproject_key", "summary", "description"), help="\nCreate a new story. Example: --create-story MP \"Summary\" \"Description\"")
-#     parser.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help="\nUpdate story status. Example: --update-story-status ST-1 \"In Progress\"")
-#     parser.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help="\nUpdate story summary. Example: --update-story-summary ST-1 \"New Summary\"")
-#     parser.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help="\nUpdate story description. Example: --update-story-description ST-1 \"New Description\"")
-#     parser.add_argument("--update-assignee", nargs=2, metavar=("\tstory_key", "new_assignee"),help="\nUpdate story assignee. Example: --update-assignee ST-1 new_assignee_username")
-#     parser.add_argument("--update-reporter", nargs=2, metavar=("\tstory_key", "new_reporter"),help="\nUpdate story reporter. Example: --update-reporter ST-1 new_reporter_username")
-#     parser.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help="\nAdd comments to issue. Example: --add-comment \"issue-key\" \"Comment body\"")
-#     parser.add_argument("--read-story-details", metavar="\tstory_key", help="\nRead story details. Example: --read-story-details ST-1")
-#     parser.add_argument("--delete-story", metavar="\tstory_key", help="\nDelete a story. Example: --delete-story ST-1")
-#     parser.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help="\nCreate a new epic. Example: --create-epic PROJ-1 \"Epic Name\" \"Epic Summary\"")
-#     parser.add_argument("--list-epics", metavar="\tproject_key", help="\nList all epics in a project. Example: --list-epics PROJ-1")
-#     parser.add_argument("--update-epic", nargs=3, metavar=("\tepic_key", "new_summary", "new_description"), help="\nUpdate an existing epic. Example: --update-epic EPIC-1 \"New Summary\" \"New Description\"")
-#     parser.add_argument("--read-epic-details", metavar="\tepic_key", help="\nRead epic details. Example: --read-epic-details EPIC-1")
-#     parser.add_argument("--add-story-to-epic", nargs=2, metavar=("\tepic_key", "story_key"), help="\nAdd a story to an epic. Example: --add-story-to-epic EPIC-1 STORY-1")
-#     parser.add_argument("--unlink-story-from-epic", metavar="\tstory_key", help="\nUnlink a story from its epic. Example: --unlink-story-from-epic STORY-1")
-#     parser.add_argument("--delete-epic", metavar="\tepic_key", help="\nDelete an epic. Example: --delete-epic EPIC-1")
-#     parser.add_argument("--create-sprint", nargs=1, metavar=("\tsprint_name"), help="\nCreate a new sprint")
-#     parser.add_argument('--get-sprints-for-board', dest='board_id', help='ID of the board for which to retrieve sprints')
-#     parser.add_argument('--move-issues-to-sprint', nargs=4, metavar=("\tproject_key", "start_issue_key", "end_issue_key", "target_sprint_id"), help="\nMove issues to a sprint")
-#     parser.add_argument("--start-sprint", nargs=4, metavar=("\tsprint_id", "new_summary", "start_date", "end_date"), help="\nStart a sprint")
-#     parser.add_argument("--get-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nGet list of stories in a sprint")
-#     parser.add_argument("--complete-stories-in-sprint", nargs=1, metavar=("\tsprint_id"), help="\nComplete stories in a sprint")
-#     parser.add_argument("--complete-sprint", nargs=3, metavar=("\tsprint_id", "start_date", "end_date"), help="\nComplete a sprint")
-#     parser.add_argument("--update-sprint-summary", nargs=5, metavar=("sprint_id", "new_summary", "sprint_state", "start_date", "end_date"), help="Update sprint summary")
-#     parser.add_argument("--sprint-report", nargs=2, metavar=("\tsprint_id", "project_key"), help="\nGenerate sprint report")
-#     parser.add_argument("--delete-sprint", nargs=1, metavar=("\tsprint_id"), help="\nDelete a sprint")
-#     parser.add_argument("--delete-all-sprints", action="store_true", help="\nDelete all sprints")
-#     parser.add_argument("--create-board", nargs=3, metavar=("\tproject_key", "project_lead", "user_email"), help="\hCreate a new board")
-#     parser.add_argument("--get-board-id", nargs=1, metavar=("\tboard_name"), help="\nGet the ID of a board by name")
-#     parser.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help="\nGet stories assigned to a user")
-#     return parser
-
 def main():
     try:
         term = Terminal()
         parser = parse_arguments()
-        args = parser.parse_args()
+        args = parser.parse_args()       
         config_file = "config.json"
         if os.path.exists(config_file):
             config_data = read_config(config_file)
@@ -1483,6 +1499,9 @@ def main():
                             logging.info("All sprints deleted successfully.")
                         else:
                             logging.error("Failed to delete all sprints.")
+                    if args.summary:
+                        project_key = args.summary
+                        summary(jira, project_key)
                     if args.get_board_id:
                         board_id = get_board_id(jira, args.get_board_id[0])
                         if board_id is not None:
