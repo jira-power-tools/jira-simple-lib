@@ -208,37 +208,63 @@ def update_story_description(jira, story_key, new_description):
         logging.error(f"Error updating story description: {e}")
         return None
 # Function to update a story's assignee
-def update_story_assignee(jira, story_key, new_assignee):
+# def update_story_assignee(jira, story_key, new_assignee):
+#     try:
+#         # Get the existing story details
+#         story = jira.issue(story_key)
+        
+#         # Get the current assignee
+#         current_assignee = story.fields.assignee
+        
+#         # If the current assignee is different from the new assignee or is None, update it
+#         if current_assignee is None or current_assignee.displayName != new_assignee:
+#             # Prepare the update data with the new assignee
+#             update_data = {"fields": {"assignee": {"name": new_assignee}}}
+            
+#             # Update the assignee
+#             story.update(**update_data)
+            
+#             # Verify the updated assignee name
+#             updated_assignee_name = assignee_name(jira, story_key)
+            
+#             if updated_assignee_name == new_assignee:
+#                 print(f"Story assignee updated successfully to {new_assignee}. Key: {story_key}")
+#             else:
+#                 print(f"Failed to update story assignee. Key: {story_key}")
+#         else:
+#             print(f"Story assignee is already {new_assignee}. Key: {story_key}")
+        
+#         return story_key
+#     except JIRAError as e:
+#         # Print error message if an exception occurs
+#         print(f"Error updating story assignee: {e}")
+#         return None
+
+
+def update_assignee(jira, issue_key, new_assignee):
+    """
+    Update the assignee of a Jira issue.
+
+    :param jira: JIRA object
+    :param issue_key: Key of the issue to be updated
+    :param new_assignee: Username of the new assignee
+    :return: None
+    """
     try:
-        # Get the existing story details
-        story = jira.issue(story_key)
-        
-        # Get the current assignee
-        current_assignee = story.fields.assignee
-        
-        # If the current assignee is different from the new assignee or is None, update it
-        if current_assignee is None or current_assignee.displayName != new_assignee:
-            # Prepare the update data with the new assignee
-            update_data = {"fields": {"assignee": {"name": new_assignee}}}
-            
+        # Fetch user details to verify the assignee username
+        user = jira.user(new_assignee)
+        if user:
             # Update the assignee
-            story.update(**update_data)
-            
-            # Verify the updated assignee name
-            updated_assignee_name = assignee_name(jira, story_key)
-            
-            if updated_assignee_name == new_assignee:
-                print(f"Story assignee updated successfully to {new_assignee}. Key: {story_key}")
-            else:
-                print(f"Failed to update story assignee. Key: {story_key}")
+            issue = jira.issue(issue_key)
+            issue.update(assignee={'name': new_assignee})
+            print(f"Issue {issue_key} successfully assigned to {new_assignee}")
         else:
-            print(f"Story assignee is already {new_assignee}. Key: {story_key}")
-        
-        return story_key
+            print(f"User {new_assignee} does not exist")
     except JIRAError as e:
-        # Print error message if an exception occurs
-        print(f"Error updating story assignee: {e}")
-        return None
+        print(f"Failed to assign issue: {e.status_code}, {e.text}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 
 
 
@@ -1355,7 +1381,7 @@ def main():
                         members = get_members_tui(jira, project_key)
                     if args.update_assignee:
                         story_key, new_assignee = args.update_assignee
-                        update_story_assignee(jira,story_key, new_assignee)
+                        update_assignee(jira,story_key, new_assignee)
                     if args.create_project:
                         project_name, project_key = args.create_project
                         create_jira_project(jira, project_name, project_key)
@@ -1406,9 +1432,7 @@ def main():
                             logging.error("Failed to update story description.")
                     if args.add_comment:
                         issue_key, comment_body = args.add_comment
-                        # comment_body = args.comment_body
                         add_comment(jira, issue_key, comment_body)  # Use the assigned variables here
-                        # logging.info(f"Added comment '{comment_body}' to issue {issue_key}")
                     if args.read_story_details:
                         story_key = args.read_story_details
                         read_story_details_tui(jira, story_key)
