@@ -246,22 +246,30 @@ def update_story_description(jira, story_key, new_description):
         return None
 
 
-# Function to update a story's assignee
-def update_story_assignee(jira, story_key, new_assignee):
-    try:
-        story = jira.issue(story_key)
-        if story is None:
-            logging.error(f"Error: Issue with key {story_key} not found.")
-            return None
-        
-        story.update(assignee=new_assignee)
-        assignee_name = story.fields.assignee.name
-        logging.info(f"Story assignee updated successfully. Key: {story_key}")
-        return assignee_name
-    except JIRAError as e:
-        logging.error(f"Error updating story assignee: {e}")
-        return None
 
+def update_assignee(jira, issue_key, new_assignee):
+    """
+    Update the assignee of a Jira issue.
+
+    :param jira: JIRA object
+    :param issue_key: Key of the issue to be updated
+    :param new_assignee: Username of the new assignee
+    :return: None
+    """
+    try:
+        # Fetch user details to verify the assignee username
+        user = jira.user(new_assignee)
+        if user:
+            # Update the assignee
+            issue = jira.issue(issue_key)
+            issue.update(assignee={'name': new_assignee})
+            print(f"Issue {issue_key} successfully assigned to {new_assignee}")
+        else:
+            print(f"User {new_assignee} does not exist")
+    except JIRAError as e:
+        print(f"Failed to assign issue: {e.status_code}, {e.text}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 def print_issue_assignee(jira, issue_key):
@@ -1591,7 +1599,7 @@ def main():
         members = get_members_tui(jira, project_key)
     if args.update_assignee:
         story_key, new_assignee = args.update_assignee
-        update_story_assignee(jira, story_key, new_assignee)
+        update_assignee(jira, story_key, new_assignee)
     if args.update_reporter:
         story_key, new_reporter = args.update_reporter
         update_story_reporter(jira, story_key, new_reporter)
