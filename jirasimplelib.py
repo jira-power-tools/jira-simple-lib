@@ -251,19 +251,34 @@ def update_assignee(jira, issue_key, new_assignee):
     :return: None
     """
     try:
-        # Fetch user details to verify the assignee username
-        user = jira.user(new_assignee)
-        if user:
-            # Update the assignee
-            issue = jira.issue(issue_key)
-            issue.update(assignee={'name': new_assignee})
-            print(f"Issue {issue_key} successfully assigned to {new_assignee}")
+        # Verify if the user exists in Jira
+        try:
+            user = jira.user(new_assignee)
+            print(f"User {new_assignee} found: {user}")
+        except JIRAError as e:
+            if e.status_code == 404:
+                print(f"User {new_assignee} does not exist.")
+                return
+            else:
+                raise
+
+        # Check current assignee
+        issue = jira.issue(issue_key)
+        current_assignee = issue.fields.assignee
+        if current_assignee:
+            print(f"Current assignee: {current_assignee.displayName} ({current_assignee.name})")
         else:
-            print(f"User {new_assignee} does not exist")
+            print(f"Issue {issue_key} is currently unassigned.")
+
+        # Update the assignee
+        issue.update(assignee={'name': new_assignee})
+        print(f"Issue {issue_key} successfully assigned to {new_assignee}")
+
     except JIRAError as e:
         print(f"Failed to assign issue: {e.status_code}, {e.text}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
 
 
 
