@@ -1,4 +1,5 @@
 import getpass
+from requests.auth import HTTPBasicAuth
 from jira.exceptions import JIRAError
 from datetime import datetime
 import blessed
@@ -207,82 +208,6 @@ def update_story_description(jira, story_key, new_description):
     except JIRAError as e:
         logging.error(f"Error updating story description: {e}")
         return None
-# Function to update a story's assignee
-# def update_story_assignee(jira, story_key, new_assignee):
-#     try:
-#         # Get the existing story details
-#         story = jira.issue(story_key)
-        
-#         # Get the current assignee
-#         current_assignee = story.fields.assignee
-        
-#         # If the current assignee is different from the new assignee or is None, update it
-#         if current_assignee is None or current_assignee.displayName != new_assignee:
-#             # Prepare the update data with the new assignee
-#             update_data = {"fields": {"assignee": {"name": new_assignee}}}
-            
-#             # Update the assignee
-#             story.update(**update_data)
-            
-#             # Verify the updated assignee name
-#             updated_assignee_name = assignee_name(jira, story_key)
-            
-#             if updated_assignee_name == new_assignee:
-#                 print(f"Story assignee updated successfully to {new_assignee}. Key: {story_key}")
-#             else:
-#                 print(f"Failed to update story assignee. Key: {story_key}")
-#         else:
-#             print(f"Story assignee is already {new_assignee}. Key: {story_key}")
-        
-#         return story_key
-#     except JIRAError as e:
-#         # Print error message if an exception occurs
-#         print(f"Error updating story assignee: {e}")
-#         return None
-
-
-def update_assignee(jira, issue_key, new_assignee):
-    """
-    Update the assignee of a Jira issue.
-
-    :param jira: JIRA object
-    :param issue_key: Key of the issue to be updated
-    :param new_assignee: Username of the new assignee
-    :return: None
-    """
-    try:
-        # Verify if the user exists in Jira
-        try:
-            user = jira.user(new_assignee)
-            print(f"User {new_assignee} found: {user}")
-        except JIRAError as e:
-            if e.status_code == 404:
-                print(f"User {new_assignee} does not exist.")
-                return
-            else:
-                raise
-
-        # Check current assignee
-        issue = jira.issue(issue_key)
-        current_assignee = issue.fields.assignee
-        if current_assignee:
-            print(f"Current assignee: {current_assignee.displayName} ({current_assignee.name})")
-        else:
-            print(f"Issue {issue_key} is currently unassigned.")
-
-        # Update the assignee
-        issue.update(assignee={'name': new_assignee})
-        print(f"Issue {issue_key} successfully assigned to {new_assignee}")
-
-    except JIRAError as e:
-        print(f"Failed to assign issue: {e.status_code}, {e.text}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-
-
-
-
 def assignee_name(jira, issue_key):
     try:
         # Retrieve the issue object
@@ -1306,8 +1231,24 @@ def print_boundary(term):
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]
     print(f"| {' | '.join(formatted_row)} |")
-
-
+def assign_issue(jira, issue_key, new_assignee):
+    try:
+        url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{issue_key}/assignee"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        data = {
+            "name": new_assignee
+        }
+        print(new_assignee)
+        response = requests.put(url, json=data, auth=("user", "api_token"))
+        print(response)
+        if response.status_code == 204:
+            print(f"Issue {issue_key} has been successfully assigned to {new_assignee}.")
+        else:
+            print(f"Failed to assign issue. Status code: {response.status_code}, Error: {response.text}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 def parse_arguments():
     term = blessed.Terminal()
     parser = argparse.ArgumentParser(description=term.green('Jira CLI Tool'))
@@ -1335,9 +1276,7 @@ def parse_arguments():
     project_group.add_argument("--update-story-status", nargs=2, metavar=("\tstory_key", "new_status"), help=term.blue("Update story status."))
     project_group.add_argument("--update-story-summary", nargs=2, metavar=("\tstory_key", "new_summary"), help=term.blue("Update story summary."))
     project_group.add_argument("--update-story-description", nargs=2, metavar=("\tstory_key", "new_description"), help=term.blue("Update story description."))
-    project_group.add_argument("--update-assignee", nargs=2, metavar=("\tstory_key", "new_assignee"), help=term.blue("Update story assignee."))
-
-    # Epic Related
+    # Epic Relate
     epic_group = parser.add_argument_group(term.green('Epic Related'))
     epic_group.add_argument("--create-epic", nargs=3, metavar=("\tproject_key", "epic_name", "epic_summary"), help=term.blue("Create a new epic."))
     epic_group.add_argument("--list-epics", metavar="\tproject_key", help=term.blue("List all epics in a project."))
@@ -1370,6 +1309,7 @@ def parse_arguments():
     # User Related
     user_group = parser.add_argument_group(term.green('User Related'))
     user_group.add_argument("--my-stories", nargs=2, metavar=("\tproject_key", "user"), help=term.blue("Get stories assigned to a user"))
+    user_group.add_argument("--assign-issue", nargs=2,metavar=("issue_key", "new_assignee"),help="assign issue to new user")
     return parser
 def main():
     try:
@@ -1382,21 +1322,17 @@ def main():
             jira_url = config_data.get("jira_url")
             username = config_data.get("user")
             api_token = config_data.get("api_token")
-
             if all([jira_url, username, api_token]):
                 jira = create_jira_connection(jira_url, username, api_token)
-                if jira:
+                if jira:  
                     if args.issue_key:
-                        assignee_name(jira, args.issue_key)
-                    # if args.assign_issue:
-                    #     issue_key, assignee_username = args.assign_issue
-                    #     assign_issue(jira, issue_key, assign_issue)
+                        assignee_name(jira, args.issue_key)   
+                    if args.assign_issue:
+                        issue_key, new_assignee = args.assign_issue
+                        assign_issue(jira, issue_key, new_assignee)  
                     if args.get_members:
                         project_key = args.get_members
                         members = get_members_tui(jira, project_key)
-                    if args.update_assignee:
-                        story_key, new_assignee = args.update_assignee
-                        update_assignee(jira,story_key, new_assignee)
                     if args.create_project:
                         project_name, project_key = args.create_project
                         create_jira_project(jira, project_name, project_key)

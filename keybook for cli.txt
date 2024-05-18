@@ -1,20 +1,98 @@
 # Create a new Jira project:
-# python your_script.py --config path/to/config.json --project-name "New Project" --project-key NEWPROJ
+# python3 ./jirasimplelib.py --create-project "TaskManagementSystem" "TMS"
 
-# Create a new Jira project:
-# python your_script.py --config path/to/config.json --project-key EXISTINGPROJ --new-name "Updated Project Name" --new-key NEWKEY
+# To create a new Epic:
+# python3 ./jirasimplelib.py --create-epic TMS "Create Project Structure and Setup" "Create Project Structure and Setup"
+# To create a new Epic:
+# python3 ./jirasimplelib.py --create-epic TMS "Backend Development" "Backend Development"
+# To create a new Epic:
+# python3 ./jirasimplelib.py --create-epic TMS "Fronend Development" "Frontend Development"
+# To create a new Epic:
+# python3 ./jirasimplelib.py --create-epic TMS "Quality Assurance and Testing" "Quality Assurance and Testing"
+
+# Create a new story in a project:
+# python3 ./jirasimplelib.py --create-story TMS "create the project repository and set up necessary development environments" "create the project repository and set up necessary development environments"
+# Create a new story in a project:
+# python3 ./jirasimplelib.py --create-story TMS "develop the backend functionalities, including task creation, assignment, and tracking." "develop the backend functionalities, including task creation, assignment, and tracking."
+# Create a new story in a project:
+# python3 ./jirasimplelib.py --create-story TMS "Claire will design and develop the user interface for the TMS." "Claire will design and develop the user interface for the TMS."
+# Create a new story in a project:
+# python3 ./jirasimplelib.py --create-story TMS "Dave will thoroughly test all features and functionalities to ensure they meet the project requirements and are bug-free." "Dave will thoroughly test all features and functionalities to ensure they meet the project requirements and are bug-free."
+
+# Get stories for a project:
+# python3 ./jirasimplelib.py --get-stories TMS
+
+# To add a story to an Epic:
+# python3 ./jirasimplelib.py --add-story-to-epic EPIC_KEY STORY_KEY
+
+# To create a new sprint:
+# python3 ./jirasimplelib.py --create-sprint 3 Backend Development
+# To create a new sprint:
+# python3 ./jirasimplelib.py --create-sprint 3 Fronend Development
+# To create a new sprint:
+# python3 ./jirasimplelib.py --create-sprint 3 Quality Assurance and Testing
+
+#get-sprints-for-board
+python3 ./jirasimplelib.py --get-sprints-for-board 3
+
+# Move Issues to Sprint:
+#python3 ./jirasimplelib.py --move-signle-issue ISSUE_KEY SPRINT_ID
+# Move Issues to Sprint:
+#python3 ./jirasimplelib.py --move-signle-issue ISSUE_KEY SPRINT_ID
+# Move Issues to Sprint:
+#python3 ./jirasimplelib.py --move-signle-issue ISSUE_KEY SPRINT_ID
+#start_sprint
+python3 ./jirasimplelib.py --start-sprint SPRINT_ID Summary Start_date end_date
+
+#complete_stories_in_sprint
+python3 ./jirasimplelib.py --complete-stories-in-sprint SPRINT_ID
+
+#complete_sprint
+python3 ./jirasimplelib.py --complete-sprint SPRINT_ID Start_date end
+
+#sprint_report
+python3 ./jirasimplelib.py --sprint-report SPRINT_ID TMS
+
+# Delete all stories in a project:
+# python3 ./jirasimplelib.py --delete-all-stories TMS
+
+
+#delete_all_sprints
+python3 ./jirasimplelib.py --delete-all-sprints 3
+
+#delete-all-projects
+python3 ./jirasimplelib.py --delete-all-projects
+
 
 # Delete all projects:
 # python your_script.py --config path/to/config.json --delete-projects
 
-# Get stories for a project:
-# python your_script.py --config path/to/config.json --project-key EXISTINGPROJ --get-stories
 
-# Delete all stories in a project:
-# python your_script.py --config path/to/config.json --project-key EXISTINGPROJ --delete-stories
 
-# Create a new story in a project:
-# python your_script.py --config path/to/config.json --project-key EXISTINGPROJ --new-story-summary "New Story Summary" --new-story-description "Description of the new story"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # To update the status of a story:
@@ -33,8 +111,6 @@
 # To read details of a story:
 # python your_script.py --config path/to/config.json --read-story-details STORY_KEY
 
-# To create a new Epic:
-# python your_script.py --config path/to/config.json --create-epic PROJECT_KEY EPIC_NAME EPIC_SUMMARY
 
 # To list all Epics in a project:
 # python your_script.py --config path/to/config.json --list-epics --project-key PROJECT_KEY
@@ -48,8 +124,6 @@
 # Delete a story:
 # python your_script.py --config path/to/config.json --delete-story STORY_KEY
 
-# To add a story to an Epic:
-# python your_script.py --config path/to/config.json --add-story-to-epic EPIC_KEY STORY_KEY
 
 # To unlink a story from an Epic:
 # python your_script.py --config path/to/config.json --unlink-story-from-epic STORY_KEY
@@ -57,8 +131,6 @@
 # To delete an Epic:
 # python your_script.py --config path/to/config.json --delete-epic EPIC_KEY
 
-# To create a new sprint:
-# python your_script.py --config path/to/config.json --create-sprint JIRA_URL JIRA_USERNAME API_TOKEN BOARD_ID SPRINT_NAME
 
 
 # To get all sprints for the specified board:
