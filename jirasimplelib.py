@@ -1231,24 +1231,28 @@ def print_boundary(term):
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]
     print(f"| {' | '.join(formatted_row)} |")
-def assign_issue(jira, issue_key, new_assignee):
+def assign_issue(issue_key,user_account_id):
+    url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{issue_key}/assignee"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    payload = json.dumps({
+    "accountId": user_account_id  # Replace with the actual accountId
+})
+    auth = HTTPBasicAuth("rimsha.ashfaq@verituslabs.com", "ATATT3xFfGF0Nnf69USKMyeqvq0C4X8fxZc2v4Sn5F4VmxYIjEUjtuik2bqy-abJDodOiNCrakl5Ae5R1U-FlvE5AfNJ3b2ZGOprGWJ3GsEnMilU6Aff32m4xsrWhsQdsgQCwrtAPKRZnNU2DSgvvFlep3Twrd9vvZraD2mlW6aeVp_Q2SG3YT0=848384A6")
+    
     try:
-        url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{issue_key}/assignee"
-        headers = {
-            "Content-Type": "application/json"
-        }
-        data = {
-            "name": new_assignee
-        }
-        print(new_assignee)
-        response = requests.put(url, json=data, auth=("user", "api_token"))
-        print(response)
+        response = requests.put(url,data=payload,headers=headers,auth=auth)
         if response.status_code == 204:
-            print(f"Issue {issue_key} has been successfully assigned to {new_assignee}.")
+            print(f"Issue {issue_key} assigned successfully.")
         else:
-            print(f"Failed to assign issue. Status code: {response.status_code}, Error: {response.text}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+            # Print error details
+            print(f"Failed to assign issue {issue_key}.")
+            print(f"Status Code: {response.status_code}")
+            print(f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}")
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred while trying to assign the issue: {e}")
 def parse_arguments():
     term = blessed.Terminal()
     parser = argparse.ArgumentParser(description=term.green('Jira CLI Tool'))
@@ -1328,8 +1332,8 @@ def main():
                     if args.issue_key:
                         assignee_name(jira, args.issue_key)   
                     if args.assign_issue:
-                        issue_key, new_assignee = args.assign_issue
-                        assign_issue(jira, issue_key, new_assignee)  
+                        issue_key, user_account_id = args.assign_issue
+                        assign_issue(issue_key, user_account_id)  
                     if args.get_members:
                         project_key = args.get_members
                         members = get_members_tui(jira, project_key)
