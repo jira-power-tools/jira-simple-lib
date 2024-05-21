@@ -56,7 +56,6 @@ python3 ./jirasimplelib.py --sprint-report SPRINT_ID TMS
 # Delete all stories in a project:
 # python3 ./jirasimplelib.py --delete-all-stories TMS
 
-
 #delete_all_sprints
 python3 ./jirasimplelib.py --delete-all-sprints 3
 
