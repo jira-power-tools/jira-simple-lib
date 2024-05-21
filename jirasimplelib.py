@@ -1101,6 +1101,8 @@ def get_members(jira, project_key):
         # Log any exceptions that occur during the process
         logging.error(f"Error fetching users for project {project_key}: {e}")
         return None
+
+    
 def get_members_tui(jira, project_key):
     try:
         term = blessed.Terminal()
@@ -1262,6 +1264,7 @@ def parse_arguments():
     issue_group = parser.add_argument_group(term.green('Issue Related'))
     issue_group.add_argument("--assignee-name", metavar="\tissue_key", dest="issue_key", type=str, help=term.blue("Issue key for which to print the assignee name"))
     issue_group.add_argument("--get-members", metavar="\tproject_key", help=term.blue("Retrieve members in a Jira project."))
+    issue_group.add_argument("--jira-members", action='store_true', help=term.blue("Retrieve members in a Jira."))
     issue_group.add_argument('--list-projects', action='store_true', help=term.blue('Get all projects'))
     issue_group.add_argument("--add-comment", nargs=2, metavar=("\tissue_key", "comment_body"), help=term.blue("Add comments to issue."))
     issue_group.add_argument("--read-story-details", metavar="\tstory_key", help=term.blue("Read story details."))
@@ -1337,6 +1340,12 @@ def main():
                     if args.get_members:
                         project_key = args.get_members
                         members = get_members_tui(jira, project_key)
+                    if args.jira_members:
+                        members = get_all_members(jira)
+                        if members:
+                            print("Members:")
+                            for member, account_id in members.items():
+                                print(f"{member}: {account_id}")
                     if args.create_project:
                         project_name, project_key = args.create_project
                         create_jira_project(jira, project_name, project_key)
