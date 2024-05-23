@@ -1450,7 +1450,9 @@ def assign_issue(issue_key, user_account_id):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(prog='jsl', description='Jira Simple Lib Command Line Tool')
+    parser = argparse.ArgumentParser(
+        prog="jsl", description="Jira Simple Lib Command Line Tool"
+    )
     # Configuration
     parser.add_argument(
         "--config", help="Path to the configuration file", default="config.json"
