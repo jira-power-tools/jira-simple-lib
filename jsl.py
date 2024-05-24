@@ -139,7 +139,7 @@ def delete_project(jira, project_key):
         return False
 
 
-def get_stories_for_project(jira, project_key):
+def list_stories_for_project(jira, project_key):
     try:
         jql_query = f"project = {project_key} AND issuetype in (Bug, Task, Story)"
         issues = jira.search_issues(jql_query)
@@ -175,7 +175,7 @@ def delete_all_stories_in_project(jira, project_key):
         return True
     except Exception as e:
         logging.error(f"Error deleting stories in project: {e}")
-        raise  # Re-raise the exception to propagate it further
+        raise 
 
 
 # Function to create a new story in Jira
@@ -235,7 +235,7 @@ def update_story_description(jira, story_key, new_description):
         return None
 
 
-def assignee_name(jira, issue_key):
+def view_assignee(jira, issue_key):
     try:
         # Retrieve the issue object
         issue = jira.issue(issue_key)
@@ -426,7 +426,7 @@ def create_sprint(jira, board_id, sprint_name):
         return None
 
 
-def get_sprints_for_board(jira, board_id):
+def list_sprints(jira, board_id):
     try:
         sprints = jira.sprints(board_id)
         return sprints
@@ -457,7 +457,7 @@ def start_sprint(jira, sprint_id, new_summary, start_date, end_date):
         return None
 
 
-def get_stories_in_sprint(jira, sprint_id, print_info=False):
+def list_stories_in_sprint(jira, sprint_id, print_info=False):
     try:
         # Construct JQL to search for issues in the given sprint
         jql = f"sprint = {sprint_id} AND issuetype = Task"
@@ -482,7 +482,7 @@ def get_stories_in_sprint(jira, sprint_id, print_info=False):
 def complete_stories_in_sprint(jira, sprint_id, print_info=False):
     try:
         # Get the list of stories in the sprint
-        story_keys = get_stories_in_sprint(jira, sprint_id, print_info)
+        story_keys = list_stories_in_sprint(jira, sprint_id, print_info)
 
         if not story_keys:
             logging.error("No stories found in the sprint.")
@@ -496,9 +496,6 @@ def complete_stories_in_sprint(jira, sprint_id, print_info=False):
     except Exception as e:
         logging.error(f"Error completing stories in sprint: {e}")
         return False
-
-    # complete sprint
-
 
 def complete_sprint(jira, sprint_id, start_date, end_date):
     try:
@@ -670,17 +667,6 @@ def render_tui(issues, fetching_data=False):
         ]
         print_row(row)  # Reverse colors for alternating rows
         print_boundary()
-
-    # Print status bar with colored text
-    status_message = "Fetching..." if fetching_data else "Ready"
-    print(term.green(f"Status Bar: {status_message}"))
-
-    # Wait for user input and then exit
-    with term.cbreak():
-        inp = ""
-        while inp.lower() != "q":
-            inp = term.inkey()
-
 
 def read_story_details_tui(jira, story_key):
     try:
@@ -898,7 +884,7 @@ def read_epic_details_tui(jira, epic_key):
         logging.error(f"Error reading epic: {e}")
 
 
-def get_sprints_for_board_tui(jira, board_id):
+def list_sprints_for_board_tui(jira, board_id):
     try:
         term = blessed.Terminal()
         sprints = jira.sprints(board_id)
@@ -1103,7 +1089,7 @@ def move_all_issues_to_sprint_tui(jira, project_key, target_sprint_id):
         logging.error(f"Error moving all issues to Sprint: {e}")
 
 
-def get_stories_in_sprint_tui(jira, sprint_id):
+def list_stories_in_sprint_tui(jira, sprint_id):
     try:
         term = blessed.Terminal()
 
@@ -1310,17 +1296,15 @@ def print_boundary(term):
     print(term.green(boundary))
 
 
-def move_single_issue_to_sprint(jira, issue_key, target_sprint_id):
+def move_single_issue_to_sprint(jira, story_key, target_sprint_id):
     try:
-        jira.add_issues_to_sprint(target_sprint_id, [issue_key])
-        logging.info(f"Issue {issue_key} moved to Sprint {target_sprint_id}")
+        jira.add_issues_to_sprint(target_sprint_id, [story_key])
+        logging.info(f"Issue {story_key} moved to Sprint {target_sprint_id}")
     except Exception as e:
-        logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
+        logging.error(f"Error moving issue {story_key} to Sprint: {e}")
 
 
-def move_issues_in_range_to_sprint(
-    jira, project_key, start_issue_key, end_issue_key, target_sprint_id
-):
+def move_issues_in_range_to_sprint(jira, project_key, start_issue_key, end_issue_key, target_sprint_id):
     try:
         start_issue_number = int(start_issue_key.split("-")[1])
         end_issue_number = int(end_issue_key.split("-")[1])
@@ -1364,13 +1348,13 @@ def summary(jira, project_key):
         board_name = (
             f"Board for {project_key}"  # Adjust as per your board naming convention
         )
-        board_id = get_board_id(jira, board_name)
+        board_id = get_board_id(jira, board_name="Dev")
         if board_id is None:
             return  # Stop execution if board ID retrieval fails
 
         # Get sprints for board
         print(term.bold("Sprints for Board:"))
-        sprints = get_sprints_for_board(jira, board_id)
+        sprints = list_sprints(jira, board_id)
         if sprints:
             for sprint in sprints:
                 print_row(term, [sprint.id, sprint.name])
@@ -1386,7 +1370,7 @@ def summary(jira, project_key):
 
         # Get stories for project
         print(term.bold("Issues:"))
-        issues = get_stories_for_project(jira, project_key)
+        issues = list_stories_for_project(jira, project_key)
         if issues:
             for issue in issues:
                 print_row(
@@ -1423,8 +1407,8 @@ def print_row(term, row):
     print(f"| {' | '.join(formatted_row)} |")
 
 
-def assign_issue(issue_key, user_account_id):
-    url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{issue_key}/assignee"
+def update_assignee(story_key, user_account_id):
+    url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{story_key}/assignee"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
     payload = json.dumps(
         {"accountId": user_account_id}  # Replace with the actual accountId
@@ -1437,10 +1421,10 @@ def assign_issue(issue_key, user_account_id):
     try:
         response = requests.put(url, data=payload, headers=headers, auth=auth)
         if response.status_code == 204:
-            print(f"Issue {issue_key} assigned successfully.")
+            print(f"Issue {story_key} assigned successfully.")
         else:
             # Print error details
-            print(f"Failed to assign issue {issue_key}.")
+            print(f"Failed to assign issue {story_key}.")
             print(f"Status Code: {response.status_code}")
             print(
                 f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
@@ -1522,6 +1506,20 @@ def parse_arguments():
     update_description_parser.add_argument(
         "-d", "--description", metavar="new_description", required=True
     )
+    update_status_parser = story_subparsers.add_parser('update-status', help="Update the status of a story")
+    update_status_parser.add_argument('-sk', '--story-key', metavar='story_key', required=True, help='Story key')
+    update_status_parser.add_argument('-ns', '--new-status', metavar='new_status', required=True, help='New status')
+    view_assignee_parser = story_subparsers.add_parser('view-assignee', help="View the assignee of a story")
+    view_assignee_parser.add_argument('-sk', '--story-key', metavar='story_key', required=True, help='Story key')
+    update_assignee_parser = story_subparsers.add_parser('update-assignee', help="Update the assignee of a story")
+    update_assignee_parser.add_argument('-sk', '--story-key', metavar='story_key', required=True, help='story key')
+    update_assignee_parser.add_argument('-uid', '--user-accound-id', metavar='user_account_id', required=True, help='User account ID')
+    delete_story_parser = story_subparsers.add_parser('delete', help="Delete a story")
+    delete_story_parser.add_argument('-sk', '--story-key', metavar='story_key', required=True, help='Story Key')
+
+
+
+
 
     # Project Related
     project_parser = subparsers.add_parser(
@@ -1554,11 +1552,20 @@ def parse_arguments():
     project_subparsers.add_parser(
         "delete", help="Delete a specific project"
     ).add_argument("-pk", "--project-key", metavar="project_key", required=True)
-    project_subparsers.add_parser("delete-all", help="Delete all projects")
+    project_subparsers.add_parser("delete-a", help="Delete all projects")
     project_subparsers.add_parser("list", help="List all projects")
     project_subparsers.add_parser(
         "get-members", help="Retrieve members in a Jira project"
     ).add_argument("-pk", "--project-key", metavar="project_key", required=True)
+    delete_all_stories_parser = project_subparsers.add_parser('delete-a-stories', help="Delete all stories in a project")
+    delete_all_stories_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True)
+    list_stories_parser = project_subparsers.add_parser('list-stories', help="List all stories in a project")
+    list_stories_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True)
+    my_stories_parser = project_subparsers.add_parser('my-stories', help="List stories assigned to a user in a project")
+    my_stories_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True, help='Project key')
+    my_stories_parser.add_argument('-u', '--user', metavar='user', required=True, help='User')
+    summary_parser = project_subparsers.add_parser('summary', help="Generate summary for a project")
+    summary_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True, help='Project key')
 
     # Epic Related
     epic_parser = subparsers.add_parser("epic", help="Actions related to epics")
@@ -1604,6 +1611,9 @@ def parse_arguments():
     epic_subparsers.add_parser(
         "unlink-story", help="Unlink a story from its epic"
     ).add_argument("-sk", "--story-key", metavar="story_key", required=True)
+    delete_epic_parser = epic_subparsers.add_parser('delete', help="Delete an epic")
+    delete_epic_parser.add_argument('-ek', '--epic-key', metavar='epic_key', required=True)
+
     # Board Related
     board_parser = subparsers.add_parser("board", help="Actions related to boards")
     board_subparsers = board_parser.add_subparsers(dest="board_action")
@@ -1625,7 +1635,6 @@ def parse_arguments():
     sprint_create_parser.add_argument(
         "-n", "--name", metavar="sprint_name", required=True
     )
-    # Parser for updating sprint summary
     sprint_summary_parser = sprint_subparsers.add_parser(
         "update-summary", help="Update sprint summary"
     )
@@ -1638,16 +1647,58 @@ def parse_arguments():
     sprint_subparsers.add_parser("delete", help="Delete a sprint").add_argument(
         "-sid", "--sprint-id", metavar="sprint_id", required=True
     )
+    list_sprints_parser = sprint_subparsers.add_parser('list', help="List sprints for a board")
+    list_sprints_parser.add_argument('-bid', '--board-id', metavar='board_id', required=True, help='Board ID')
+    start_sprint_parser = sprint_subparsers.add_parser('start', help="Start a sprint")
+    start_sprint_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    start_sprint_parser.add_argument('-ns', '--new-summary', metavar='new_summary', required=True, help='New summary')
+    start_sprint_parser.add_argument('-sd', '--start-date', metavar='start_date', required=True, help='Start date')
+    start_sprint_parser.add_argument('-ed', '--end-date', metavar='end_date', required=True, help='End date')
+    list_stories_parser = sprint_subparsers.add_parser('list-stories', help="List stories in a sprint")
+    list_stories_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    list_stories_parser.add_argument('--print-info', action='store_true', help='Print information about the retrieved stories')
+    complete_stories_parser = sprint_subparsers.add_parser('complete-stories', help="Complete stories in a sprint")
+    complete_stories_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    complete_stories_parser.add_argument('--print-info', action='store_true', help='Print information about the completed stories')
+    complete_sprint_parser = sprint_subparsers.add_parser('complete', help="Complete a sprint")
+    complete_sprint_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    complete_sprint_parser.add_argument('-sd', '--start-date', metavar='start_date', required=True, help='Start date of the sprint')
+    complete_sprint_parser.add_argument('-ed', '--end-date', metavar='end_date', required=True, help='End date of the sprint')
+    sprint_report_parser = sprint_subparsers.add_parser('report', help="Generate a sprint report")
+    sprint_report_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    sprint_report_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True, help='Project key')
+    delete_sprint_parser = sprint_subparsers.add_parser('delete', help="Delete a sprint")
+    delete_sprint_parser.add_argument('-sid', '--sprint-id', metavar='sprint_id', required=True, help='Sprint ID')
+    delete_all_sprints_parser = sprint_subparsers.add_parser('delete-a', help="Delete all sprints in a board")
+    delete_all_sprints_parser.add_argument('-bid', '--board-id', metavar='board_id', required=True, help='Board ID')
+    move_single_issue_parser = sprint_subparsers.add_parser('move-issue', help="Move a single issue to a sprint")
+    move_single_issue_parser.add_argument('-sk', '--story_key', metavar='story_key', required=True, help='story_key')
+    move_single_issue_parser.add_argument('-sid', '--sprint-id', metavar='target_sprint_id', required=True, help='Target sprint ID')
+
+    # Move Issues in Range
+    move_range_issue_parser = sprint_subparsers.add_parser('move-issues-range', help="Move issues in a range to a sprint")
+    move_range_issue_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True, help='Project key')
+    move_range_issue_parser.add_argument('-sik', '--start-issue-key', metavar='start_issue_key', required=True, help='Start issue key')
+    move_range_issue_parser.add_argument('-eik', '--end-issue-key', metavar='end_issue_key', required=True, help='End issue key')
+    move_range_issue_parser.add_argument('-sid', '--sprint-id', metavar='target_sprint_id', required=True, help='Target sprint ID')
+
+    # Move All Issues
+    move_all_issue_parser = sprint_subparsers.add_parser('move-a-issues', help="Move all issues to a sprint")
+    move_all_issue_parser.add_argument('-pk', '--project-key', metavar='project_key', required=True, help='Project key')
+    move_all_issue_parser.add_argument('-sid', '--sprint-id', metavar='target_sprint_id', required=True, help='Target sprint ID')
+
+
+
+
+
 
     return parser
 
 
 def main():
     try:
-        term = blessed.Terminal()
         parser = parse_arguments()
         args = parser.parse_args()
-
         config_file = args.config
         if os.path.exists(config_file):
             config_data = read_config(config_file)
@@ -1673,13 +1724,21 @@ def main():
                             update_story_summary(jira, args.story_key, args.summary)
                         elif args.story_action == "update-description":
                             update_story_description(
-                                jira, args.story_key, args.description
-                            )
-                        elif args.story_action == "my-stories":
-                            my_stories_tui(jira, args.project_key, username)
-                        elif args.story_action == "assign-issue":
-                            assign_issue(jira, args.story_key, args.user)
-                    elif args.command == "project":
+                                jira, args.story_key, args.description)
+                        elif args.story_action == 'update-status':
+                            success = update_story_status(jira, args.story_key, args.new_status, print_info=True)
+                            if success:
+                                logging.info(f"Story {args.story_key} status updated to {args.new_status} successfully.")
+                            else:
+                                logging.error(f"Failed to update story {args.story_key} status to {args.new_status}.")
+                        elif args.story_action == 'view-assignee':
+                                view_assignee(jira, args.story_key)
+                        elif args.story_action == "update-assignee":
+                            update_assignee(args.story_key, args.user_accound_id)
+                        elif args.command == 'story':
+                            if args.story_action == 'delete':
+                                delete_story(jira, args.story_key)
+                    if args.command == "project":
                         if args.project_action == "create":
                             create_jira_project(jira, args.name, args.project_key)
                         elif args.project_action == "update":
@@ -1688,12 +1747,24 @@ def main():
                             )
                         elif args.project_action == "delete":
                             delete_project(jira, args.project_key)
-                        elif args.project_action == "delete-all":
+                        elif args.project_action == "delete-a":
                             delete_all_projects(jira)
                         elif args.project_action == "list":
                             list_projects(jira)
+                        elif args.project_action == 'delete-a-stories':
+                                delete_all_stories_in_project(jira, args.project_key)
+                        elif args.project_action == 'list-stories':
+                                stories = list_stories_for_project(jira, args.project_key)
+                                if stories:
+                                    render_tui(stories, fetching_data=False) 
+                                else:
+                                    logging.error("No stories found")
                         elif args.project_action == "get-members":
                             get_members_tui(jira, args.project_key)
+                        elif args.project_action == "my-stories":
+                            my_stories_tui(jira, args.project_key, args.user)
+                        elif args.project_action == 'summary':
+                            summary(jira, args.project_key)
                     elif args.command == "epic":
                         if args.epic_action == "create":
                             create_epic(jira, args.project_key, args.name, args.summary)
@@ -1723,22 +1794,32 @@ def main():
                             create_sprint(jira, args.board_id, args.name)
                         elif args.sprint_action == "update-summary":
                             update_sprint_summary(
-                                jira, args.sprint_id, args.new_summary
-                            )
-                        elif args.sprint_action == "delete":
+                                jira, args.sprint_id, args.new_summary)
+                        elif args.sprint_action == 'list':
+                            sprints = list_sprints_for_board_tui(jira, args.board_id)
+                            if sprints:
+                                for sprint in sprints:
+                                    logging.info(f"Sprint ID: {sprint.id}, Name: {sprint.name}, State: {sprint.state}")
+                        elif args.sprint_action == 'start':
+                            start_sprint(jira, args.sprint_id, args.new_summary, args.start_date, args.end_date)
+                        elif args.sprint_action == 'list-stories':
+                            list_stories_in_sprint_tui(jira, args.sprint_id)
+                        elif args.sprint_action == 'complete-stories':
+                            complete_stories_in_sprint(jira, args.sprint_id, args.print_info)
+                        elif args.sprint_action == 'complete':
+                            complete_sprint(jira, args.sprint_id, args.start_date, args.end_date)
+                        elif args.sprint_action == 'report':
+                            sprint_report_tui(jira, args.sprint_id, args.project_key)
+                        elif args.sprint_action == 'delete':
                             delete_sprint(jira, args.sprint_id)
-                        elif args.sprint_action == "delete-all":
+                        elif args.sprint_action == 'delete-a':
                             delete_all_sprints(jira, args.board_id)
-                        elif args.sprint_action == "get-stories":
-                            get_stories_in_sprint(jira, args.id)
-                        elif args.sprint_action == "complete":
-                            complete_sprint(
-                                jira, args.id, args.start_date, args.end_date
-                            )
-
-                    elif args.command == "user":
-                        if args.action == "get-stories":
-                            my_stories_tui(jira, args.project_key, args.username)
+                        elif args.sprint_action == 'move-issue':
+                            move_single_issue_to_sprint(jira, args.story_key, args.sprint_id)
+                        elif args.sprint_action == 'move-issues-range':
+                            move_issues_in_range_to_sprint(jira, args.project_key, args.start_issue_key, args.end_issue_key, args.sprint_id)
+                        elif args.sprint_action == 'move-a-issues':
+                            move_all_issues_to_sprint(jira, args.project_key, args.sprint_id)                       
             else:
                 logging.error("Jira configuration is missing required fields.")
         else:
