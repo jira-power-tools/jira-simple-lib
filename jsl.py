@@ -10,7 +10,6 @@ import requests
 import json
 import os
 import argparse
-import sys
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -20,7 +19,6 @@ def read_config(filename):
     with open(filename, "r") as f:
         config = json.load(f)
     return config
-
 
 def create_jira_connection(jira_url, username, api_token):
     try:
