@@ -4,7 +4,7 @@ from datetime import datetime
 import requests
 from jira import JIRAError
 from unittest.mock import MagicMock, patch, call, mock_open, Mock
-from jirasimplelib import read_config, create_jira_connection, create_jira_project, update_jira_project, delete_all_projects, get_stories_for_project, delete_all_stories_in_project, create_story, update_story_summary, update_story_status, update_story_description, add_comment_to_issues_in_range, read_story_details, delete_story, create_epic, update_epic, read_epic_details, add_story_to_epic, unlink_story_from_epic, delete_epic, list_epics, create_sprint, move_issues_to_sprint, start_sprint, get_stories_in_sprint, complete_stories_in_sprint, complete_sprint, get_sprints_for_board, update_sprint_summary, sprint_report, get_velocity, delete_sprint, delete_all_sprints, create_board, get_board_id
+from jsl import read_config, create_jira_connection, create_jira_project, update_jira_project, delete_all_projects, list_stories_for_project, delete_all_stories_in_project, create_story, update_story_summary, update_story_status, update_story_description, add_comment, read_story_details, delete_story, create_epic, update_epic, read_epic_details, add_story_to_epic, unlink_story_from_epic, delete_epic, list_epics, create_sprint, move_all_issues_to_sprint,move_single_issue_to_sprint,move_issues_in_range_to_sprint, start_sprint, list_stories_in_sprint, complete_stories_in_sprint, complete_sprint, list_sprints, update_sprint_summary, sprint_report, delete_sprint, delete_all_sprints,  get_board_id
 
 class TestReadConfig(unittest.TestCase):
     @patch('builtins.open', new_callable=mock_open, read_data='{"key": "value"}')
