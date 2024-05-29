@@ -22,6 +22,7 @@ def read_config(filename):
         config = json.load(f)
     return config
 
+
 def create_jira_connection(jira_url, username, api_token):
     try:
         if not all([jira_url, username, api_token]):
@@ -1409,6 +1410,8 @@ def print_boundary(term):
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]
     print(f"| {' | '.join(formatted_row)} |")
+
+
 def get_user_account_id(jira, username):
     try:
         users = jira.search_users(query=username, maxResults=1)
@@ -1420,6 +1423,8 @@ def get_user_account_id(jira, username):
     except JIRAError as e:
         logging.error(f"Error fetching user account ID for {username}: {e}")
         return None
+
+
 def update_assignee(jira, story_key, username):
     user_account_id = get_user_account_id(jira, username)
     if not user_account_id:
@@ -1431,44 +1436,25 @@ def update_assignee(jira, story_key, username):
     payload = json.dumps({"accountId": user_account_id})
 
     try:
-        response = requests.put(url, data=payload, headers=headers, auth=jira._session.auth)
+        response = requests.put(
+            url, data=payload, headers=headers, auth=jira._session.auth
+        )
         if response.status_code == 204:
             logging.info(f"Issue {story_key} assigned successfully to {username}.")
         else:
-            logging.error(f"Failed to assign issue {story_key}. Status Code: {response.status_code}")
-            logging.error(f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}")
+            logging.error(
+                f"Failed to assign issue {story_key}. Status Code: {response.status_code}"
+            )
+            logging.error(
+                f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
+            )
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred while trying to assign the issue: {e}")
 
 
-
-# def update_assignee(story_key, user_account_id):
-#     url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{story_key}/assignee"
-#     headers = {"Accept": "application/json", "Content-Type": "application/json"}
-#     payload = json.dumps(
-#         {"accountId": user_account_id}  # Replace with the actual accountId
-#     )
-#     auth = HTTPBasicAuth(
-#         "rimsha.ashfaq@verituslabs.com",
-#         "ATATT3xFfGF0Nnf69USKMyeqvq0C4X8fxZc2v4Sn5F4VmxYIjEUjtuik2bqy-abJDodOiNCrakl5Ae5R1U-FlvE5AfNJ3b2ZGOprGWJ3GsEnMilU6Aff32m4xsrWhsQdsgQCwrtAPKRZnNU2DSgvvFlep3Twrd9vvZraD2mlW6aeVp_Q2SG3YT0=848384A6",
-#     )
-
-#     try:
-#         response = requests.put(url, data=payload, headers=headers, auth=auth)
-#         if response.status_code == 204:
-#             print(f"Issue {story_key} assigned successfully.")
-#         else:
-#             # Print error details
-#             print(f"Failed to assign issue {story_key}.")
-#             print(f"Status Code: {response.status_code}")
-#             print(
-#                 f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
-#             )
-#     except requests.exceptions.RequestException as e:
-#         print(f"An error occurred while trying to assign the issue: {e}")
 def create_stories_from_csv(jira, project_key, csv_file_path):
     try:
-        with open(csv_file_path, mode='r', encoding='utf-8-sig') as file:
+        with open(csv_file_path, mode="r", encoding="utf-8-sig") as file:
             reader = csv.DictReader(file)
             rows = list(reader)
 
@@ -1487,13 +1473,13 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
                     if new_story and assignee_username:
                         update_assignee(jira, new_story.key, assignee_username)
                 else:
-                    logging.warning("Skipped a row due to missing summary or description")
+                    logging.warning(
+                        "Skipped a row due to missing summary or description"
+                    )
     except FileNotFoundError:
         logging.error(f"The file {csv_file_path} does not exist.")
     except Exception as e:
         logging.error(f"An error occurred while processing the CSV file: {e}")
-
-
 
 
 def parse_arguments():
@@ -1509,9 +1495,23 @@ def parse_arguments():
     story_parser = subparsers.add_parser("story", help="Actions related to stories")
     story_subparsers = story_parser.add_subparsers(dest="story_action", required=True)
     # Story Related
-    create_stories_parser = story_subparsers.add_parser("create_from_csv", help="Create stories from a CSV file")
-    create_stories_parser.add_argument("-pk", "--project-key", metavar="project_key", required=True, help="Jira project key")
-    create_stories_parser.add_argument("-csv", "--csv-file-path", metavar="csv_file_path", required=True, help="Path to the CSV file")
+    create_stories_parser = story_subparsers.add_parser(
+        "create_from_csv", help="Create stories from a CSV file"
+    )
+    create_stories_parser.add_argument(
+        "-pk",
+        "--project-key",
+        metavar="project_key",
+        required=True,
+        help="Jira project key",
+    )
+    create_stories_parser.add_argument(
+        "-csv",
+        "--csv-file-path",
+        metavar="csv_file_path",
+        required=True,
+        help="Path to the CSV file",
+    )
 
     create_story_parser = story_subparsers.add_parser(
         "create", help="Create a new story"
@@ -1911,7 +1911,9 @@ def main():
                 if jira:
                     if args.command == "story":
                         if args.story_action == "create_from_csv":
-                            create_stories_from_csv(jira, args.project_key, args.csv_file_path)
+                            create_stories_from_csv(
+                                jira, args.project_key, args.csv_file_path
+                            )
                         elif args.story_action == "add-comment":
                             add_comment(jira, args.story_key, args.message)
                         elif args.story_action == "create":
