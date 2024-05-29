@@ -1409,38 +1409,69 @@ def print_boundary(term):
 def print_row(term, row):
     formatted_row = [f"{field:<30}" for field in row]
     print(f"| {' | '.join(formatted_row)} |")
+def get_user_account_id(jira, username):
+    try:
+        users = jira.search_users(query=username, maxResults=1)
+        if users:
+            return users[0].accountId
+        else:
+            logging.error(f"No user found for username: {username}")
+            return None
+    except JIRAError as e:
+        logging.error(f"Error fetching user account ID for {username}: {e}")
+        return None
+def update_assignee(jira, story_key, username):
+    user_account_id = get_user_account_id(jira, username)
+    if not user_account_id:
+        logging.error(f"Failed to fetch account ID for username: {username}")
+        return
 
-
-def update_assignee(story_key, user_account_id):
     url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{story_key}/assignee"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
-    payload = json.dumps(
-        {"accountId": user_account_id}  # Replace with the actual accountId
-    )
-    auth = HTTPBasicAuth(
-        "rimsha.ashfaq@verituslabs.com",
-        "ATATT3xFfGF0Nnf69USKMyeqvq0C4X8fxZc2v4Sn5F4VmxYIjEUjtuik2bqy-abJDodOiNCrakl5Ae5R1U-FlvE5AfNJ3b2ZGOprGWJ3GsEnMilU6Aff32m4xsrWhsQdsgQCwrtAPKRZnNU2DSgvvFlep3Twrd9vvZraD2mlW6aeVp_Q2SG3YT0=848384A6",
-    )
+    payload = json.dumps({"accountId": user_account_id})
 
     try:
-        response = requests.put(url, data=payload, headers=headers, auth=auth)
+        response = requests.put(url, data=payload, headers=headers, auth=jira._session.auth)
         if response.status_code == 204:
-            print(f"Issue {story_key} assigned successfully.")
+            logging.info(f"Issue {story_key} assigned successfully to {username}.")
         else:
-            # Print error details
-            print(f"Failed to assign issue {story_key}.")
-            print(f"Status Code: {response.status_code}")
-            print(
-                f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
-            )
+            logging.error(f"Failed to assign issue {story_key}. Status Code: {response.status_code}")
+            logging.error(f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}")
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred while trying to assign the issue: {e}")
+        logging.error(f"An error occurred while trying to assign the issue: {e}")
+
+
+
+# def update_assignee(story_key, user_account_id):
+#     url = f"https://jirasimplelib.atlassian.net/rest/api/2/issue/{story_key}/assignee"
+#     headers = {"Accept": "application/json", "Content-Type": "application/json"}
+#     payload = json.dumps(
+#         {"accountId": user_account_id}  # Replace with the actual accountId
+#     )
+#     auth = HTTPBasicAuth(
+#         "rimsha.ashfaq@verituslabs.com",
+#         "ATATT3xFfGF0Nnf69USKMyeqvq0C4X8fxZc2v4Sn5F4VmxYIjEUjtuik2bqy-abJDodOiNCrakl5Ae5R1U-FlvE5AfNJ3b2ZGOprGWJ3GsEnMilU6Aff32m4xsrWhsQdsgQCwrtAPKRZnNU2DSgvvFlep3Twrd9vvZraD2mlW6aeVp_Q2SG3YT0=848384A6",
+#     )
+
+#     try:
+#         response = requests.put(url, data=payload, headers=headers, auth=auth)
+#         if response.status_code == 204:
+#             print(f"Issue {story_key} assigned successfully.")
+#         else:
+#             # Print error details
+#             print(f"Failed to assign issue {story_key}.")
+#             print(f"Status Code: {response.status_code}")
+#             print(
+#                 f"Response: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
+#             )
+#     except requests.exceptions.RequestException as e:
+#         print(f"An error occurred while trying to assign the issue: {e}")
 def create_stories_from_csv(jira, project_key, csv_file_path):
     try:
         with open(csv_file_path, mode='r', encoding='utf-8-sig') as file:
             reader = csv.DictReader(file)
             rows = list(reader)
-            
+
             if not rows:
                 logging.warning("The CSV file is empty.")
                 return
@@ -1449,11 +1480,12 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
                 summary = row.get("Summary")
                 description = row.get("Description")
                 issue_type = row.get("Issue Type", "Task")
-                assignee_account_id = row.get("Assignee Account ID")
+                assignee_username = row.get("Assignee Username")
+
                 if summary and description:
                     new_story = create_story(jira, project_key, summary, description)
-                    if new_story and assignee_account_id:
-                        update_assignee(new_story.key, assignee_account_id)
+                    if new_story and assignee_username:
+                        update_assignee(jira, new_story.key, assignee_username)
                 else:
                     logging.warning("Skipped a row due to missing summary or description")
     except FileNotFoundError:
