@@ -1,4 +1,5 @@
 import getpass
+import csv
 from requests.auth import HTTPBasicAuth
 from jira.exceptions import JIRAError
 from datetime import datetime
@@ -7,6 +8,7 @@ from blessed import Terminal
 import logging
 from jira import JIRA, JIRAError
 import requests
+from requests.auth import HTTPBasicAuth
 import json
 import os
 import argparse
@@ -1433,6 +1435,33 @@ def update_assignee(story_key, user_account_id):
             )
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while trying to assign the issue: {e}")
+def create_stories_from_csv(jira, project_key, csv_file_path):
+    try:
+        with open(csv_file_path, mode='r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            rows = list(reader)
+            
+            if not rows:
+                logging.warning("The CSV file is empty.")
+                return
+
+            for row in rows:
+                summary = row.get("Summary")
+                description = row.get("Description")
+                issue_type = row.get("Issue Type", "Task")
+                assignee_account_id = row.get("Assignee Account ID")
+                if summary and description:
+                    new_story = create_story(jira, project_key, summary, description)
+                    if new_story and assignee_account_id:
+                        update_assignee(new_story.key, assignee_account_id)
+                else:
+                    logging.warning("Skipped a row due to missing summary or description")
+    except FileNotFoundError:
+        logging.error(f"The file {csv_file_path} does not exist.")
+    except Exception as e:
+        logging.error(f"An error occurred while processing the CSV file: {e}")
+
+
 
 
 def parse_arguments():
@@ -1448,6 +1477,10 @@ def parse_arguments():
     story_parser = subparsers.add_parser("story", help="Actions related to stories")
     story_subparsers = story_parser.add_subparsers(dest="story_action", required=True)
     # Story Related
+    create_stories_parser = story_subparsers.add_parser("create_from_csv", help="Create stories from a CSV file")
+    create_stories_parser.add_argument("-pk", "--project-key", metavar="project_key", required=True, help="Jira project key")
+    create_stories_parser.add_argument("-csv", "--csv-file-path", metavar="csv_file_path", required=True, help="Path to the CSV file")
+
     create_story_parser = story_subparsers.add_parser(
         "create", help="Create a new story"
     )
@@ -1845,7 +1878,9 @@ def main():
                 jira = create_jira_connection(jira_url, username, api_token)
                 if jira:
                     if args.command == "story":
-                        if args.story_action == "add-comment":
+                        if args.story_action == "create_from_csv":
+                            create_stories_from_csv(jira, args.project_key, args.csv_file_path)
+                        elif args.story_action == "add-comment":
                             add_comment(jira, args.story_key, args.message)
                         elif args.story_action == "create":
                             create_story(
