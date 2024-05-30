@@ -10,7 +10,7 @@ from jira import JIRA, JIRAError
 import requests
 from requests.auth import HTTPBasicAuth
 import json
-import os
+import os,sys
 import argparse
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -22,37 +22,75 @@ def read_config(filename):
         config = json.load(f)
     return config
 
-
 def create_jira_connection(jira_url, username, api_token):
+    """
+    Establishes a connection to the Jira server using the provided credentials.
+
+    Args:
+        jira_url (str): The URL of the Jira server.
+        username (str): The username for Jira authentication.
+        api_token (str): The API token for Jira authentication.
+
+    Returns:
+        JIRA: An instance of the JIRA client.
+
+    Raises:
+        ValueError: If any of the inputs (jira_url, username, api_token) are missing.
+        JIRAError: If there is an error specific to the Jira API.
+        Exception: For any other exceptions that may occur.
+    """
+    if not (jira_url and username and api_token):
+        logging.error("Missing username, API token, or Jira URL")
+        raise ValueError("Missing username, API token, or Jira URL")
+    
     try:
-        if not all([jira_url, username, api_token]):
-
-            raise ValueError("Missing username, API token, or Jira URL")
-
         jira = JIRA(basic_auth=(username, api_token), options={"server": jira_url})
         logging.info("Jira connection established successfully.")
         return jira
-    except ValueError as ve:
-        logging.error(f"Invalid input: {ve}")
     except JIRAError as je:
         logging.error(f"JiraError: {je}")
+        raise
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
-    return None
+        raise
 
+
+
+PROMPT_JIRA_URL = "Enter Jira URL: "
+PROMPT_USERNAME = "Enter your username: "
+PROMPT_API_TOKEN = "Enter your API token: "
 
 def get_user_credentials():
-    jira_url = input("Enter Jira URL: ")
-    username = input("Enter your username: ")
-    api_token = getpass.getpass("Enter your API token: ")
+    """
+    Prompts the user for their Jira credentials.
+
+    Returns:
+        tuple: A tuple containing the Jira URL, username, and API token.
+    """
+    jira_url = input(PROMPT_JIRA_URL)
+    username = input(PROMPT_USERNAME)
+    api_token = getpass.getpass(PROMPT_API_TOKEN)
     return jira_url, username, api_token
 
-
 def save_credentials_to_config(config_file, jira_url, username, api_token):
-    config_data = {"jira_url": jira_url, "user": username, "api_token": api_token}
+    """
+    Saves the provided Jira credentials to a specified configuration file.
+
+    Args:
+        config_file (str): The path to the configuration file where credentials will be saved.
+        jira_url (str): The Jira URL.
+        username (str): The username.
+        api_token (str): The API token.
+    """
+    config_data = {
+        "jira_url": jira_url,
+        "user": username,
+        "api_token": api_token
+    }
     with open(config_file, "w") as f:
         json.dump(config_data, f)
     logging.info(f"Credentials saved to {config_file}")
+
 
 
 # Function to create a new project in Jira
@@ -1486,7 +1524,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         prog="jsl", description="Jira Simple Lib Command Line Tool"
     )
-    # Configuration
     parser.add_argument(
         "--config", help="Path to the configuration file", default="config.json"
     )
@@ -1899,27 +1936,31 @@ def main():
     try:
         parser = parse_arguments()
         args = parser.parse_args()
-        config_file = args.config
-        if os.path.exists(config_file):
+        config_file = args.config or "config.json"
+
+        if not os.path.exists(config_file):
+            # Config file does not exist, ask for credentials and create config file
+            jira_url, username, api_token = get_user_credentials()
+            save_config = input("Do you want to save these credentials for future use? (y/n): ")
+            if save_config.lower() == 'y':
+                save_credentials_to_config(config_file, jira_url, username, api_token)
+        else:
+            # Config file exists, read config data
             config_data = read_config(config_file)
             jira_url = config_data.get("jira_url")
             username = config_data.get("user")
             api_token = config_data.get("api_token")
 
-            if all([jira_url, username, api_token]):
-                jira = create_jira_connection(jira_url, username, api_token)
-                if jira:
+        # Create Jira connection
+            jira = create_jira_connection(jira_url, username, api_token)
+            if jira:
                     if args.command == "story":
                         if args.story_action == "create_from_csv":
-                            create_stories_from_csv(
-                                jira, args.project_key, args.csv_file_path
-                            )
+                            create_stories_from_csv(jira, args.project_key, args.csv_file_path)
                         elif args.story_action == "add-comment":
                             add_comment(jira, args.story_key, args.message)
                         elif args.story_action == "create":
-                            create_story(
-                                jira, args.project_key, args.summary, args.description
-                            )
+                            create_story(jira, args.project_key, args.summary, args.description)
                         elif args.story_action == "read-details":
                             read_story_details_tui(jira, args.story_key)
                         elif args.story_action == "delete":
@@ -1931,25 +1972,18 @@ def main():
                                 jira, args.story_key, args.description
                             )
                         elif args.story_action == "update-status":
-                            success = update_story_status(
-                                jira, args.story_key, args.new_status, print_info=True
-                            )
+                            success = update_story_status(jira, args.story_key, args.new_status, print_info=True )
                             if success:
-                                logging.info(
-                                    f"Story {args.story_key} status updated to {args.new_status} successfully."
-                                )
+                                logging.info(f"Story {args.story_key} status updated to {args.new_status} successfully." )
                             else:
-                                logging.error(
-                                    f"Failed to update story {args.story_key} status to {args.new_status}."
-                                )
+                                logging.error(f"Failed to update story {args.story_key} status to {args.new_status}.")
                         elif args.story_action == "view-assignee":
                             view_assignee(jira, args.story_key)
                         elif args.story_action == "update-assignee":
                             update_assignee(args.story_key, args.user_accound_id)
-                        elif args.command == "story":
-                            if args.story_action == "delete":
+                        elif args.story_action == "delete":
                                 delete_story(jira, args.story_key)
-                    if args.command == "project":
+                    elif args.command == "project":
                         if args.project_action == "create":
                             create_jira_project(jira, args.name, args.project_key)
                         elif args.project_action == "update":
@@ -2051,15 +2085,14 @@ def main():
                                 args.sprint_id,
                             )
                         elif args.sprint_action == "move-a-issues":
-                            move_all_issues_to_sprint(
-                                jira, args.project_key, args.sprint_id
-                            )
+                            move_all_issues_to_sprint(jira, args.project_key, args.sprint_id)
             else:
-                logging.error("Jira configuration is missing required fields.")
-        else:
-            logging.error(f"Configuration file '{config_file}' not found.")
+                logging.error("Failed to establish Jira connection.")
+
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
+        sys.exit(1)
+
 
 
 if __name__ == "__main__":
