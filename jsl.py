@@ -622,7 +622,7 @@ def update_assignee(jira, story_key, username):
         logging.error(f"An error occurred while trying to assign the issue: {e}")
         raise
 
-def view_assignee(jira, issue_key):
+def view_assignee(jira, story_key):
     """
     View the assignee of a specific Jira issue.
 
@@ -634,13 +634,13 @@ def view_assignee(jira, issue_key):
         None
     """
     try:
-        issue = jira.issue(issue_key)
+        issue = jira.issue(story_key)
         assignee = issue.fields.assignee
 
         if assignee is not None:
-            logging.info(f"The assignee of issue {issue_key} is: {assignee.displayName}")
+            logging.info(f"The assignee of issue {story_key} is: {assignee.displayName}")
         else:
-            logging.info(f"Issue {issue_key} is currently unassigned.")
+            logging.info(f"Issue {story_key} is currently unassigned.")
     except JIRAError as e:
         logging.error(f"Error viewing assignee: {e}")
 
@@ -668,7 +668,7 @@ def delete_story(jira, story_key):
                 logging.error(f"Error deleting story: {e}")
                 return False
 
-def add_comment(jira, issue_key, comment_body):
+def add_comment(jira, story_key, comment_body):
             """
             Add a comment to a specific Jira issue.
 
@@ -681,16 +681,16 @@ def add_comment(jira, issue_key, comment_body):
                 int: 1 if the comment was added successfully, 0 otherwise.
             """
             try:
-                issue = jira.issue(issue_key)
+                issue = jira.issue(story_key)
                 if issue:
                     jira.add_comment(issue, comment_body)
-                    logging.info(f"Comment added to issue {issue_key}")
+                    logging.info(f"Comment added to issue {story_key}")
                     return 1
                 else:
-                    logging.error(f"Issue with key {issue_key} does not exist.")
+                    logging.error(f"Issue with key {story_key} does not exist.")
                     return 0
             except JIRAError as e:
-                logging.error(f"Error adding comment to issue {issue_key}: {e}")
+                logging.error(f"Error adding comment to issue {story_key}: {e}")
                 return 0
 def read_story_details(jira, story_key):
             """
@@ -1645,7 +1645,7 @@ def sprint_report_tui(jira, sprint_id, project_key):
 
 
 
-def move_single_issue_to_sprint_tui(jira, issue_key, target_sprint_id):
+def move_single_issue_to_sprint_tui(jira, story_key, target_sprint_id):
     """
     Render a text-based user interface (TUI) to move a single issue to a specified sprint.
 
@@ -1678,18 +1678,18 @@ def move_single_issue_to_sprint_tui(jira, issue_key, target_sprint_id):
         print_row(headers)
         print_boundary()
 
-        issue = jira.issue(issue_key)
+        issue = jira.issue(story_key)
         jira.add_issues_to_sprint(target_sprint_id, [issue.key])
         print_row(
             [
                 issue.key,
                 "Moved",
-                f"Issue {issue_key} moved to Sprint {target_sprint_id}",
+                f"Issue {story_key} moved to Sprint {target_sprint_id}",
             ]
         )
         print_boundary()
     except Exception as e:
-        logging.error(f"Error moving issue {issue_key} to Sprint: {e}")
+        logging.error(f"Error moving issue {story_key} to Sprint: {e}")
 
 
 def move_issues_in_range_to_sprint_tui(
