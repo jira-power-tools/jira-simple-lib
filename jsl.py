@@ -8,7 +8,6 @@ from blessed import Terminal
 import logging
 from jira import JIRA, JIRAError
 import requests
-from requests.auth import HTTPBasicAuth
 import json
 import os,sys
 import argparse
@@ -242,16 +241,16 @@ def delete_all_projects(jira):
     except Exception as e:
         logging.error(f"Unexpected error deleting projects: {e}")
         raise
-
-
-
-def delete_project(jira, project_key):
+    
+    
+def delete_project(jira, project_key, auto_confirm=False):
     """
     Deletes a specific project in Jira.
 
     Args:
         jira (JIRA): An authenticated JIRA client instance.
         project_key (str): The key of the project to delete.
+        auto_confirm (bool): If True, skips the confirmation prompt and deletes the project directly.
 
     Returns:
         bool: True if the project was deleted successfully, False otherwise.
@@ -268,6 +267,12 @@ def delete_project(jira, project_key):
     if not project_key:
         logging.error("Failed to delete project: Project key not provided.")
         raise ValueError("Project key must be provided.")
+    
+    if not auto_confirm:
+        confirmation = input(f"Do you really want to delete project {project_key}? [y/n]: ").strip().lower()
+        if confirmation != 'y':
+            logging.info(f"Project {project_key} deletion cancelled by user.")
+            return False
 
     try:
         # Delete project
@@ -280,6 +285,43 @@ def delete_project(jira, project_key):
     except Exception as e:
         logging.error(f"Unexpected error deleting project {project_key}: {e}")
         raise
+
+
+# def delete_project(jira, project_key):
+#     """
+#     Deletes a specific project in Jira.
+
+#     Args:
+#         jira (JIRA): An authenticated JIRA client instance.
+#         project_key (str): The key of the project to delete.
+
+#     Returns:
+#         bool: True if the project was deleted successfully, False otherwise.
+
+#     Raises:
+#         ValueError: If jira connection or project_key is not provided.
+#         JIRAError: If there is an error specific to the Jira API.
+#         Exception: For any other exceptions that may occur.
+#     """
+#     if not jira:
+#         logging.error("Failed to delete project: Jira connection not established.")
+#         raise ValueError("Jira connection must be provided.")
+    
+#     if not project_key:
+#         logging.error("Failed to delete project: Project key not provided.")
+#         raise ValueError("Project key must be provided.")
+
+#     try:
+#         # Delete project
+#         jira.delete_project(project_key)
+#         logging.info(f"Project {project_key} deleted successfully.")
+#         return True
+#     except JIRAError as e:
+#         logging.error(f"Error deleting project {project_key}: {e}")
+#         raise
+#     except Exception as e:
+#         logging.error(f"Unexpected error deleting project {project_key}: {e}")
+#         raise
 
 
 def list_stories_for_project(jira, project_key):
@@ -692,7 +734,7 @@ def add_comment(jira, story_key, comment_body):
             except JIRAError as e:
                 logging.error(f"Error adding comment to issue {story_key}: {e}")
                 return 0
-def read_story_details(jira, story_key):
+def get_story_details(jira, story_key):
             """
             Read the details of a specific Jira story.
 
@@ -796,7 +838,7 @@ def update_epic(jira, epic_key, new_summary, new_description):
         logging.error(f"Error updating epic: {e}")
         return None
 
-def read_epic_details(jira, epic_key):
+def get_epic_details(jira, epic_key):
     """
     Read the details of an Epic in Jira, including associated stories.
 
@@ -1311,7 +1353,7 @@ def render_tui(issues, fetching_data=False):
         logging.error(f"An error occurred while rendering TUI: {e}")
         
         
-def read_story_details_tui(jira, story_key):
+def get_story_details_tui(jira, story_key):
     """
     Render a text-based user interface (TUI) to display details of a Jira story.
 
@@ -1475,7 +1517,7 @@ def list_projects_tui(jira):
         return None
 
 
-def read_epic_details_tui(jira, epic_key):
+def get_epic_details_tui(jira, epic_key):
     """
     Render a text-based user interface (TUI) to display details of an epic and stories linked with it.
 
@@ -2402,10 +2444,10 @@ def parse_arguments():
     add_comment_parser.add_argument(
         "-m", "--message", metavar="comment_body", required=True
     )
-    read_details_parser = story_subparsers.add_parser(
-        "read-details", help="Read story details"
+    get_details_parser = story_subparsers.add_parser(
+        "get-details", help="get story details"
     )
-    read_details_parser.add_argument(
+    get_details_parser.add_argument(
         "-sk", "--story-key", metavar="story_key", required=True
     )
     delete_story_parser = story_subparsers.add_parser("delete", help="Delete a story")
@@ -2491,9 +2533,15 @@ def parse_arguments():
     update_project_parser.add_argument(
         "-nk", "--new-key", metavar="new_key", required=True
     )
-    project_subparsers.add_parser(
+    delete_parser = project_subparsers.add_parser(
         "delete", help="Delete a specific project"
-    ).add_argument("-pk", "--project-key", metavar="project_key", required=True)
+    )
+    delete_parser.add_argument(
+        "-pk", "--project-key", metavar="project_key", required=True, help="The key of the project to delete"
+    )
+    delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
+    )
     project_subparsers.add_parser("delete-a", help="Delete all projects")
     project_subparsers.add_parser("list", help="List all projects")
     project_subparsers.add_parser(
@@ -2558,7 +2606,7 @@ def parse_arguments():
     epic_subparsers.add_parser("list", help="List all epics in a project").add_argument(
         "-pk", "--project-key", metavar="project_key", required=True
     )
-    epic_subparsers.add_parser("read-details", help="Read epic details").add_argument(
+    epic_subparsers.add_parser("get-details", help="get epic details").add_argument(
         "-ek", "--epic-key", metavar="epic_key", required=True
     )
     epic_add_story_parser = epic_subparsers.add_parser(
@@ -2781,8 +2829,8 @@ def main():
                             add_comment(jira, args.story_key, args.message)
                         elif args.story_action == "create":
                             create_story(jira, args.project_key, args.summary, args.description)
-                        elif args.story_action == "read-details":
-                            read_story_details_tui(jira, args.story_key)
+                        elif args.story_action == "get-details":
+                            get_story_details_tui(jira, args.story_key)
                         elif args.story_action == "delete":
                             delete_story(jira, args.story_key)
                         elif args.story_action == "update-summary":
@@ -2815,7 +2863,7 @@ def main():
                                 jira, args.project_key, args.name, args.new_key
                             )
                         elif args.project_action == "delete":
-                            delete_project(jira, args.project_key)
+                            delete_project(jira, args.project_key, auto_confirm=args.yes)
                         elif args.project_action == "delete-a":
                             delete_all_projects(jira)
                         elif args.project_action == "list":
@@ -2845,8 +2893,8 @@ def main():
                             delete_epic(jira, args.epic_key)
                         elif args.epic_action == "list":
                             list_epics_tui(jira, args.project_key)
-                        elif args.epic_action == "read-details":
-                            read_epic_details_tui(jira, args.epic_key)
+                        elif args.epic_action == "get-details":
+                            get_epic_details_tui(jira, args.epic_key)
                         elif args.epic_action == "add-story":
                             add_story_to_epic(jira, args.epic_key, args.story_key)
                         elif args.epic_action == "unlink-story":
