@@ -204,43 +204,6 @@ def list_projects(jira):
         logging.error(f"Error listing projects: {e}")
         return []
 
-def delete_all_projects(jira):
-    """
-    Deletes all projects in Jira.
-
-    Args:
-        jira (JIRA): An authenticated JIRA client instance.
-
-    Returns:
-        bool: True if all projects were deleted successfully, False otherwise.
-
-    Raises:
-        ValueError: If jira connection is not provided.
-        JIRAError: If there is an error specific to the Jira API.
-        Exception: For any other exceptions that may occur.
-    """
-    if not jira:
-        logging.error("Failed to delete projects: Jira connection not established.")
-        raise ValueError("Jira connection must be provided.")
-
-    try:
-        # Get all projects
-        projects = jira.projects()
-
-        # Iterate over projects
-        for project in projects:
-            # Delete project
-            jira.delete_project(project.key)
-            logging.info(f"Project {project.key} deleted successfully.")
-
-        logging.info("All projects have been deleted.")
-        return True
-    except JIRAError as e:
-        logging.error(f"Error deleting projects: {e}")
-        raise
-    except Exception as e:
-        logging.error(f"Unexpected error deleting projects: {e}")
-        raise
     
     
 def delete_project(jira, project_key, auto_confirm=False):
@@ -285,43 +248,6 @@ def delete_project(jira, project_key, auto_confirm=False):
     except Exception as e:
         logging.error(f"Unexpected error deleting project {project_key}: {e}")
         raise
-
-
-# def delete_project(jira, project_key):
-#     """
-#     Deletes a specific project in Jira.
-
-#     Args:
-#         jira (JIRA): An authenticated JIRA client instance.
-#         project_key (str): The key of the project to delete.
-
-#     Returns:
-#         bool: True if the project was deleted successfully, False otherwise.
-
-#     Raises:
-#         ValueError: If jira connection or project_key is not provided.
-#         JIRAError: If there is an error specific to the Jira API.
-#         Exception: For any other exceptions that may occur.
-#     """
-#     if not jira:
-#         logging.error("Failed to delete project: Jira connection not established.")
-#         raise ValueError("Jira connection must be provided.")
-    
-#     if not project_key:
-#         logging.error("Failed to delete project: Project key not provided.")
-#         raise ValueError("Project key must be provided.")
-
-#     try:
-#         # Delete project
-#         jira.delete_project(project_key)
-#         logging.info(f"Project {project_key} deleted successfully.")
-#         return True
-#     except JIRAError as e:
-#         logging.error(f"Error deleting project {project_key}: {e}")
-#         raise
-#     except Exception as e:
-#         logging.error(f"Unexpected error deleting project {project_key}: {e}")
-#         raise
 
 
 def list_stories_for_project(jira, project_key):
@@ -371,48 +297,6 @@ def list_stories_for_project(jira, project_key):
         logging.error(f"Unexpected error retrieving stories for project: {e}")
         raise
 
-
-def delete_all_stories_in_project(jira, project_key):
-    """
-    Deletes all stories, tasks, and bugs in a specific project in Jira.
-
-    Args:
-        jira (JIRA): An authenticated JIRA client instance.
-        project_key (str): The key of the project to delete stories from.
-
-    Returns:
-        bool: True if all stories were deleted successfully, False otherwise.
-
-    Raises:
-        ValueError: If jira connection or project_key is not provided.
-        JIRAError: If there is an error specific to the Jira API.
-        Exception: For any other exceptions that may occur.
-    """
-    if not jira:
-        logging.error("Failed to delete stories: Jira connection not established.")
-        raise ValueError("Jira connection must be provided.")
-    
-    if not project_key:
-        logging.error("Failed to delete stories: Project key not provided.")
-        raise ValueError("Project key must be provided.")
-
-    try:
-        # Retrieve all issues (stories) in the project
-        issues = jira.search_issues(f"project={project_key}")
-
-        # Delete each story
-        for issue in issues:
-            issue.delete()
-            logging.info(f"Story deleted successfully. Key: {issue.key}")
-
-        logging.info(f"All stories in Project {project_key} have been deleted.")
-        return True
-    except JIRAError as e:
-        logging.error(f"Error deleting stories in project: {e}")
-        raise
-    except Exception as e:
-        logging.error(f"Unexpected error deleting stories in project: {e}")
-        raise
 
 
 def create_story(jira, project_key, summary, description):
@@ -466,7 +350,7 @@ def create_story(jira, project_key, summary, description):
         raise
 
 
-def update_story_status(jira, story_key, new_status, print_info=False):
+def update_story_status(jira, story_key, new_status, print_info=True):
     """
     Updates the status of a specific story in Jira.
 
@@ -599,7 +483,7 @@ def update_story_description(jira, story_key, new_description):
         raise
 
 
-def update_assignee(jira, story_key, username):
+def update_story_assignee(jira, story_key, username):
     """
     Updates the assignee of a specific Jira story.
 
@@ -664,7 +548,7 @@ def update_assignee(jira, story_key, username):
         logging.error(f"An error occurred while trying to assign the issue: {e}")
         raise
 
-def view_assignee(jira, story_key):
+def get_assignee(jira, story_key):
     """
     View the assignee of a specific Jira issue.
 
@@ -686,29 +570,37 @@ def view_assignee(jira, story_key):
     except JIRAError as e:
         logging.error(f"Error viewing assignee: {e}")
 
-def delete_story(jira, story_key):
-            """
-            Delete a specific Jira story.
+def delete_story(jira, story_key, auto_confirm=False):
+    """
+    Delete a specific Jira story.
 
-            Args:
-                jira (JIRA): An authenticated JIRA client instance.
-                story_key (str): The key of the story to delete.
+    Args:
+        jira (JIRA): An authenticated JIRA client instance.
+        story_key (str): The key of the story to delete.
+        auto_confirm (bool): If True, skips the confirmation prompt and deletes the story directly.
 
-            Returns:
-                bool: True if the story was deleted successfully, False otherwise.
-            """
-            try:
-                issue = jira.issue(story_key)
-                if issue:
-                    issue.delete()
-                    logging.info(f"Story deleted successfully. Key: {story_key}")
-                    return True
-                else:
-                    logging.error(f"Story with key {story_key} does not exist.")
+    Returns:
+        bool: True if the story was deleted successfully, False otherwise.
+    """
+    try:
+        issue = jira.issue(story_key)
+        if issue:
+            if not auto_confirm:
+                confirmation = input(f"Do you really want to delete the story with key {story_key}? [y/n]: ").strip().lower()
+                if confirmation != 'y':
+                    logging.info(f"Story deletion cancelled by user. Key: {story_key}")
                     return False
-            except JIRAError as e:
-                logging.error(f"Error deleting story: {e}")
-                return False
+
+            issue.delete()
+            logging.info(f"Story deleted successfully. Key: {story_key}")
+            return True
+        else:
+            logging.error(f"Story with key {story_key} does not exist.")
+            return False
+    except JIRAError as e:
+        logging.error(f"Error deleting story: {e}")
+        return False
+
 
 def add_comment(jira, story_key, comment_body):
             """
@@ -920,23 +812,33 @@ def unlink_story_from_epic(jira, story_key):
     except JIRAError as e:
         logging.error(f"Error unlinking story from epic: {e}")
         return False
-    
-def delete_epic(jira, epic_key):
+def delete_epic(jira, epic_key, auto_confirm=False):
     """
     Delete an Epic in Jira.
 
     Args:
         jira (JIRA): An authenticated JIRA client instance.
         epic_key (str): The key of the Epic to delete.
+        auto_confirm (bool): If True, skips the confirmation prompt and deletes the Epic directly.
 
     Returns:
         bool: True if the Epic was deleted successfully, False otherwise.
     """
     try:
         issue = jira.issue(epic_key)
-        issue.delete()
-        logging.info(f"Epic deleted successfully. Key: {epic_key}")
-        return True
+        if issue:
+            if not auto_confirm:
+                confirmation = input(f"Do you really want to delete the epic with key {epic_key}? [y/n]: ").strip().lower()
+                if confirmation != 'y':
+                    logging.info(f"Epic deletion cancelled by user. Key: {epic_key}")
+                    return False
+
+            issue.delete()
+            logging.info(f"Epic deleted successfully. Key: {epic_key}")
+            return True
+        else:
+            logging.error(f"Epic with key {epic_key} does not exist.")
+            return False
     except JIRAError as e:
         logging.error(f"Error deleting epic: {e}")
         return False
@@ -1184,34 +1086,45 @@ def sprint_report(jira, sprint_id, project_key):
     except JIRAError as e:
         logging.error(f"Error generating sprint report: {e}")
 
-def delete_sprint(jira, sprint_id):
+def delete_sprint(jira, sprint_id, auto_confirm=False):
     """
     Delete a sprint in Jira.
 
     Args:
         jira (JIRA): An authenticated JIRA client instance.
         sprint_id (int): The ID of the sprint to delete.
+        auto_confirm (bool): If True, skips the confirmation prompt and deletes the sprint directly.
 
     Returns:
         bool: True if the sprint is deleted successfully, False otherwise.
     """
     try:
         sprint = jira.sprint(sprint_id)
-        sprint.delete()
-        logging.info(f"Sprint with ID {sprint_id} deleted successfully.")
-        return True
+        if sprint:
+            if not auto_confirm:
+                confirmation = input(f"Do you really want to delete the sprint with ID {sprint_id}? [y/n]: ").strip().lower()
+                if confirmation != 'y':
+                    logging.info(f"Sprint deletion cancelled by user. ID: {sprint_id}")
+                    return False
+
+            sprint.delete()
+            logging.info(f"Sprint with ID {sprint_id} deleted successfully.")
+            return True
+        else:
+            logging.error(f"Sprint with ID {sprint_id} does not exist.")
+            return False
     except JIRAError as e:
         logging.error(f"Error deleting sprint: {e}")
         return False
-    
 
-def delete_all_sprints(jira, board_id):
+def delete_all_sprints(jira, board_id, auto_confirm=False):
     """
     Delete all sprints associated with a board in Jira.
 
     Args:
         jira (JIRA): An authenticated JIRA client instance.
         board_id (int): The ID of the board containing the sprints to be deleted.
+        auto_confirm (bool): If True, skips the confirmation prompt and deletes the sprints directly.
 
     Returns:
         bool: True if all sprints are deleted successfully, False otherwise.
@@ -1219,6 +1132,12 @@ def delete_all_sprints(jira, board_id):
     try:
         # Retrieve all sprints in the board
         sprints = jira.sprints(board_id)
+
+        if not auto_confirm:
+            confirmation = input(f"Do you really want to delete all sprints for board ID {board_id}? [y/n]: ").strip().lower()
+            if confirmation != 'y':
+                logging.info(f"Deletion of all sprints cancelled by user. Board ID: {board_id}")
+                return False
 
         # Delete each sprint
         for sprint in sprints:
@@ -1230,6 +1149,7 @@ def delete_all_sprints(jira, board_id):
     except JIRAError as e:
         logging.error(f"Error deleting sprints: {e}")
         return False
+
 
 def get_board_id(jira, board_name):
     """
@@ -2054,7 +1974,7 @@ def print_boundary(term):
 
 
 
-def get_members(jira, project_key):
+def list_members(jira, project_key):
     """
     Retrieve the unique user names assigned to issues in a project.
 
@@ -2089,7 +2009,7 @@ def get_members(jira, project_key):
         return None
 
 
-def get_members_tui(jira, project_key):
+def list_members_tui(jira, project_key):
     """
     Retrieve and display unique user names assigned to issues in a project with TUI formatting.
 
@@ -2233,7 +2153,7 @@ def move_all_issues_to_sprint(jira, project_key, target_sprint_id):
     except Exception as e:
         logging.error(f"Error moving all issues to Sprint: {e}")
 
-def summary(jira, project_key):
+def get_project_details(jira, project_key):
     """
     Generate a summary for the specified project including projects, sprints, epics, issues, and members.
 
@@ -2299,7 +2219,7 @@ def summary(jira, project_key):
 
         # Get members
         print(term.bold("Members:"))
-        members = get_members(jira, project_key)
+        members = list_members(jira, project_key)
         if members:
             for member in members:
                 print_row(term, [member])
@@ -2371,7 +2291,7 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
                 if summary and description:
                     new_story = create_story(jira, project_key, summary, description)
                     if new_story and assignee_username:
-                        update_assignee(jira, new_story.key, assignee_username)
+                        update_story_assignee(jira, new_story.key, assignee_username)
                 else:
                     logging.warning(
                         "Skipped a row due to missing summary or description"
@@ -2454,55 +2374,39 @@ def parse_arguments():
     delete_story_parser.add_argument(
         "-sk", "--story-key", metavar="story_key", required=True
     )
-    update_summary_parser = story_subparsers.add_parser(
-        "update-summary", help="Update story summary"
+    delete_story_parser.add_argument(
+        "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
     )
-    update_summary_parser.add_argument(
-        "-sk", "--story-key", metavar="story_key", required=True
+    update_story_parser = story_subparsers.add_parser(
+        "update", help="Update a story"
     )
-    update_summary_parser.add_argument(
-        "-s", "--summary", metavar="new_summary", required=True
+    update_story_parser.add_argument(
+        "-sk", "--story-key", metavar="story_key", required=True, help="The key of the story to update"
     )
-    update_description_parser = story_subparsers.add_parser(
-        "update-description", help="Update story description"
+    update_story_parser.add_argument(
+        "-s", "--summary", metavar="new_summary", help="The new summary for the story"
     )
-    update_description_parser.add_argument(
-        "-sk", "--story-key", metavar="story_key", required=True
+    update_story_parser.add_argument(
+        "-d", "--description", metavar="new_description", help="The new description for the story"
     )
-    update_description_parser.add_argument(
-        "-d", "--description", metavar="new_description", required=True
+    update_story_parser.add_argument(
+        "-ns", "--new-status", metavar="new_status", help="The new status for the story"
     )
-    update_status_parser = story_subparsers.add_parser(
-        "update-status", help="Update the status of a story"
+    update_story_parser.add_argument(
+        "-a", "--assignee", metavar="new_assignee", help="The new assignee for the story"
     )
-    update_status_parser.add_argument(
+    get_assignee_parser = story_subparsers.add_parser(
+        "get-assignee", help="get the assignee of a story"
+    )
+    get_assignee_parser.add_argument(
         "-sk", "--story-key", metavar="story_key", required=True, help="Story key"
-    )
-    update_status_parser.add_argument(
-        "-ns", "--new-status", metavar="new_status", required=True, help="New status"
-    )
-    view_assignee_parser = story_subparsers.add_parser(
-        "view-assignee", help="View the assignee of a story"
-    )
-    view_assignee_parser.add_argument(
-        "-sk", "--story-key", metavar="story_key", required=True, help="Story key"
-    )
-    update_assignee_parser = story_subparsers.add_parser(
-        "update-assignee", help="Update the assignee of a story"
-    )
-    update_assignee_parser.add_argument(
-        "-sk", "--story-key", metavar="story_key", required=True, help="story key"
-    )
-    update_assignee_parser.add_argument(
-        "-uid",
-        "--user-accound-id",
-        metavar="user_account_id",
-        required=True,
-        help="User account ID",
     )
     delete_story_parser = story_subparsers.add_parser("delete", help="Delete a story")
     delete_story_parser.add_argument(
         "-sk", "--story-key", metavar="story_key", required=True, help="Story Key"
+    )
+    delete_story_parser.add_argument(
+        "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
     )
 
     # Project Related
@@ -2542,17 +2446,10 @@ def parse_arguments():
     delete_parser.add_argument(
         "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
     )
-    project_subparsers.add_parser("delete-a", help="Delete all projects")
     project_subparsers.add_parser("list", help="List all projects")
     project_subparsers.add_parser(
-        "get-members", help="Retrieve members in a Jira project"
+        "list-members", help="Retrieve members in a Jira project"
     ).add_argument("-pk", "--project-key", metavar="project_key", required=True)
-    delete_all_stories_parser = project_subparsers.add_parser(
-        "delete-a-stories", help="Delete all stories in a project"
-    )
-    delete_all_stories_parser.add_argument(
-        "-pk", "--project-key", metavar="project_key", required=True
-    )
     list_stories_parser = project_subparsers.add_parser(
         "list-stories", help="List all stories in a project"
     )
@@ -2568,10 +2465,10 @@ def parse_arguments():
     my_stories_parser.add_argument(
         "-u", "--user", metavar="user", required=True, help="User"
     )
-    summary_parser = project_subparsers.add_parser(
-        "summary", help="Generate summary for a project"
+    get_project_details_parser = project_subparsers.add_parser(
+        "get-details", help="Get details for a project"
     )
-    summary_parser.add_argument(
+    get_project_details_parser.add_argument(
         "-pk", "--project-key", metavar="project_key", required=True, help="Project key"
     )
     get_id_parser = project_subparsers.add_parser("get-id", help="Get the ID of a user by name")
@@ -2624,6 +2521,9 @@ def parse_arguments():
     delete_epic_parser = epic_subparsers.add_parser("delete", help="Delete an epic")
     delete_epic_parser.add_argument(
         "-ek", "--epic-key", metavar="epic_key", required=True
+    )
+    delete_epic_parser.add_argument(
+        "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
     )
 
     # Board Related
@@ -2733,11 +2633,17 @@ def parse_arguments():
     delete_sprint_parser.add_argument(
         "-sid", "--sprint-id", metavar="sprint_id", required=True, help="Sprint ID"
     )
+    delete_sprint_parser.add_argument(
+        "-y", "--yes", action="store_true", help = "Confirm deletion without prompting"
+    )
     delete_all_sprints_parser = sprint_subparsers.add_parser(
         "delete-a", help="Delete all sprints in a board"
     )
     delete_all_sprints_parser.add_argument(
         "-bid", "--board-id", metavar="board_id", required=True, help="Board ID"
+    )
+    delete_all_sprints_parser.add_argument(
+        "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
     )
     move_single_issue_parser = sprint_subparsers.add_parser(
         "move-issue", help="Move a single issue to a sprint"
@@ -2831,26 +2737,19 @@ def main():
                             create_story(jira, args.project_key, args.summary, args.description)
                         elif args.story_action == "get-details":
                             get_story_details_tui(jira, args.story_key)
+                        elif args.story_action == "update":
+                            if args.summary:
+                                update_story_summary(jira, args.story_key, args.summary)
+                            if args.description:
+                                update_story_description(jira, args.story_key, args.description)
+                            if args.new_status:
+                                update_story_status(jira, args.story_key, args.new_status)
+                            if args.assignee:
+                                update_story_assignee(jira, args.story_key, args.assignee)
+                        elif args.story_action == "get-assignee":
+                            get_assignee(jira, args.story_key)
                         elif args.story_action == "delete":
-                            delete_story(jira, args.story_key)
-                        elif args.story_action == "update-summary":
-                            update_story_summary(jira, args.story_key, args.summary)
-                        elif args.story_action == "update-description":
-                            update_story_description(
-                                jira, args.story_key, args.description
-                            )
-                        elif args.story_action == "update-status":
-                            success = update_story_status(jira, args.story_key, args.new_status, print_info=True )
-                            if success:
-                                logging.info(f"Story {args.story_key} status updated to {args.new_status} successfully." )
-                            else:
-                                logging.error(f"Failed to update story {args.story_key} status to {args.new_status}.")
-                        elif args.story_action == "view-assignee":
-                            view_assignee(jira, args.story_key)
-                        elif args.story_action == "update-assignee":
-                            update_assignee(args.story_key, args.user_accound_id)
-                        elif args.story_action == "delete":
-                                delete_story(jira, args.story_key)
+                                delete_story(jira, args.story_key, auto_confirm=args.yes)
                     elif args.command == "project":
                         if args.project_action == "get-id":
                             user_account_id = get_user_account_id(jira, args.username)
@@ -2864,24 +2763,20 @@ def main():
                             )
                         elif args.project_action == "delete":
                             delete_project(jira, args.project_key, auto_confirm=args.yes)
-                        elif args.project_action == "delete-a":
-                            delete_all_projects(jira)
                         elif args.project_action == "list":
                             list_projects(jira)
-                        elif args.project_action == "delete-a-stories":
-                            delete_all_stories_in_project(jira, args.project_key)
                         elif args.project_action == "list-stories":
                             stories = list_stories_for_project(jira, args.project_key)
                             if stories:
                                 render_tui(stories, fetching_data=False)
                             else:
                                 logging.error("No stories found")
-                        elif args.project_action == "get-members":
-                            get_members_tui(jira, args.project_key)
+                        elif args.project_action == "list-members":
+                            list_members_tui(jira, args.project_key)
                         elif args.project_action == "my-stories":
                             my_stories_tui(jira, args.project_key, args.user)
-                        elif args.project_action == "summary":
-                            summary(jira, args.project_key)
+                        elif args.project_action == "get-details":
+                            get_project_details(jira, args.project_key)
                     elif args.command == "epic":
                         if args.epic_action == "create":
                             create_epic(jira, args.project_key, args.name, args.summary)
@@ -2890,7 +2785,7 @@ def main():
                                 jira, args.epic_key, args.summary, args.description
                             )
                         elif args.epic_action == "delete":
-                            delete_epic(jira, args.epic_key)
+                            delete_epic(jira, args.epic_key,auto_confirm=args.yes)
                         elif args.epic_action == "list":
                             list_epics_tui(jira, args.project_key)
                         elif args.epic_action == "get-details":
@@ -2941,9 +2836,9 @@ def main():
                         elif args.sprint_action == "report":
                             sprint_report_tui(jira, args.sprint_id, args.project_key)
                         elif args.sprint_action == "delete":
-                            delete_sprint(jira, args.sprint_id)
+                            delete_sprint(jira, args.sprint_id, auto_confirm=args.yes)
                         elif args.sprint_action == "delete-a":
-                            delete_all_sprints(jira, args.board_id)
+                            delete_all_sprints(jira, args.board_id, auto_confirm=args.yes)
                         elif args.sprint_action == "move-issue":
                             move_single_issue_to_sprint(
                                 jira, args.story_key, args.sprint_id
