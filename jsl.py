@@ -1091,7 +1091,7 @@ def update_sprint_summary(jira, sprint_id, new_summary):
         return False
 
 
-def sprint_report(jira, sprint_id, project_key):
+def get_sprint_details(jira, sprint_id, project_key):
     """
     Generate a report for a sprint in Jira.
 
@@ -1649,7 +1649,7 @@ def list_sprints_for_board_tui(jira, board_id):
         logging.error(f"Error retrieving sprints for board: {e}")
 
 
-def sprint_report_tui(jira, sprint_id, project_key):
+def get_sprint_details_tui(jira, sprint_id, project_key):
     """
     Render a text-based user interface (TUI) to display a sprint report.
 
@@ -1904,87 +1904,87 @@ def list_stories_in_sprint_tui(jira, sprint_id):
         return None
 
 
-def sprint_report_tui(jira, sprint_id, project_key):
-    """
-    Generate a text-based user interface (TUI) sprint report for a specified sprint.
+# def sprint_report_tui(jira, sprint_id, project_key):
+#     """
+#     Generate a text-based user interface (TUI) sprint report for a specified sprint.
 
-    Args:
-        jira: JIRA connection object.
-        sprint_id (str): ID of the sprint.
-        project_key (str): Key of the project.
+#     Args:
+#         jira: JIRA connection object.
+#         sprint_id (str): ID of the sprint.
+#         project_key (str): Key of the project.
 
-    Returns:
-        None
-    """
-    try:
-        term = blessed.Terminal()
+#     Returns:
+#         None
+#     """
+#     try:
+#         term = blessed.Terminal()
 
-        # Get detailed information about the sprint
-        sprint_info = jira.sprint(sprint_id)
-        if not sprint_info:
-            print(f"Sprint with ID {sprint_id} not found.")
-            return
+#         # Get detailed information about the sprint
+#         sprint_info = jira.sprint(sprint_id)
+#         if not sprint_info:
+#             print(f"Sprint with ID {sprint_id} not found.")
+#             return
 
-        # Print sprint details with TUI formatting
-        print(term.bold("Sprint Details:"))
-        print_boundary(term)
-        for key, value in sprint_info.raw.items():
-            print_row(term, [key, value])
-        print_boundary(term)
+#         # Print sprint details with TUI formatting
+#         print(term.bold("Sprint Details:"))
+#         print_boundary(term)
+#         for key, value in sprint_info.raw.items():
+#             print_row(term, [key, value])
+#         print_boundary(term)
 
-        # Define the JQL query to search for issues of type 'Story' in the sprint
-        jql_query = (
-            f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
-        )
+#         # Define the JQL query to search for issues of type 'Story' in the sprint
+#         jql_query = (
+#             f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
+#         )
 
-        # Search for issues using the JQL query
-        issues = jira.search_issues(jql_query)
+#         # Search for issues using the JQL query
+#         issues = jira.search_issues(jql_query)
 
-        # Count issue statuses
-        status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
-        for issue in issues:
-            status = issue.fields.status.name
-            if status in status_counts:
-                status_counts[status] += 1
+#         # Count issue statuses
+#         status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
+#         for issue in issues:
+#             status = issue.fields.status.name
+#             if status in status_counts:
+#                 status_counts[status] += 1
 
-        # Print issue status distribution with TUI formatting
-        print(term.bold("Issue Status Distribution in Sprint:"))
-        print_boundary(term)
-        for status, count in status_counts.items():
-            print_row(term, [status, str(count)])
-        print_boundary(term)
+#         # Print issue status distribution with TUI formatting
+#         print(term.bold("Issue Status Distribution in Sprint:"))
+#         print_boundary(term)
+#         for status, count in status_counts.items():
+#             print_row(term, [status, str(count)])
+#         print_boundary(term)
 
-    except Exception as e:
-        print(f"Error generating sprint report: {e}")
-
-
-def print_row(term, row):
-    """
-    Print a row of data with TUI formatting.
-
-    Args:
-        term: blessed.Terminal object.
-        row (list): List of fields to print in the row.
-
-    Returns:
-        None
-    """
-    formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
-    print(f"| {' | '.join(formatted_row)} |")
+#     except Exception as e:
+#         print(f"Error generating sprint report: {e}")
 
 
-def print_boundary(term):
-    """
-    Print a boundary line with TUI formatting.
+# def print_row(term, row):
+#     """
+#     Print a row of data with TUI formatting.
 
-    Args:
-        term: blessed.Terminal object.
+#     Args:
+#         term: blessed.Terminal object.
+#         row (list): List of fields to print in the row.
 
-    Returns:
-        None
-    """
-    boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary))
+#     Returns:
+#         None
+#     """
+#     formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
+#     print(f"| {' | '.join(formatted_row)} |")
+
+
+# def print_boundary(term):
+#     """
+#     Print a boundary line with TUI formatting.
+
+#     Args:
+#         term: blessed.Terminal object.
+
+#     Returns:
+#         None
+#     """
+#     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
+#     print(term.green(boundary))
 
 
 def my_stories_tui(jira, project_key, user):
@@ -2732,13 +2732,13 @@ def parse_arguments():
         required=True,
         help="End date of the sprint",
     )
-    sprint_report_parser = sprint_subparsers.add_parser(
+    get_sprint_details_parser = sprint_subparsers.add_parser(
         "report", help="Generate a sprint report"
     )
-    sprint_report_parser.add_argument(
+    get_sprint_details_parser.add_argument(
         "-sid", "--sprint-id", metavar="sprint_id", required=True, help="Sprint ID"
     )
-    sprint_report_parser.add_argument(
+    get_sprint_details_parser.add_argument(
         "-pk", "--project-key", metavar="project_key", required=True, help="Project key"
     )
     delete_sprint_parser = sprint_subparsers.add_parser(
@@ -2952,7 +2952,7 @@ def main():
                             jira, args.sprint_id, args.start_date, args.end_date
                         )
                     elif args.sprint_action == "report":
-                        sprint_report_tui(jira, args.sprint_id, args.project_key)
+                        get_sprint_details_tui(jira, args.sprint_id, args.project_key)
                     elif args.sprint_action == "delete":
                         delete_sprint(jira, args.sprint_id, auto_confirm=args.yes)
                     elif args.sprint_action == "delete-a":
