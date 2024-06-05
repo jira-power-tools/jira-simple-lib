@@ -17,50 +17,95 @@ from jira import JIRAError
 import requests
 
 
-load_dotenv()
+def load_dotenv():
+    """
+    Load environment variables from a .env file.
+    """
+    # Implementation of load_dotenv() function goes here
 
 
-# Load credentials from JSON file
 def load_credentials(file_path):
+    """
+    Load credentials from a JSON file.
+
+    Args:
+        file_path (str): Path to the JSON file containing credentials.
+
+    Returns:
+        dict: A dictionary containing the loaded credentials.
+    """
     with open(file_path, "r") as f:
         credentials = json.load(f)
     return credentials
 
 
-# Set environment variables from credentials
 def set_environment_variables(credentials):
+    """
+    Set environment variables from credentials.
+
+    Args:
+        credentials (dict): A dictionary containing the credentials.
+
+    """
     os.environ["JIRA_URL"] = credentials["jira_url"]
     os.environ["API_TOKEN"] = credentials["api_token"]
     os.environ["USER"] = credentials["user"]
 
 
-# Call the function to load credentials and set environment variables
 def initialize(config_file):
+    """
+    Initialize the application by loading credentials and setting environment variables.
+
+    Args:
+        config_file (str): Path to the configuration file.
+
+    """
     if os.path.exists(config_file):
         credentials = load_credentials(config_file)
         set_environment_variables(credentials)
     else:
         jira_url, username, api_token = get_user_credentials()
-        save_config = input("Do you want to save these credentials for future use? (y/n): ")
+        save_config = input(
+            "Do you want to save these credentials for future use? (y/n): "
+        )
         if save_config.lower() == "y":
             save_credentials_to_config(config_file, jira_url, username, api_token)
-        set_environment_variables({"jira_url": jira_url, "user": username, "api_token": api_token})
+        set_environment_variables(
+            {"jira_url": jira_url, "user": username, "api_token": api_token}
+        )
+
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def read_config(filename):
+    """
+    Read configuration from a JSON file.
+
+    Args:
+        filename (str): Path to the configuration file.
+
+    Returns:
+        dict: A dictionary containing the configuration.
+    """
     with open(filename, "r") as f:
         config = json.load(f)
     return config
 
 
 def get_user_credentials():
+    """
+    Prompt the user to enter Jira URL, username, and API token.
+
+    Returns:
+        tuple: A tuple containing Jira URL, username, and API token.
+    """
     jira_url = input("Enter Jira URL: ")
     username = input("Enter username: ")
     api_token = input("Enter API token: ")
     return jira_url, username, api_token
+
 
 def save_credentials_to_config(config_file, jira_url, username, api_token):
     """
@@ -76,7 +121,6 @@ def save_credentials_to_config(config_file, jira_url, username, api_token):
     with open(config_file, "w") as f:
         json.dump(config_data, f)
     logging.info(f"Credentials saved to {config_file}")
-
 
 
 def create_jira_connection(jira_url, username, api_token):
@@ -110,10 +154,6 @@ def create_jira_connection(jira_url, username, api_token):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         raise
-
-
-
-
 
 
 def create_jira_project(jira, project_name, project_key):
@@ -836,7 +876,7 @@ def add_issues_to_epic(jira, epic_key, issue_keys):
         if not epic:
             logging.error(f"Epic with key {epic_key} does not exist.")
             return False
-        
+
         # Check if the issue keys exist
         if isinstance(issue_keys, str):
             issue_keys = [issue_keys]
@@ -845,7 +885,7 @@ def add_issues_to_epic(jira, epic_key, issue_keys):
             if not issue:
                 logging.error(f"Issue with key {issue_key} does not exist.")
                 return False
-        
+
         # Add issues to the epic
         for issue_key in issue_keys:
             issue = jira.issue(issue_key)
@@ -855,6 +895,7 @@ def add_issues_to_epic(jira, epic_key, issue_keys):
     except JIRAError as e:
         logging.error(f"Error adding issues to epic: {e}")
         return False
+
 
 def unlink_story_from_epic(jira, issue_key):
     """
@@ -2401,7 +2442,7 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
             for row in rows:
                 summary = row.get("Summary")
                 description = row.get("Description")
-                issue_type = row.get("Issue Type", "Task")
+                issue_type = row.get("Issue Type", "Task", "Bug", "Improvement")
                 assignee_username = row.get("Assignee Username")
 
                 if summary and description:
@@ -2848,153 +2889,137 @@ def parse_arguments():
 
 
 def main():
-        parser = parse_arguments()
-        args = parser.parse_args()
-        config_file = args.config
-        initialize(config_file)
-        jira_url = os.getenv("JIRA_URL")
-        username = os.getenv("USER")
-        api_token = os.getenv("API_TOKEN")
-        jira = create_jira_connection(jira_url, username, api_token)
-        if not jira:
-            logger.error("Unable to create Jira connection, exiting.")
-            sys.exit(1)
-        try:
-            if args.command == "story":
-                if args.story_action == "create_from_csv":
-                    create_stories_from_csv(
-                        jira, args.project_key, args.csv_file_path
+    parser = parse_arguments()
+    args = parser.parse_args()
+    config_file = args.config
+    initialize(config_file)
+    jira_url = os.getenv("JIRA_URL")
+    username = os.getenv("USER")
+    api_token = os.getenv("API_TOKEN")
+    jira = create_jira_connection(jira_url, username, api_token)
+    if not jira:
+        logger.error("Unable to create Jira connection, exiting.")
+        sys.exit(1)
+    try:
+        if args.command == "story":
+            if args.story_action == "create_from_csv":
+                create_stories_from_csv(jira, args.project_key, args.csv_file_path)
+            elif args.story_action == "add-comment":
+                add_comment(jira, args.issue_key, args.message)
+            elif args.story_action == "create":
+                create_story(jira, args.project_key, args.summary, args.description)
+            elif args.story_action == "get-details":
+                get_story_details_tui(jira, args.issue_key)
+            elif args.story_action == "update":
+                if args.summary:
+                    update_story_summary(jira, args.issue_key, args.summary)
+                if args.description:
+                    update_story_description(jira, args.issue_key, args.description)
+                if args.new_status:
+                    update_story_status(jira, args.issue_key, args.new_status)
+                if args.assignee:
+                    update_story_assignee(jira, args.issue_key, args.assignee)
+            elif args.story_action == "get-assignee":
+                get_assignee(jira, args.issue_key)
+            elif args.story_action == "delete":
+                delete_story(jira, args.issue_key, auto_confirm=args.yes)
+        elif args.command == "project":
+            if args.project_action == "get-id":
+                user_account_id = get_user_account_id(jira, args.username)
+                if user_account_id is not None:
+                    logging.info(
+                        f"Account ID of user '{args.username}': {user_account_id}"
                     )
-                elif args.story_action == "add-comment":
-                    add_comment(jira, args.issue_key, args.message)
-                elif args.story_action == "create":
-                    create_story(
-                        jira, args.project_key, args.summary, args.description
-                    )
-                elif args.story_action == "get-details":
-                    get_story_details_tui(jira, args.issue_key)
-                elif args.story_action == "update":
-                    if args.summary:
-                        update_story_summary(jira, args.issue_key, args.summary)
-                    if args.description:
-                        update_story_description(
-                            jira, args.issue_key, args.description
-                        )
-                    if args.new_status:
-                        update_story_status(jira, args.issue_key, args.new_status)
-                    if args.assignee:
-                        update_story_assignee(jira, args.issue_key, args.assignee)
-                elif args.story_action == "get-assignee":
-                    get_assignee(jira, args.issue_key)
-                elif args.story_action == "delete":
-                    delete_story(jira, args.issue_key, auto_confirm=args.yes)
-            elif args.command == "project":
-                if args.project_action == "get-id":
-                    user_account_id = get_user_account_id(jira, args.username)
-                    if user_account_id is not None:
-                        logging.info(
-                            f"Account ID of user '{args.username}': {user_account_id}"
-                        )
-                elif args.project_action == "create":
-                    create_jira_project(jira, args.name, args.project_key)
-                elif args.project_action == "update":
-                    update_jira_project(
-                        jira, args.project_key, args.name, args.new_key
-                    )
-                elif args.project_action == "delete":
-                    delete_project(jira, args.project_key, auto_confirm=args.yes)
-                elif args.project_action == "list":
-                    list_projects(jira)
-                elif args.project_action == "list-stories":
-                    stories = list_stories_for_project(jira, args.project_key)
-                    if stories:
-                        render_tui(stories, fetching_data=False)
-                    else:
-                        logging.error("No stories found")
-                elif args.project_action == "list-members":
-                    list_members_tui(jira, args.project_key)
-                elif args.project_action == "my-stories":
-                    my_stories_tui(jira, args.project_key, args.user)
-                elif args.project_action == "get-details":
-                    get_project_details(jira, args.project_key)
-            elif args.command == "epic":
-                if args.epic_action == "create":
-                    create_epic(jira, args.project_key, args.name, args.summary)
-                elif args.epic_action == "update":
-                    update_epic(jira, args.epic_key, args.summary, args.description)
-                elif args.epic_action == "delete":
-                    delete_epic(jira, args.epic_key, auto_confirm=args.yes)
-                elif args.epic_action == "list":
-                    list_epics_tui(jira, args.project_key)
-                elif args.epic_action == "get-details":
-                    get_epic_details_tui(jira, args.epic_key)
-                elif args.epic_action == "add-issues":
-                    add_issues_to_epic(jira, args.epic_key, args.issue_key)
-                elif args.epic_action == "unlink-story":
-                    unlink_story_from_epic(jira, args.issue_key)
-            elif args.command == "board":
-                if args.board_action == "get-id":
-                    board_id = get_board_id(jira, args.name)
-                    if board_id:
-                        print(f"The ID of the board '{args.name}' is: {board_id}")
-            elif args.command == "sprint":
-                if args.sprint_action == "create":
-                    create_sprint(jira, args.board_id, args.name)
-                elif args.sprint_action == "update-summary":
-                    update_sprint_summary(jira, args.sprint_id, args.new_summary)
-                elif args.sprint_action == "list":
-                    sprints = list_sprints_for_board_tui(jira, args.board_id)
-                    if sprints:
-                        for sprint in sprints:
-                            logging.info(
-                                f"Sprint ID: {sprint.id}, Name: {sprint.name}, State: {sprint.state}"
-                            )
-                elif args.sprint_action == "start":
-                    start_sprint(
-                        jira,
-                        args.sprint_id,
-                        args.new_summary,
-                        args.start_date,
-                        args.end_date,
-                    )
-                elif args.sprint_action == "list-stories":
-                    list_stories_in_sprint_tui(jira, args.sprint_id)
-                elif args.sprint_action == "complete-stories":
-                    complete_stories_in_sprint(
-                        jira, args.sprint_id, args.print_info
-                    )
-                elif args.sprint_action == "complete":
-                    complete_sprint(
-                        jira, args.sprint_id, args.start_date, args.end_date
-                    )
-                elif args.sprint_action == "report":
-                    get_sprint_details_tui(jira, args.sprint_id, args.project_key)
-                elif args.sprint_action == "delete":
-                    delete_sprint(jira, args.sprint_id, auto_confirm=args.yes)
-                elif args.sprint_action == "delete-a":
-                    delete_all_sprints(jira, args.board_id, auto_confirm=args.yes)
-                elif args.sprint_action == "move-issue":
-                    move_single_issue_to_sprint(
-                        jira, args.issue_key, args.sprint_id
-                    )
-                elif args.sprint_action == "move-issues-range":
-                    move_issues_in_range_to_sprint(
-                        jira,
-                        args.project_key,
-                        args.start_issue_key,
-                        args.end_issue_key,
-                        args.sprint_id,
-                    )
-                elif args.sprint_action == "move-a-issues":
-                    move_all_issues_to_sprint(
-                        jira, args.project_key, args.sprint_id
-                    )
+            elif args.project_action == "create":
+                create_jira_project(jira, args.name, args.project_key)
+            elif args.project_action == "update":
+                update_jira_project(jira, args.project_key, args.name, args.new_key)
+            elif args.project_action == "delete":
+                delete_project(jira, args.project_key, auto_confirm=args.yes)
+            elif args.project_action == "list":
+                list_projects(jira)
+            elif args.project_action == "list-stories":
+                stories = list_stories_for_project(jira, args.project_key)
+                if stories:
+                    render_tui(stories, fetching_data=False)
                 else:
-                    logging.error("Failed to establish Jira connection.")
+                    logging.error("No stories found")
+            elif args.project_action == "list-members":
+                list_members_tui(jira, args.project_key)
+            elif args.project_action == "my-stories":
+                my_stories_tui(jira, args.project_key, args.user)
+            elif args.project_action == "get-details":
+                get_project_details(jira, args.project_key)
+        elif args.command == "epic":
+            if args.epic_action == "create":
+                create_epic(jira, args.project_key, args.name, args.summary)
+            elif args.epic_action == "update":
+                update_epic(jira, args.epic_key, args.summary, args.description)
+            elif args.epic_action == "delete":
+                delete_epic(jira, args.epic_key, auto_confirm=args.yes)
+            elif args.epic_action == "list":
+                list_epics_tui(jira, args.project_key)
+            elif args.epic_action == "get-details":
+                get_epic_details_tui(jira, args.epic_key)
+            elif args.epic_action == "add-issues":
+                add_issues_to_epic(jira, args.epic_key, args.issue_key)
+            elif args.epic_action == "unlink-story":
+                unlink_story_from_epic(jira, args.issue_key)
+        elif args.command == "board":
+            if args.board_action == "get-id":
+                board_id = get_board_id(jira, args.name)
+                if board_id:
+                    print(f"The ID of the board '{args.name}' is: {board_id}")
+        elif args.command == "sprint":
+            if args.sprint_action == "create":
+                create_sprint(jira, args.board_id, args.name)
+            elif args.sprint_action == "update-summary":
+                update_sprint_summary(jira, args.sprint_id, args.new_summary)
+            elif args.sprint_action == "list":
+                sprints = list_sprints_for_board_tui(jira, args.board_id)
+                if sprints:
+                    for sprint in sprints:
+                        logging.info(
+                            f"Sprint ID: {sprint.id}, Name: {sprint.name}, State: {sprint.state}"
+                        )
+            elif args.sprint_action == "start":
+                start_sprint(
+                    jira,
+                    args.sprint_id,
+                    args.new_summary,
+                    args.start_date,
+                    args.end_date,
+                )
+            elif args.sprint_action == "list-stories":
+                list_stories_in_sprint_tui(jira, args.sprint_id)
+            elif args.sprint_action == "complete-stories":
+                complete_stories_in_sprint(jira, args.sprint_id, args.print_info)
+            elif args.sprint_action == "complete":
+                complete_sprint(jira, args.sprint_id, args.start_date, args.end_date)
+            elif args.sprint_action == "report":
+                get_sprint_details_tui(jira, args.sprint_id, args.project_key)
+            elif args.sprint_action == "delete":
+                delete_sprint(jira, args.sprint_id, auto_confirm=args.yes)
+            elif args.sprint_action == "delete-a":
+                delete_all_sprints(jira, args.board_id, auto_confirm=args.yes)
+            elif args.sprint_action == "move-issue":
+                move_single_issue_to_sprint(jira, args.issue_key, args.sprint_id)
+            elif args.sprint_action == "move-issues-range":
+                move_issues_in_range_to_sprint(
+                    jira,
+                    args.project_key,
+                    args.start_issue_key,
+                    args.end_issue_key,
+                    args.sprint_id,
+                )
+            elif args.sprint_action == "move-a-issues":
+                move_all_issues_to_sprint(jira, args.project_key, args.sprint_id)
+            else:
+                logging.error("Failed to establish Jira connection.")
 
-        except Exception as e:
-            logging.error(f"An error occurred: {str(e)}")
-            sys.exit(1)
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
