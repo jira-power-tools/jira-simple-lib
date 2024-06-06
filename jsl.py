@@ -1159,6 +1159,7 @@ def update_sprint_summary(jira, sprint_id, new_summary):
         return False
 
 
+
 def get_sprint_details(jira, sprint_id, project_key):
     """
     Generate a report for a sprint in Jira.
@@ -2727,14 +2728,24 @@ def parse_arguments():
     sprint_create_parser.add_argument(
         "-n", "--name", metavar="sprint_name", required=True
     )
-    sprint_summary_parser = sprint_subparsers.add_parser(
-        "update-summary", help="Update sprint summary"
+    # Assuming you have already defined the 'sprint_parser' and 'sprint_subparsers' objects
+
+    # Create subparser for updating a sprint
+    update_sprint_parser = sprint_subparsers.add_parser("update", help="Update a sprint")
+
+    # Add arguments for updating a sprint
+    update_sprint_parser.add_argument(
+        "-sid",
+        "--sprint-id",
+        metavar="sprint_id",
+        required=True,
+        help="The ID of the sprint to update",
     )
-    sprint_summary_parser.add_argument(
-        "-sid", "--sprint-id", metavar="sprint_id", required=True, help="Sprint ID"
-    )
-    sprint_summary_parser.add_argument(
-        "-ns", "--new_summary", metavar="new_summary", required=True, help="New summary"
+    update_sprint_parser.add_argument(
+        "-ns",
+        "--new-summary",
+        metavar="new_summary",
+        help="The new summary for the sprint",
     )
     sprint_subparsers.add_parser("delete", help="Delete a sprint").add_argument(
         "-sid", "--sprint-id", metavar="sprint_id", required=True
@@ -2972,9 +2983,9 @@ def main():
                     print(f"The ID of the board '{args.name}' is: {board_id}")
         elif args.command == "sprint":
             if args.sprint_action == "create":
-                create_sprint(jira, args.board_id, args.name)
-            elif args.sprint_action == "update-summary":
-                update_sprint_summary(jira, args.sprint_id, args.new_summary)
+                create_sprint(jira, args.board_id, args.name)        
+            elif args.sprint_action == "update":
+                    update_sprint_summary(jira, args.sprint_id, args.new_summary)
             elif args.sprint_action == "list":
                 sprints = list_sprints_for_board_tui(jira, args.board_id)
                 if sprints:
