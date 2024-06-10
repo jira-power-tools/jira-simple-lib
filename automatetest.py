@@ -1,15 +1,13 @@
 import unittest
-import logging
-from datetime import datetime
-import requests
-from jira import JIRAError
-from unittest.mock import MagicMock, patch, call, mock_open, Mock
+from unittest.mock import patch, mock_open,MagicMock, call
+import os,logging,jsl
 from jsl import (
+    JIRAError,
     read_config,
     create_jira_connection,
     create_jira_project,
-    update_jira_project,
-    list_stories_for_project,
+    update_jira_project,list_projects,
+    list_stories_for_project,delete_project,
     create_story,
     update_story_summary,
     update_story_status,
@@ -42,1013 +40,331 @@ from jsl import (
 
 
 class TestReadConfig(unittest.TestCase):
+    @patch('builtins.open', new_callable=mock_open, read_data='{"key": "value"}')
+    def test_read_config(self, mock_open):
+        # Call the function being tested
+        config = read_config('test_config.json')
+        
+        # Check if the function returns the expected result
+        self.assertEqual(config, {'key': 'value'})
+        # Check if the open function was called with the correct file name
+        mock_open.assert_called_once_with('test_config.json', 'r')
 
-    def setUp(self):
-        self.valid_config_data = '{"key": "value"}'
-        self.invalid_config_path = "nonexistent_file.json"
-        self.valid_config_path = "test_config.json"
 
-    @patch("builtins.open", new_callable=mock_open, read_data='{"key": "value"}')
-    def test_read_config_valid(self, mock_open):
-        config = read_config(self.valid_config_path)
-        self.assertEqual(config, {"key": "value"})
+class TestInitialize(unittest.TestCase):
+    @patch('jsl.load_credentials')
+    @patch('jsl.set_environment_variables')
+    def test_initialize_with_existing_config(self, mock_set_env_vars, mock_load_credentials):
+        config_file = 'existing_config.json'
+        # Mocking the existence of the config file
+        os.path.exists = MagicMock(return_value=True)
+        # Mocking the credentials loading
+        mock_load_credentials.return_value = {"jira_url": "example.com", "user": "user", "api_token": "token"}
 
-    @patch("builtins.open", side_effect=FileNotFoundError)
-    def test_read_config_file_not_found(self, mock_open):
-        with self.assertRaises(FileNotFoundError):
-            read_config(self.invalid_config_path)
+        # Call the function being tested
+        jsl.initialize(config_file)
+        
+        # Check if the load_credentials and set_environment_variables functions were called
+        mock_load_credentials.assert_called_once_with(config_file)
+        mock_set_env_vars.assert_called_once_with({"jira_url": "example.com", "user": "user", "api_token": "token"})
 
+    @patch('jsl.get_user_credentials', return_value=("example.com", "user", "token"))
+    @patch('jsl.save_credentials_to_config')
+    @patch('jsl.set_environment_variables')
+    @patch('builtins.input', return_value='y')
+    def test_initialize_without_existing_config(self, mock_input, mock_set_env_vars, mock_save_to_config, mock_get_user_credentials):
+        config_file = 'nonexistent_config.json'
+        # Mocking the absence of the config file
+        os.path.exists = MagicMock(return_value=False)
+
+        # Call the function being tested
+        jsl.initialize(config_file)
+        
+        # Check if the get_user_credentials, save_credentials_to_config, and set_environment_variables functions were called
+        mock_get_user_credentials.assert_called_once()
+        mock_save_to_config.assert_called_once_with(config_file, "example.com", "user", "token")
+        mock_set_env_vars.assert_called_once_with({"jira_url": "example.com", "user": "user", "api_token": "token"})
+        
+class TestSetEnvironmentVariables(unittest.TestCase):
+    def test_set_environment_variables(self):
+        # Prepare test data
+        credentials = {"jira_url": "example.com", "user": "user", "api_token": "token"}
+
+        # Call the function being tested
+        jsl.set_environment_variables(credentials)
+
+        # Check if the environment variables are set correctly
+        self.assertEqual(os.environ["JIRA_URL"], "example.com")
+        self.assertEqual(os.environ["API_TOKEN"], "token")
+        self.assertEqual(os.environ["USER"], "user")
+        
+
+class TestLoadCredentials(unittest.TestCase):
+    @patch('jsl.open', new_callable=mock_open, read_data='{"username": "test_user", "password": "test_pass"}')
+    def test_load_credentials(self, mock_open):
+        # Call the function being tested
+        credentials = jsl.load_credentials('test_credentials.json')
+        
+        # Check if the function returns the expected result
+        self.assertEqual(credentials, {'username': 'test_user', 'password': 'test_pass'})
+        # Check if the open function was called with the correct file name
+        mock_open.assert_called_once_with('test_credentials.json', 'r')
+        
+class TestGetUserCredentials(unittest.TestCase):
+    @patch('builtins.input', side_effect=['example.com', 'test_user', 'test_token'])
+    def test_get_user_credentials(self, mock_input):
+        # Call the function being tested
+        jira_url, username, api_token = jsl.get_user_credentials()
+        
+        # Check if the function returns the expected result
+        self.assertEqual(jira_url, 'example.com')
+        self.assertEqual(username, 'test_user')
+        self.assertEqual(api_token, 'test_token')
+        # Check if input was called the expected number of times with the correct prompts
+        expected_prompts = ["Enter Jira URL: ", "Enter username: ", "Enter API token: "]
+        for i, prompt in enumerate(expected_prompts):
+            with self.subTest(i=i, prompt=prompt):
+                mock_input.assert_any_call(prompt)
+                
 
 class TestCreateJiraConnection(unittest.TestCase):
+    @patch('jsl.JIRA')
+    @patch('jsl.logging')
+    def test_create_jira_connection_success(self, mock_logging, mock_jira):
+        # Set up mock behavior for the JIRA constructor
+        mock_jira_instance = MagicMock()
+        mock_jira.return_value = mock_jira_instance
 
+        # Call the function being tested
+        jira_connection = create_jira_connection('https://example.com', 'username', 'api_token')
+        
+        # Check if the function returns the expected result
+        self.assertEqual(jira_connection, mock_jira_instance)
+        # Check if the JIRA constructor was called with the correct arguments
+        mock_jira.assert_called_once_with(basic_auth=('username', 'api_token'), options={"server": 'https://example.com'})
+        # Check if the logging was called with the correct message
+        mock_logging.info.assert_called_once_with("Jira connection established successfully.")
+
+    @patch('jsl.logging')
+    def test_create_jira_connection_missing_inputs(self, mock_logging):
+        # Call the function being tested with missing inputs
+        with self.assertRaises(ValueError):
+            create_jira_connection('', '', '')
+
+        # Check if the logging was called with the correct message
+        mock_logging.error.assert_called_once_with("Missing username, API token, or Jira URL")
+
+    @patch('jsl.JIRA')
+    @patch('jsl.logging')
+    def test_create_jira_connection_error(self, mock_logging, mock_jira):
+        # Set up mock behavior for the JIRA constructor to raise an exception
+        mock_jira.side_effect = Exception('Connection error')
+
+        # Call the function being tested
+        with self.assertRaises(Exception):
+            create_jira_connection('https://example.com', 'username', 'api_token')
+
+        # Check if the logging was called with the correct message
+        mock_logging.error.assert_called_once_with("Error creating Jira connection: Connection error")
+
+
+class TestCreateJiraProject(unittest.TestCase):
+    def test_create_project_success(self):
+        # Create a mock JIRA client
+        jira_mock = MagicMock()
+        # Set up mock behavior for the create_project function
+        jira_mock.create_project.return_value = {'key': 'PROJECT', 'name': 'Test Project'}
+        
+        # Call the function being tested
+        result = create_jira_project(jira_mock, 'Test Project', 'PROJECT')
+        
+        # Check if the function returns the expected result
+        self.assertEqual(result, {'key': 'PROJECT', 'name': 'Test Project'})
+        # Check if the create_project method of the mock was called with the correct arguments
+        jira_mock.create_project.assert_called_once_with('PROJECT', 'Test Project')
+
+    def test_create_project_missing_arguments(self):
+        # Call the function being tested without providing required arguments
+        with self.assertRaises(ValueError):
+            create_jira_project(None, None, None)
+
+    def test_create_project_api_error(self):
+        # Create a mock JIRA client
+        jira_mock = MagicMock()
+        # Set up mock behavior for the create_project function to raise an exception
+        jira_mock.create_project.side_effect = Exception("API Error")
+        
+        # Call the function being tested and expect it to raise an exception
+        with self.assertRaises(Exception):
+            create_jira_project(jira_mock, 'Test Project', 'PROJECT')
+
+
+class TestUpdateJiraProject(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_update_jira_project_no_jira_connection(self, mock_logging):
+        # Call the function being tested without providing a JIRA client instance
+        with self.assertRaises(ValueError):
+            update_jira_project(None, 'PROJ', new_name='New Name')
+
+        # Check if logging error was called
+        mock_logging.error.assert_called_once_with("Failed to update project: Jira connection not established.")
+
+    @patch('jsl.logging')
+    def test_update_jira_project_no_project_key(self, mock_logging):
+        # Mock the JIRA client instance
+        mock_jira = MagicMock()
+
+        # Call the function being tested without providing a project key
+        with self.assertRaises(ValueError):
+            update_jira_project(mock_jira, '', new_name='New Name')
+
+        # Check if logging error was called
+        mock_logging.error.assert_called_once_with("Failed to update project: Project key not provided.")
+
+    @patch('jsl.logging')
+    def test_update_jira_project_no_changes(self, mock_logging):
+        # Mock the JIRA client instance
+        mock_jira = MagicMock()
+
+        # Call the function being tested with no changes
+        with self.assertRaises(ValueError):
+            update_jira_project(mock_jira, 'PROJ')
+
+        # Check if logging error was called
+        mock_logging.error.assert_called_once_with("Failed to update project: No new name or key provided.")
+
+    @patch('jsl.logging')
+    def test_update_jira_project_project_not_found(self, mock_logging):
+        # Mock the JIRA client instance
+        mock_jira = MagicMock()
+        mock_jira.project.return_value = None
+
+        # Call the function being tested with a project that doesn't exist
+        result = update_jira_project(mock_jira, 'PROJ', new_name='New Name')
+
+        # Check if the function returns the expected result
+        self.assertFalse(result)
+        # Check if logging error was called
+        mock_logging.error.assert_called_once_with("Project with key 'PROJ' does not exist.")
+
+    @patch('jsl.logging')
+    def test_update_jira_project_error_retrieving_project(self, mock_logging):
+        # Mock the JIRA client instance
+        mock_jira = MagicMock()
+        mock_jira.project.side_effect = JIRAError()
+
+        # Call the function being tested with an error retrieving the project
+        result = update_jira_project(mock_jira, 'PROJ', new_name='New Name')
+
+        # Check if the function returns the expected result
+        self.assertFalse(result)
+        # Check if logging error was called
+        mock_logging.error.assert_called_once()
+
+
+class TestListProjects(unittest.TestCase):
+    def test_list_projects_success(self):
+        # Create mock project objects with key and name attributes
+        project1 = MagicMock(key='PROJ1', name='Project 1')
+        project2 = MagicMock(key='PROJ2', name='Project 2')
+        # Create a mock JIRA client
+        jira_mock = MagicMock()
+        # Mock the return value of the projects method
+        jira_mock.projects.return_value = [project1, project2]
+        
+        # Call the function being tested
+        result = list_projects(jira_mock)
+        
+        # Check if the function returns the expected result
+        self.assertEqual(result, [project1, project2])
+        # Check if the projects method of the mock was called
+        jira_mock.projects.assert_called_once()
+        
+class TestDeleteProject(unittest.TestCase):
+    def test_delete_project_success(self):
+        # Mock JIRA client
+        jira_mock = MagicMock()
+        jira_mock.delete_project.return_value = True
+        
+        # Call function with valid arguments
+        result = delete_project(jira_mock, 'PROJ-123')
+        
+        # Check if project deletion was successful
+        self.assertTrue(result)
+        # Check if delete_project method of the mock was called with the correct argument
+        jira_mock.delete_project.assert_called_once_with('PROJ-123')
+
+class TestListStoriesForProject(unittest.TestCase):
     def setUp(self):
-        self.valid_config_data = '{"jira_url": "http://example.com", "user": "test_user", "api_token": "test_token"}'
-        self.missing_user_data = (
-            '{"jira_url": "http://example.com", "api_token": "test_token"}'
-        )
-        self.missing_fields_data = "{}"
-        self.config_path = "config.json"
-
-    @patch(
-        "builtins.open",
-        new_callable=mock_open,
-        read_data='{"jira_url": "http://example.com", "user": "test_user", "api_token": "test_token"}',
-    )
-    @patch("jsl.JIRA", return_value=MagicMock())
-    def test_create_jira_connection_success(self, mock_jira, mock_open):
-        jira = create_jira_connection(self.config_path)
-        self.assertIsNotNone(jira, "Jira connection should not be None")
-
-    @patch("builtins.open", side_effect=FileNotFoundError)
-    def test_create_jira_connection_file_not_found(self, mock_open):
-        jira = create_jira_connection(self.config_path)
-        self.assertIsNone(
-            jira, "Jira connection should be None when config file is not found"
-        )
-
-    @patch(
-        "builtins.open",
-        new_callable=mock_open,
-        read_data='{"jira_url": "http://example.com", "api_token": "test_token"}',
-    )
-    def test_create_jira_connection_missing_user(self, mock_open):
-        jira = create_jira_connection(self.config_path)
-        self.assertIsNone(
-            jira, "Jira connection should be None when user is missing from config"
-        )
-
-    @patch("builtins.open", new_callable=mock_open, read_data="{}")
-    def test_create_jira_connection_missing_config_fields(self, mock_open):
-        jira = create_jira_connection(self.config_path)
-        self.assertIsNone(
-            jira,
-            "Jira connection should be None when required config fields are missing",
-        )
-
-    @patch(
-        "builtins.open",
-        new_callable=mock_open,
-        read_data='{"jira_url": "http://example.com", "user": "test_user", "api_token": "test_token"}',
-    )
-    @patch("jsl.JIRA", side_effect=JIRAError(status_code=404))
-    def test_create_jira_connection_jira_error(self, mock_jira, mock_open):
-        jira = create_jira_connection(self.config_path)
-        self.assertIsNone(
-            jira, "Jira connection should be None when encountering JIRAError"
-        )
-
-
-# class TestCreateJiraProject(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_create_jira_project_success(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_project = MagicMock()
-#         mock_jira.create_project.return_value = mock_project
-
-#         # Call the function under test
-#         result = create_jira_project(mock_jira, "Test Project", "TEST")
-
-#         # Assertions
-#         self.assertEqual(result, mock_project)
-#         mock_logging.info.assert_called_once_with(
-#             "Project 'Test Project' created successfully."
-#         )
-
-#     @patch("jsl.logging")
-#     def test_create_jira_project_failure_jira_error(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.create_project.side_effect = JIRAError("Test JIRA Error")
-
-#         # Call the function under test
-#         result = create_jira_project(mock_jira, "Test Project", "TEST")
-
-#         # Assertions
-#         self.assertIsNone(result)
-#         mock_logging.error.assert_called_once()
-
-#     @patch("jsl.logging")
-#     def test_create_jira_project_failure_general_error(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.create_project.side_effect = Exception("Test General Error")
-
-#         # Call the function under test
-#         result = create_jira_project(mock_jira, "Test Project", "TEST")
-
-#         # Assertions
-#         self.assertIsNone(result)
-#         mock_logging.error.assert_called_once()
-
-
-# class TestUpdateJiraProject(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_update_jira_project_success_name(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_project = MagicMock()
-#         mock_jira.project.return_value = mock_project
-
-#         # Call the function under test
-#         result = update_jira_project(mock_jira, "TEST", new_name="New Name")
-
-#         # Assertions
-#         self.assertTrue(result)
-#         mock_logging.info.assert_called_once_with(
-#             "Project name updated to 'New Name' successfully."
-#         )
-#         mock_project.update.assert_called_once_with(name="New Name")
-
-#     @patch("jsl.logging")
-#     def test_update_jira_project_success_key(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_project = MagicMock()
-#         mock_jira.project.return_value = mock_project
-
-#         # Call the function under test
-#         result = update_jira_project(mock_jira, "TEST", new_key="NEW")
-
-#         # Assertions
-#         self.assertTrue(result)
-#         mock_logging.info.assert_called_once_with(
-#             "Project key updated to 'NEW' successfully."
-#         )
-#         mock_project.update.assert_called_once_with(key="NEW")
-
-#     @patch("jsl.logging")
-#     def test_update_jira_project_failure_no_changes(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_project = MagicMock()
-#         mock_jira.project.return_value = mock_project
-
-#         # Call the function under test
-#         result = update_jira_project(mock_jira, "TEST")
-
-#         # Assertions
-#         self.assertFalse(result)
-#         mock_logging.error.assert_called_once_with(
-#             "Failed to update project: No new name or key provided."
-#         )
-#         mock_project.update.assert_not_called()
-
-#     @patch("jsl.logging")
-#     def test_update_jira_project_failure_jira_error(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.project.side_effect = JIRAError("Test JIRA Error")
-
-#         # Call the function under test
-#         result = update_jira_project(mock_jira, "TEST", new_name="New Name")
-
-#         # Assertions
-#         self.assertFalse(result)
-#         mock_logging.error.assert_called_once()
-
-#     @patch("jsl.logging")
-#     def test_update_jira_project_failure_general_error(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.project.side_effect = Exception("Test General Error")
-
-#         # Call the function under test
-#         result = update_jira_project(mock_jira, "TEST", new_name="New Name")
-
-#         # Assertions
-#         self.assertFalse(result)
-#         mock_logging.error.assert_called_once()
-
-
-# class TestDeleteAllProjects(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_delete_all_projects_success(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-
-#         # Mock project objects
-#         mock_project_1 = MagicMock(key="PROJECT1")
-#         mock_project_2 = MagicMock(key="PROJECT2")
-#         mock_jira.projects.return_value = [mock_project_1, mock_project_2]
-
-#         # Call the function under test
-#         result = delete_all_projects(mock_jira)
-
-#         # Assertions
-#         self.assertTrue(result)
-#         mock_jira.projects.assert_called_once()
-#         mock_jira.delete_project.assert_has_calls(
-#             [call("PROJECT1"), call("PROJECT2")], any_order=True
-#         )
-#         mock_logging.info.assert_has_calls(
-#             [
-#                 call("Project PROJECT1 deleted successfully."),
-#                 call("Project PROJECT2 deleted successfully."),
-#                 call("All projects have been deleted."),
-#             ]
-#         )
-
-#     @patch("jsl.logging")
-#     def test_delete_all_projects_failure(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.projects.side_effect = Exception("Test Error")
-
-#         # Call the function under test
-#         result = delete_all_projects(mock_jira)
-
-#         # Assertions
-#         self.assertFalse(result)
-#         mock_logging.error.assert_called_once()
-
-
-# class TestGetStoriesForProject(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_get_stories_for_project_success(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-
-#         # Mock issues
-#         mock_issue_1 = MagicMock(key="ISSUE1", fields=MagicMock(summary="Summary 1"))
-#         mock_issue_2 = MagicMock(key="ISSUE2", fields=MagicMock(summary="Summary 2"))
-#         mock_issues = [mock_issue_1, mock_issue_2]
-#         mock_jira.search_issues.return_value = mock_issues
-
-#         # Call the function under test
-#         result = get_stories_for_project(mock_jira, "PROJECT_KEY")
-
-#         # Assertions
-#         self.assertEqual(
-#             result,
-#             [
-#                 {"key": "ISSUE1", "summary": "Summary 1"},
-#                 {"key": "ISSUE2", "summary": "Summary 2"},
-#             ],
-#         )
-#         mock_jira.search_issues.assert_called_once_with(
-#             "project = PROJECT_KEY AND issuetype = Task"
-#         )
-#         mock_logging.error.assert_not_called()
-
-#     @patch("jsl.logging")
-#     def test_get_stories_for_project_failure(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.search_issues.side_effect = Exception("Test Error")
-
-#         # Call the function under test
-#         result = get_stories_for_project(mock_jira, "PROJECT_KEY")
-
-#         # Assertions
-#         self.assertIsNone(result)
-#         mock_jira.search_issues.assert_called_once_with(
-#             "project = PROJECT_KEY AND issuetype = Task"
-#         )
-#         mock_logging.error.assert_called_once()
-
-
-# class TestDeleteAllStoriesInProject(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_delete_all_stories_in_project_failure(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_jira.search_issues.side_effect = Exception("Test Error")
-
-#         # Call the function under test
-#         with self.assertRaises(Exception) as context:
-#             delete_all_stories_in_project(mock_jira, "PROJECT_KEY")
-
-#         # Assertions
-#         self.assertEqual(str(context.exception), "Test Error")
-#         mock_jira.search_issues.assert_called_once_with("project=PROJECT_KEY")
-#         mock_logging.error.assert_called_once_with(
-#             "Error deleting stories in project: Test Error"
-#         )
-
-#     @patch("jsl.logging")
-#     def test_delete_all_stories_in_project_success(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_issues = [MagicMock(key="ISSUE1"), MagicMock(key="ISSUE2")]  # Mock issues
-#         mock_jira.search_issues.return_value = mock_issues
-
-#         # Call the function under test
-#         result = delete_all_stories_in_project(mock_jira, "PROJECT_KEY")
-
-#         # Assertions
-#         self.assertTrue(result)
-#         mock_jira.search_issues.assert_called_once_with("project=PROJECT_KEY")
-#         mock_logging.info.assert_any_call("Story deleted successfully. Key: ISSUE1")
-#         mock_logging.info.assert_any_call("Story deleted successfully. Key: ISSUE2")
-#         mock_logging.info.assert_called_with(
-#             "All stories in Project PROJECT_KEY have been deleted."
-#         )
-
-
-# # #create story
-# class TestCreateStory(unittest.TestCase):
-#     def setUp(self):
-#         self.mock_jira = MagicMock()
-
-#     def test_create_story_success(self):
-#         # Arrange
-#         project_key = "PROJ"
-#         summary = "New Story"
-#         description = "Description of New Story"
-#         expected_issue_key = "STORY-456"
-
-#         # Mock the create_issue method to return a predefined issue key
-#         self.mock_jira.create_issue.return_value.key = expected_issue_key
-
-#         # Act
-#         new_story = create_story(self.mock_jira, project_key, summary, description)
-
-#         # Assert
-#         self.assertIsNotNone(new_story)
-#         self.assertEqual(new_story.key, expected_issue_key)
-#         self.mock_jira.create_issue.assert_called_once_with(
-#             project=project_key,
-#             summary=summary,
-#             description=description,
-#             issuetype={"name": "Task"},
-#         )
-
-#     def test_create_story_failure(self):
-#         # Arrange
-#         project_key = "PROJ"
-#         summary = "New Story"
-#         description = "Description of New Story"
-#         error_message = "Error creating story: Something went wrong"
-
-#         # Mock the create_issue method to raise a JIRAError
-#         self.mock_jira.create_issue.side_effect = JIRAError(error_message)
-
-#         # Act
-#         new_story = create_story(self.mock_jira, project_key, summary, description)
-
-#         # Assert
-#         self.assertIsNone(new_story)
-#         self.mock_jira.create_issue.assert_called_once_with(
-#             project=project_key,
-#             summary=summary,
-#             description=description,
-#             issuetype={"name": "Task"},
-#         )
-
-
-# # #update story status
-# class TestUpdateStoryStatus(unittest.TestCase):
-#     def test_update_story_status_valid_status(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the issue object
-#         issue_mock = MagicMock()
-
-#         # Mock the transitions method to return a list of transitions
-#         jira_mock.transitions.return_value = [
-#             {"id": "1", "to": {"name": "In Progress"}},
-#             {"id": "2", "to": {"name": "Done"}},
-#         ]
-
-#         # Configure the return value of the jira.issue method
-#         jira_mock.issue.return_value = issue_mock
-
-#         # Call the function with mock objects
-#         story_key = "JST-1"
-#         new_status = "In Progress"
-#         result = update_story_status(jira_mock, story_key, new_status)
-
-#         # Assertions
-#         self.assertTrue(result)  # Update should be successful
-#         jira_mock.transitions.assert_called_once_with(
-#             issue_mock
-#         )  # Ensure transitions method is called
-#         jira_mock.transition_issue.assert_called_once_with(
-#             issue_mock, "1"
-#         )  # Ensure transition_issue is called with the correct transition id
-
-#     def test_update_story_status_invalid_status(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the issue object
-#         issue_mock = MagicMock()
-
-#         # Mock the transitions method to return a list of transitions
-#         jira_mock.transitions.return_value = [
-#             {"id": "1", "to": {"name": "In Progress"}},
-#             {"id": "2", "to": {"name": "Done"}},
-#         ]
-
-#         # Configure the return value of the jira.issue method
-#         jira_mock.issue.return_value = issue_mock
-
-#         # Call the function with mock objects
-#         story_key = "JST-1"
-#         new_status = "Invalid Status"
-#         result = update_story_status(jira_mock, story_key, new_status)
-
-#         # Assertions
-#         self.assertFalse(result)  # Update should fail due to invalid status
-#         jira_mock.transitions.assert_called_once_with(
-#             issue_mock
-#         )  # Ensure transitions method is called
-#         self.assertFalse(
-#             jira_mock.transition_issue.called
-#         )  # Ensure transition_issue is not called
-
-
-# class TestUpdateStorySummary(unittest.TestCase):
-#     @patch("jsl.logging")
-#     def test_update_story_summary_success(self, mock_logging):
-#         # Mock JIRA instance
-#         mock_jira = MagicMock()
-#         mock_issue = MagicMock(key="STORY1")  # Mock issue
-#         mock_jira.issue.return_value = mock_issue
-
-#         # Call the function under test
-#         result = update_story_summary(mock_jira, "STORY1", "New Summary")
-
-#         # Assertions
-#         self.assertEqual(result, mock_issue)
-#         mock_jira.issue.assert_called_once_with("STORY1")
-#         mock_issue.update.assert_called_once_with(summary="New Summary")
-#         mock_logging.info.assert_called_once_with(
-#             "Story summary updated successfully. Key: STORY1"
-#         )
-
-
-# class TestUpdateStoryDescription(unittest.TestCase):
-#     @patch("jsl.logging")
-#     @patch("jsl.JIRA")
-#     def test_update_story_description_success(self, mock_jira, mock_logging):
-#         # Mocking the JIRA instance
-#         mock_issue = MagicMock()
-#         mock_jira.return_value.issue.return_value = mock_issue
-
-#         # Call the function under test
-#         result = update_story_description(
-#             mock_jira.return_value, "STORY1", "New Description"
-#         )
-
-#         # Assertions
-#         self.assertEqual(result, mock_issue)
-#         mock_jira.return_value.issue.assert_called_once_with("STORY1")
-#         mock_issue.update.assert_called_once_with(description="New Description")
-#         mock_logging.info.assert_called_once_with(
-#             "Story description updated successfully. Key: STORY1"
-#         )
-
-#     @patch("jsl.logging")
-#     @patch("jsl.JIRA")
-#     def test_update_story_description_failure(self, mock_jira, mock_logging):
-#         # Mocking the JIRA instance
-#         mock_issue = MagicMock()
-#         mock_issue.update.side_effect = JIRAError("Test Error")
-#         mock_jira.return_value.issue.return_value = mock_issue
-
-#         # Call the function under test
-#         result = update_story_description(
-#             mock_jira.return_value, "STORY1", "New Description"
-#         )
-
-#         # Assertions
-#         self.assertIsNone(result)
-#         mock_jira.return_value.issue.assert_called_once_with("STORY1")
-#         mock_issue.update.assert_called_once_with(description="New Description")
-#         # Updated assertion to check if the error message contains the expected substring
-#         mock_logging.error.asser
-
-
-# # add comments in a stories
-# class TestAddCommentToIssuesInRange(unittest.TestCase):
-#     def test_add_comment_to_issues_in_range(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the issue object
-#         issue_mock = MagicMock()
-
-#         # Configure the return value of the jira.issue method
-#         jira_mock.issue.return_value = issue_mock
-
-#         # Call the function with mock objects
-#         start_issue_num = 1
-#         end_issue_num = 3
-#         comment_body = "Test comment"
-#         success_count = add_comment_to_issues_in_range(
-#             jira_mock, start_issue_num, end_issue_num, comment_body
-#         )
-
-#         # Assertions
-#         self.assertEqual(
-#             success_count, 3
-#         )  # We assume all issues are successfully commented
-#         self.assertEqual(
-#             jira_mock.issue.call_count, 3
-#         )  # Ensure jira.issue is called for each issue
-#         jira_mock.add_comment.assert_called_with(
-#             issue_mock, comment_body
-#         )  # Ensure add_comment is called with the correct arguments
-
-#     def test_no_comment_added(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the issue object
-#         issue_mock = MagicMock()
-
-#         # Configure the return value of the jira.issue method
-#         jira_mock.issue.return_value = issue_mock
-
-#         # Configure the add_comment method to raise a JIRAError
-#         jira_mock.add_comment.side_effect = JIRAError("Failed to add comment")
-
-#         # Call the function with mock objects
-#         start_issue_num = 1
-#         end_issue_num = 3
-#         comment_body = "Test comment"
-#         success_count = add_comment_to_issues_in_range(
-#             jira_mock, start_issue_num, end_issue_num, comment_body
-#         )
-
-#         # Assertions
-#         self.assertEqual(success_count, 0)  # No issues should be successfully commented
-#         self.assertEqual(
-#             jira_mock.issue.call_count, 3
-#         )  # Ensure jira.issue is called for each issue
-#         jira_mock.add_comment.assert_called_with(
-#             issue_mock, comment_body
-#         )  # Ensure add_comment is called with the correct arguments
-
-
-# class TestReadStoryDetails(unittest.TestCase):
-#     @patch("jsl.logging")
-#     @patch("jsl.JIRA")
-#     def test_read_story_details_success(self, mock_jira, mock_logging):
-#         # Mocking the JIRA instance and the story object
-#         mock_story = MagicMock()
-#         mock_story.key = "STORY1"
-#         mock_story.fields.summary = "Test Summary"
-#         mock_story.fields.description = "Test Description"
-#         mock_story.fields.status.name = "In Progress"
-#         mock_story.fields.assignee.displayName = "John Doe"
-#         mock_story.fields.reporter.displayName = "Jane Smith"
-#         mock_story.fields.created = "2024-02-28T10:00:00.000+0000"
-#         mock_story.fields.updated = "2024-02-28T12:00:00.000+0000"
-#         mock_jira.return_value.issue.return_value = mock_story
-
-#         # Call the function under test
-#         read_story_details(mock_jira.return_value, "STORY1")
-
-#         # Assertions
-#         expected_logs = [
-#             "Key: STORY1",
-#             "Summary: Test Summary",
-#             "Description: Test Description",
-#             "Status: In Progress",
-#             "Assignee: John Doe",
-#             "Reporter: Jane Smith",
-#             "Created: 2024-02-28T10:00:00.000+0000",
-#             "Updated: 2024-02-28T12:00:00.000+0000",
-#         ]
-#         for log_message in expected_logs:
-#             mock_logging.info.assert_any_call(log_message)
-
-
-# def test_read_story_details_failure(self):
-#     # Mocking story details retrieval failure
-#     from jira import JIRAError
-
-#     self.jira.issue.side_effect = JIRAError("Test error")
-#     read_story_details(self.jira, "STORY-123")
-#     self.jira.issue.assert_called_once_with("STORY-123")
-#     self.assertNotIn("Key:", [c[0][0] for c in self.jira.mock_calls])
-
-
-# class TestDeleteStory(unittest.TestCase):
-#     def setUp(self):
-#         self.jira = MagicMock()
-
-#     def test_delete_story_success(self):
-#         # Mocking successful deletion
-#         self.jira.issue.return_value = MagicMock()
-#         result = delete_story(self.jira, "STORY-123")
-#         self.assertTrue(result)
-#         self.jira.issue.assert_called_once_with("STORY-123")
-#         self.jira.issue.return_value.delete.assert_called_once()
-
-#     def test_delete_story_failure(self):
-#         # Mocking deletion failure
-#         from jira import JIRAError
-
-#         self.jira.issue.side_effect = JIRAError("Test error")
-#         result = delete_story(self.jira, "STORY-123")
-#         self.assertFalse(result)
-#         self.jira.issue.assert_called_once_with("STORY-123")
-#         self.jira.issue.return_value.delete.assert_not_called()
-
-
-# # create epic
-# class TestCreateEpic(unittest.TestCase):
-#     def setUp(self):
-#         self.mock_jira = MagicMock()
-
-#     def test_create_epic_success(self):
-#         # Arrange
-#         project_key = "PROJ"
-#         epic_name = "New Epic"
-#         epic_summary = "Summary of New Epic"
-#         expected_issue_key = "EPIC-123"
-
-#         # Mock the create_issue method to return a predefined issue key
-#         self.mock_jira.create_issue.return_value.key = expected_issue_key
-
-#         # Act
-#         new_epic = create_epic(self.mock_jira, project_key, epic_name, epic_summary)
-
-#         # Assert
-#         self.assertIsNotNone(new_epic)
-#         self.assertEqual(new_epic.key, expected_issue_key)
-#         self.mock_jira.create_issue.assert_called_once_with(
-#             project=project_key, summary=epic_summary, issuetype={"name": "Epic"}
-#         )
-
-#     def test_create_epic_failure(self):
-#         # Arrange
-#         project_key = "PROJ"
-#         epic_name = "New Epic"
-#         epic_summary = "Summary of New Epic"
-#         error_message = "Error creating epic: Something went wrong"
-
-#         # Mock the create_issue method to raise a JIRAError
-#         self.mock_jira.create_issue.side_effect = JIRAError(error_message)
-
-#         # Act
-#         new_epic = create_epic(self.mock_jira, project_key, epic_name, epic_summary)
-
-#         # Assert
-#         self.assertIsNone(new_epic)
-#         self.mock_jira.create_issue.assert_called_once_with(
-#             project=project_key, summary=epic_summary, issuetype={"name": "Epic"}
-#         )
-
-
-# class TestUpdateEpic(unittest.TestCase):
-#     @patch("jsl.logging")
-#     @patch("jsl.JIRA")
-#     def test_update_epic_success(self, mock_jira, mock_logging):
-#         # Mocking the JIRA instance
-#         mock_issue = MagicMock()
-#         mock_jira.return_value.issue.return_value = mock_issue
-
-#         # Test data
-#         epic_key = "EPIC-123"
-#         new_summary = "New Summary"
-#         new_description = "New Description"
-
-#         # Call the function under test
-#         result = update_epic(
-#             mock_jira.return_value, epic_key, new_summary, new_description
-#         )
-
-#         # Assertions
-#         self.assertEqual(result, mock_issue)
-#         mock_jira.return_value.issue.assert_called_once_with(epic_key)
-#         mock_issue.update.assert_called_once_with(
-#             summary=new_summary, description=new_description
-#         )
-#         mock_logging.info.assert_called_once_with(
-#             f"Epic updated successfully. Key: {epic_key}"
-#         )
-
-#     @patch("jsl.logging")
-#     @patch("jsl.JIRA")
-#     def test_update_epic_failure(self, mock_jira, mock_logging):
-#         # Mocking the JIRA instance
-#         mock_jira.return_value.issue.side_effect = JIRAError("Test Error")
-
-#         # Test data
-#         epic_key = "EPIC-123"
-#         new_summary = "New Summary"
-#         new_description = "New Description"
-
-#         # Call the function under test
-#         result = update_epic(
-#             mock_jira.return_value, epic_key, new_summary, new_description
-#         )
-
-#         # Assertions
-#         self.assertIsNone(result)
-#         mock_jira.return_value.issue.assert_called_once_with(epic_key)
-#         # Check if logging.error was called with a message containing 'Test Error'
-#         mock_logging.error.assert_called_once_with(
-#             "Error updating epic: JiraError HTTP None\n\ttext: Test Error\n\t"
-#         )
-
-
-# # #add story to epic
-# class TestAddStoryToEpic(unittest.TestCase):
-#     def setUp(self):
-#         self.mock_jira = MagicMock()
-
-#     def test_add_story_to_epic_success(self):
-#         # Arrange
-#         epic_key = "EPIC-123"
-#         story_key = "STORY-456"
-#         mock_epic_issue = MagicMock(id="EPIC-123_ID")
-#         mock_story_issue = MagicMock(id="STORY-456_ID")
-
-#         # Mock jira.issue to return MagicMock objects
-#         self.mock_jira.issue.side_effect = [mock_epic_issue, mock_story_issue]
-
-#         # Act
-#         result = add_story_to_epic(self.mock_jira, epic_key, story_key)
-
-#         # Assert
-#         self.assertTrue(result)
-#         self.mock_jira.add_issues_to_epic.assert_called_once_with(
-#             "EPIC-123_ID", ["STORY-456_ID"]
-#         )
-
-#     def test_add_story_to_epic_failure(self):
-#         # Arrange
-#         epic_key = "EPIC-123"
-#         story_key = "STORY-456"
-#         error_message = "Error adding story to epic: Something went wrong"
-
-#         # Mock jira.issue to raise a JIRAError
-#         self.mock_jira.issue.side_effect = JIRAError(error_message)
-
-#         # Act
-#         result = add_story_to_epic(self.mock_jira, epic_key, story_key)
-
-#         # Assert
-#         self.assertFalse(result)
-#         self.mock_jira.add_issues_to_epic.assert_not_called()
-
-
-# # #create sprint
-# class TestCreateSprint(unittest.TestCase):
-#     @patch("requests.post")
-#     def test_create_sprint_success(self, mock_post):
-#         # Arrange
-#         jira_url = "https://jsl-test.atlassian.net"
-#         api_token = "your_api_token"
-#         jira_username = "your_username"
-#         board_id = "your_board_id"
-#         sprint_name = "Test Sprint"
-#         expected_sprint_id = "123456"
-
-#         mock_response = requests.Response()
-#         mock_response.status_code = 201
-#         mock_response.json = lambda: {
-#             "id": expected_sprint_id
-#         }  # Patching the json() method to return a predefined value
-#         mock_post.return_value = mock_response
-
-#         # Act
-#         sprint_id = create_sprint(
-#             jira_url, jira_username, api_token, board_id, sprint_name
-#         )
-
-#         # Assert
-#         self.assertEqual(sprint_id, expected_sprint_id)
-#         mock_post.assert_called_once_with(
-#             f"{jira_url}/rest/agile/1.0/sprint",
-#             json={"name": sprint_name, "originBoardId": board_id},
-#             auth=(jira_username, api_token),
-#         )
-
-#     @patch("requests.post")
-#     def test_create_sprint_failure(self, mock_post):
-#         # Arrange
-#         jira_url = "https://jsl-test.atlassian.net"
-#         api_token = "your_api_token"
-#         jira_username = "your_username"
-#         board_id = "your_board_id"
-#         sprint_name = "Test Sprint"
-
-#         mock_response = requests.Response()
-#         mock_response.status_code = 400
-#         mock_response._content = b"Error message"  # Set the content directly instead of using the 'text' attribute
-#         mock_post.return_value = mock_response
-
-#         # Act
-#         sprint_id = create_sprint(
-#             jira_url, jira_username, api_token, board_id, sprint_name
-#         )
-
-#         # Assert
-#         self.assertIsNone(sprint_id)
-#         mock_post.assert_called_once_with(
-#             f"{jira_url}/rest/agile/1.0/sprint",
-#             json={"name": sprint_name, "originBoardId": board_id},
-#             auth=(jira_username, api_token),
-#         )
-
-#     # start sprint
-
-
-# class TestStartSprint(unittest.TestCase):
-#     def setUp(self):
-#         self.mock_jira = MagicMock()
-
-#     def test_start_sprint_success(self):
-#         # Arrange
-#         sprint_id = 123
-#         new_summary = "New Sprint Summary"
-#         start_date = datetime(2024, 2, 15)
-#         end_date = datetime(2024, 2, 29)
-
-#         # Mock the sprint method to return a MagicMock object
-#         mock_sprint = MagicMock()
-#         self.mock_jira.sprint.return_value = mock_sprint
-
-#         # Act
-#         result = start_sprint(
-#             self.mock_jira, sprint_id, new_summary, start_date, end_date
-#         )
-
-#         # Assert
-#         self.assertIsNotNone(result)
-#         mock_sprint.update.assert_called_once_with(
-#             name=new_summary, state="active", startDate=start_date, endDate=end_date
-#         )
-#         self.assertTrue(mock_sprint.started)
-
-#     def test_start_sprint_failure(self):
-#         # Arrange
-#         sprint_id = 123
-#         new_summary = "New Sprint Summary"
-#         start_date = datetime(2024, 2, 15)
-#         end_date = datetime(2024, 2, 29)
-
-#         # Mock the sprint method to raise a JIRAError
-#         self.mock_jira.sprint.side_effect = JIRAError("Sprint not found")
-
-#         # Act
-#         result = start_sprint(
-#             self.mock_jira, sprint_id, new_summary, start_date, end_date
-#         )
-
-#         # Assert
-#         self.assertIsNone(result)
-#         self.mock_jira.sprint.assert_called_once_with(sprint_id)
-
-
-# # #get stories in sprint
-# class TestGetStoriesInSprint(unittest.TestCase):
-#     def test_get_stories_in_sprint(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the search_issues method
-#         jira_mock.search_issues.return_value = [
-#             MagicMock(key="JST-1", fields=MagicMock(summary="Story 1")),
-#             MagicMock(key="JST-2", fields=MagicMock(summary="Story 2")),
-#         ]
-
-#         # Call the function with mock objects
-#         sprint_id = "SPRINT-1"
-#         stories = get_stories_in_sprint(jira_mock, sprint_id)
-
-#         # Assertions
-#         self.assertIsNotNone(stories)  # Ensure that stories are not None
-#         self.assertEqual(len(stories), 2)  # Ensure that two stories are returned
-#         jira_mock.search_issues.assert_called_once_with(
-#             f"sprint = {sprint_id} AND issuetype = Task"
-#         )  # Ensure search_issues is called with the correct JQL
-
-#     def test_no_stories_in_sprint(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the search_issues method to return an empty list
-#         jira_mock.search_issues.return_value = []
-
-#         # Call the function with mock objects
-#         sprint_id = "SPRINT-1"
-#         stories = get_stories_in_sprint(jira_mock, sprint_id)
-
-#         # Assertions
-#         self.assertIsNotNone(stories)  # Ensure that stories are not None
-#         self.assertEqual(len(stories), 0)  # Ensure that no stories are returned
-#         jira_mock.search_issues.assert_called_once_with(
-#             f"sprint = {sprint_id} AND issuetype = Task"
-#         )  # Ensure search_issues is called with the correct JQL
-
-
-# # #complete sprint
-# class TestCompleteSprint(unittest.TestCase):
-#     def test_complete_sprint_success(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the sprint object
-#         sprint_mock = MagicMock()
-#         sprint_mock.name = "Sprint 1"
-#         jira_mock.sprint.return_value = sprint_mock
-
-#         # Call the function with mock objects
-#         sprint_id = "SPRINT-1"
-#         start_date = "2024-02-20"
-#         end_date = "2024-02-28"
-#         result = complete_sprint(jira_mock, sprint_id, start_date, end_date)
-
-#         # Assertions
-#         self.assertTrue(result)  # Completion should be successful
-#         jira_mock.sprint.assert_called_once_with(
-#             sprint_id
-#         )  # Ensure sprint method is called
-#         sprint_mock.update.assert_called_once_with(
-#             name="Sprint 1", state="closed", startDate=start_date, endDate=end_date
-#         )  # Ensure sprint.update is called with correct arguments
-
-#     def test_complete_sprint_failure(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the sprint object
-#         sprint_mock = MagicMock()
-#         sprint_mock.name = "Sprint 1"
-#         jira_mock.sprint.return_value = sprint_mock
-
-#         # Configure the sprint.update method to raise a JIRAError
-#         sprint_mock.update.side_effect = JIRAError("Failed to update sprint")
-
-#         # Call the function with mock objects
-#         sprint_id = "SPRINT-1"
-#         start_date = "2024-02-20"
-#         end_date = "2024-02-28"
-#         result = complete_sprint(jira_mock, sprint_id, start_date, end_date)
-
-#         # Assertions
-#         self.assertFalse(result)  # Completion should fail due to JIRAError
-#         jira_mock.sprint.assert_called_once_with(
-#             sprint_id
-#         )  # Ensure sprint method is called
-#         sprint_mock.update.assert_called_once_with(
-#             name="Sprint 1", state="closed", startDate=start_date, endDate=end_date
-#         )  # Ensure sprint.update is called with correct arguments
-
-
-# # #delete all projects
-# class TestDeleteAllProjects(unittest.TestCase):
-#     def test_delete_all_projects_success(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Mock the projects method to return a list of projects
-#         projects_mock = [MagicMock(key=f"PROJECT-{i}") for i in range(1, 4)]
-#         jira_mock.projects.return_value = projects_mock
-
-#         # Call the function with mock objects
-#         result = delete_all_projects(jira_mock)
-
-#         # Assertions
-#         self.assertTrue(result)  # Deletion should be successful
-#         jira_mock.projects.assert_called_once()  # Ensure projects is called
-
-#         # Ensure delete_project is called for each project with correct arguments
-#         expected_calls = [call(project.key) for project in projects_mock]
-#         jira_mock.delete_project.assert_has_calls(expected_calls, any_order=True)
-
-#     def test_delete_all_projects_failure(self):
-#         # Mock the jira object
-#         jira_mock = MagicMock()
-
-#         # Configure the projects method to raise an exception
-#         jira_mock.projects.side_effect = Exception("Failed to retrieve projects")
-
-#         # Call the function with mock objects
-#         result = delete_all_projects(jira_mock)
-
-#         # Assertions
-#         self.assertFalse(result)  # Deletion should fail due to exception
-#         jira_mock.projects.assert_called_once()  # Ensure projects is called
+        self.mock_jira = MagicMock()
+
+    def test_list_stories_for_project_valid(self):
+        # Set up mock behavior for the search_issues function
+        mock_issue = MagicMock()
+        mock_issue.key = 'PROJ-123'
+        mock_issue.fields.issuetype.name = 'Story'  # Correcting this line
+        mock_issue.fields.status.name = 'To Do'
+        mock_issue.fields.assignee.displayName = None
+        mock_issue.fields.summary = 'Test story'
+
+        self.mock_jira.search_issues.return_value = [mock_issue]
+        
+        # Call the function being tested
+        result = list_stories_for_project(self.mock_jira, 'PROJ')
+        
+        # Check if the function returns the expected result
+        self.assertEqual(result, [{
+            'Issue Type': 'Story',
+            'Issue Key': 'PROJ-123',
+            'Status': 'To Do',
+            'Assignee': None,
+            'Summary': 'Test story'
+        }])
+        # Check if the search_issues method of the mock was called with the correct argument
+        self.mock_jira.search_issues.assert_called_once_with('project = PROJ AND issuetype in (Bug, Task, Story)')
+
+
+class TestCreateStory(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_create_story_success(self, mock_logging):
+        # Mock JIRA client
+        jira_mock = MagicMock()
+        jira_mock.create_issue.return_value.key = 'PROJ-123'
+
+        # Call create_story with valid inputs
+        result = create_story(jira_mock, 'PROJECT', 'Summary', 'Description')
+
+        # Assert that the function returned the expected result
+        self.assertEqual(result.key, 'PROJ-123')
+
+        # Assert that logging was called with the expected message
+        mock_logging.info.assert_called_once_with('Story created successfully. Story Key: PROJ-123')
+
+    @patch('jsl.logging')
+    def test_create_story_missing_inputs(self, mock_logging):
+        # Call create_story with missing inputs
+        with self.assertRaises(ValueError) as context:
+            create_story(None, '', '', '')
+
+        # Assert that the correct ValueError was raised
+        self.assertEqual(str(context.exception), 'Jira connection must be provided.')
+
+        # Assert that logging was called with the expected messages
+        mock_logging.error.assert_called_with('Failed to create story: Jira connection not established.')
+        self.assertEqual(mock_logging.error.call_count, 1)  # Make sure only one error was logged
+    @patch('jsl.logging')
+    def test_create_story_unexpected_error(self, mock_logging):
+        # Mock JIRA client to raise unexpected error
+        jira_mock = MagicMock()
+        jira_mock.create_issue.side_effect = Exception
+
+        # Call create_story and expect Exception
+        with self.assertRaises(Exception):
+            create_story(jira_mock, 'PROJECT', 'Summary', 'Description')
+
+        # Assert that logging was called with the expected message
+        mock_logging.error.assert_called_once_with('Unexpected error creating story: ')
+        # You may want to further verify the specific error message logged here
 
 
 if __name__ == "__main__":

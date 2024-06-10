@@ -79,6 +79,8 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
+
+
 def read_config(filename):
     """
     Read configuration from a JSON file.
@@ -272,7 +274,8 @@ def list_projects(jira):
     except JIRAError as e:
         logging.error(f"Error listing projects: {e}")
         return []
-
+    
+    
 
 def delete_project(jira, project_key, auto_confirm=False):
     """
@@ -315,12 +318,13 @@ def delete_project(jira, project_key, auto_confirm=False):
         logging.info(f"Project {project_key} deleted successfully.")
         return True
     except JIRAError as e:
-        logging.error(f"Error deleting project {project_key}: {e}")
-        raise
+        error_message = f"Error deleting project {project_key}: {e.response.text}"
+        logging.error(error_message)
+        raise JIRAError(error_message) from e
     except Exception as e:
-        logging.error(f"Unexpected error deleting project {project_key}: {e}")
-        raise
-
+        error_message = f"Unexpected error deleting project {project_key}: {e}"
+        logging.error(error_message)
+        raise Exception(error_message) from e
 
 def list_stories_for_project(jira, project_key):
     """
