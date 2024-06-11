@@ -2477,7 +2477,7 @@ def parse_arguments():
     story_subparsers = story_parser.add_subparsers(dest="story_action", required=True)
     # Story Related
     create_stories_parser = story_subparsers.add_parser(
-        "create_from_csv", help="Create stories from a CSV file"
+        "multiple", help="Create stories from a CSV file"
     )
     create_stories_parser.add_argument(
         "-pk",
@@ -2917,7 +2917,7 @@ def main():
         sys.exit(1)
     try:
         if args.command == "story":
-            if args.story_action == "create_from_csv":
+            if args.story_action == "multiple":
                 create_stories_from_csv(jira, args.project_key, args.csv_file_path)
             elif args.story_action == "add-comment":
                 add_comment(jira, args.issue_key, args.message)
