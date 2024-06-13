@@ -2447,9 +2447,8 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
             for row in rows:
                 summary = row.get("Summary")
                 description = row.get("Description")
-                issue_type = row.get("Issue Type", "Task", "Bug", "Improvement")
+                issue_type = row.get("Issue Type", "Task") 
                 assignee_username = row.get("Assignee Username")
-
                 if summary and description:
                     new_story = create_story(jira, project_key, summary, description)
                     if new_story and assignee_username:
@@ -2521,7 +2520,7 @@ def parse_arguments():
         "add-comment", help="Add comments to a story"
     )
     add_comment_parser.add_argument(
-        "-ik", "--story-key", metavar="issue_key", required=True
+        "-ik", "--issue-key", metavar="issue_key", required=True
     )
     add_comment_parser.add_argument(
         "-m", "--message", metavar="comment_body", required=True
@@ -2530,11 +2529,11 @@ def parse_arguments():
         "get-details", help="get story details"
     )
     get_details_parser.add_argument(
-        "-ik", "--story-key", metavar="issue_key", required=True
+        "-ik", "--issue-key", metavar="issue_key", required=True
     )
     delete_story_parser = story_subparsers.add_parser("delete", help="Delete a story")
     delete_story_parser.add_argument(
-        "-ik", "--story-key", metavar="issue_key", required=True
+        "-ik", "--issue-key", metavar="issue_key", required=True
     )
     delete_story_parser.add_argument(
         "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
@@ -2542,7 +2541,7 @@ def parse_arguments():
     update_story_parser = story_subparsers.add_parser("update", help="Update a story")
     update_story_parser.add_argument(
         "-ik",
-        "--story-key",
+        "--issue-key",
         metavar="issue_key",
         required=True,
         help="The key of the story to update",
@@ -2569,11 +2568,11 @@ def parse_arguments():
         "get-assignee", help="get the assignee of a story"
     )
     get_assignee_parser.add_argument(
-        "-ik", "--story-key", metavar="issue_key", required=True, help="Story key"
+        "-ik", "--issue-key", metavar="issue_key", required=True, help="Story key"
     )
     delete_story_parser = story_subparsers.add_parser("delete", help="Delete a story")
     delete_story_parser.add_argument(
-        "-ik", "--story-key", metavar="issue_key", required=True, help="Story Key"
+        "-ik", "--issue-key", metavar="issue_key", required=True, help="Story Key"
     )
     delete_story_parser.add_argument(
         "-y", "--yes", action="store_true", help="Confirm deletion without prompting"
@@ -2702,7 +2701,7 @@ def parse_arguments():
     )
     epic_subparsers.add_parser(
         "unlink-story", help="Unlink a story from its epic"
-    ).add_argument("-ik", "--story-key", metavar="issue_key", required=True)
+    ).add_argument("-ik", "--issue-key", metavar="issue_key", required=True)
     delete_epic_parser = epic_subparsers.add_parser("delete", help="Delete an epic")
     delete_epic_parser.add_argument(
         "-ek", "--epic-key", metavar="epic_key", required=True
