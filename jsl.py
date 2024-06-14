@@ -654,7 +654,6 @@ def get_assignee(jira, issue_key):
     except JIRAError as e:
         logging.error(f"Error viewing assignee: {e}")
 
-
 def delete_story(jira, issue_key, auto_confirm=True):
     """
     Delete a specific Jira story.
@@ -672,9 +671,7 @@ def delete_story(jira, issue_key, auto_confirm=True):
         if issue:
             if not auto_confirm:
                 confirmation = (
-                    input(
-                        f"Do you really want to delete the story with key {issue_key}? [y/n]: "
-                    )
+                    input(f"Do you really want to delete the story with key {issue_key}? [y/n]: ")
                     .strip()
                     .lower()
                 )
@@ -689,7 +686,13 @@ def delete_story(jira, issue_key, auto_confirm=True):
             logging.error(f"Story with key {issue_key} does not exist.")
             return False
     except JIRAError as e:
-        logging.error(f"Error deleting story: {e}")
+        if e.status_code == 403:
+            logging.error(f"Permission denied: You do not have permission to delete the story with key {issue_key}. Response text: {e.text}")
+        else:
+            logging.error(f"Error deleting story: {e}. Response text: {e.text}")
+        return False
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
         return False
 
 
