@@ -655,7 +655,7 @@ def get_assignee(jira, issue_key):
         logging.error(f"Error viewing assignee: {e}")
 
 
-def delete_story(jira, issue_key, auto_confirm=False):
+def delete_story(jira, issue_key, auto_confirm=True):
     """
     Delete a specific Jira story.
 
