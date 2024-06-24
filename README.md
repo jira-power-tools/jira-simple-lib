@@ -3,12 +3,15 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/jira-power-tools/jira-simple-lib/main.yml?branch=JSL)
-![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
-![Last Commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib)
-![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
-![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
-[![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools/jira-simple-lib)
+
+[![Build Status](https://img.shields.io/github/workflow/status/yourusername/jira-simple-lib/CI/main)](https://github.com/yourusername/jira-simple-lib/actions/workflows/main.yml)
+[![Test Status](https://img.shields.io/github/workflow/status/yourusername/jira-simple-lib/Tests/main?label=tests)](https://github.com/yourusername/jira-simple-lib/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/yourusername/jira-simple-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/jira-simple-lib)
+[![License](https://img.shields.io/github/license/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/commits/main)
+[![Issues](https://img.shields.io/github/issues/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/issues)
+[![Stars](https://img.shields.io/github/stars/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/stargazers)
+
 
 ## Getting Started Guide
 
