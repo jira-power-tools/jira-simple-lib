@@ -13,9 +13,10 @@ A tool to manage Jira with CLI.
 
 ## Description
 
-This is a simple dummy project that prints "Hello, world!".
+Simplifying Jira Management with Command Line Interface
 
 ## Table of Contents
+Getting Started Guide:
 
 - [Installation](#installation)
 - [Usage](#usage)
