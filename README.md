@@ -10,7 +10,6 @@ A tool to manage Jira with CLI.
 ![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
 [![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools/jira-simple-lib)
 
-
 ## Getting Started Guide
 
 This guide will help you get started with the Jira Simple Lib library.
