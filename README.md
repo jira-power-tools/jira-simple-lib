@@ -10,13 +10,12 @@ A tool to manage Jira with CLI.
 ![Stars](https://img.shields.io/github/stars/rimshaveritus/dummy-project)
 [![codecov](https://codecov.io/gh/rimshaveritus/dummy-project/branch/main/graph/badge.svg)](https://codecov.io/gh/rimshaveritus)
 
+## Getting Started Guide
 
-## Description
-
-Simplifying Jira Management with Command Line Interface
+This guide will help you get started with the Jira Simple Lib library.
 
 ## Table of Contents
-Getting Started Guide:
+
 - [Prerequisites](#Prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -27,89 +26,72 @@ Getting Started Guide:
 
 ## Prerequisites
 
-1- Git Installation: Ensure you have Git installed on your system. You can download and install it from https://git-scm.com/ 
-2- GitHub Account: You must have a GitHub account to clone repositories.
-3- Python Installation: Ensure you have Python installed on your system. You can download it from https://www.python.org/ 
-4- API Token: Instead of a password, you will use an API token for authentication.
-
-
+1. **Git Installation:** Ensure you have Git installed on your system. You can download and install it from [Git SCM](https://git-scm.com/).
+2. **GitHub Account:** You must have a GitHub account to clone repositories.
+3. **Python Installation:** Ensure you have Python installed on your system. You can download it from [Python.org](https://www.python.org/).
+4. **API Token:** Instead of a password, you will use an API token for authentication.
 
 ## Installation
 
-To run this project locally, follow these steps:
+### Generate a GitHub API Token
 
-1. **Clone the repository:**
+1. Log in to your GitHub account.
+2. Navigate to Settings (found by clicking your profile picture in the top right corner).
+3. Go to Developer settings.
+4. Select Personal access tokens and then Tokens (classic).
+5. Click Generate new token.
+6. Provide a note and select the scopes you need (at minimum, you might need repo scope).
+7. Click Generate token.
+8. Copy the generated token and store it securely. You will use this token in place of your password.
 
+### Cloning the Repository
+
+1. Open your terminal or command prompt.
+2. Clone the repository using the provided link:
    ```sh
-   git clone https://github.com/rimshaveritus/dummy-project.git
-   cd dummy-project
+   git clone https://github.com/jira-power-tools/jira-simple-lib.git
+3. Navigate to the cloned repository folder:
+   cd jira-simple-lib
+4. Check out the desired branch:
+   git checkout JSL
+**Installing Requirements and Running the Script**
+1. Install the required Python packages:
+   pip3 install -r requirements.txt
+2. Run the main script:
+   python3 ./jsl.py
+3. If you don't have a config.json file, follow the prompts to enter your Jira URL, username, and API token:
+    Enter Jira URL: https://jirasimplelib.atlassian.net
+    Enter your username:
+    Enter your Jira API token:
+**Create your API Token**
+1. Log in to Atlassian API Tokens.
+2. Click Create API token.
+3. From the dialog that appears, enter a memorable and concise label for your token.
+**Note: For security reasons, it isn't possible to view the token after closing the creation dialog; if necessary, create a new token. You should store the token securely, just as for any password.**
 
-2. **Install dependencies:**
-
-   ```sh
-   pip install -r requirements.txt
 ## Usage
 
-python main.py
+1. Use the --help option with any command to display usage information and available options:
+```sh
+python3 ./jsl.py --help
+```
+2. Refer to the documentation for detailed explanations of each command and additional usage examples.
 
 ## Contributing
 
-Thank you for considering contributing to this project! Contributions are welcome and encouraged. Please take a moment to review the following guidelines.
-
-- Fork the repository on GitHub.
-- Create a new branch from `main` for your contributions.
-- Ensure your code adheres to the [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guide.
-- Push your changes to your forked repository.
-- Submit a pull request to the `main` branch of the original repository.
-- Provide a detailed description of the changes you've made in the pull request.
-- Your pull request will be reviewed by the project maintainers.
-- Make sure all automated tests pass.
-- Address any feedback or comments given during the review process.
-- Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating in this project.
-
-Contributions of all kinds are valued and appreciated. Thank you for helping make this project better!
+(Details about how to contribute to the project, guidelines, and code of conduct)
 
 ## API Reference
 
-### `hello_world`
+(Detailed reference of the API provided by the library, including endpoints, request formats, and example responses)
 
-The `hello_world` function is a simple function that returns the string "Hello, world!". This function is a part of the main script and serves as an example of a basic Python function.
+## Lisence
 
-**Definition:**
-
-def hello_world():
-    return "Hello, world!"
-## License
-MIT License
-
-Copyright (c) 2024 RimshaAshfaq
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+(Information about the licensing of the library)
 
 ## Community
 
-We welcome contributions and feedback from the community! Here are some ways you can get involved:
+(Information about community forums, discussions, and where to seek help or provide feedback)
 
-- **Issue Tracker**: If you find a bug or have a feature request, please [report an issue](https://github.com/rimshaveritus/dummy-project/issues).
-- **Contributing**: To contribute to this project, please read our [contributing guidelines](CONTRIBUTING.md) to get started.
-- **Pull Requests**: We welcome and appreciate pull requests. Please ensure your code follows the project's coding standards and passes all tests.
-- **Discussions**: Join us for discussions and to share your ideas in our [Community Forum](https://example.com/forum). (Replace with actual URL if applicable)
-- **Code of Conduct**: Please note that this project is governed by a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to adhere to this code.
 
-Thank you for being a part of our community!
+
