@@ -3,12 +3,14 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-[![Build Status](https://github.com/rimshaveritus/repository/workflows/workflow-name/badge.svg)](https://github.com/rimshaveritus/repository/actions)
-[![Coverage](https://codecov.io/gh/rimshaveritus/repository/branch/main/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/rimshaveritus/repository)
-[![License](https://img.shields.io/github/license/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/blob/main/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/commits/main)
-[![Issues](https://img.shields.io/github/issues/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/issues)
-[![Stars](https://img.shields.io/github/stars/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/stargazers)
+
+![Build Status](https://img.shields.io/github/actions/workflow/status/jira-power-tools/jira-simple-lib/ci.yml?branch=JSL)
+![Codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)
+
+[![License](https://img.shields.io/github/license/rimshaveritus/jira-simple-lib)](https://github.com/rimshaveritus/jira-simple-lib/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/jira-simple-lib)](https://github.com/rimshaveritus/jira-simple-lib/commits/main)
+[![Issues](https://img.shields.io/github/issues/rimshaveritus/jira-simple-lib)](https://github.com/rimshaveritus/jira-simple-lib/issues)
+[![Stars](https://img.shields.io/github/stars/rimshaveritus/jira-simple-lib)](https://github.com/rimshaveritus/jira-simple-lib/stargazers)
 
 ## Getting Started Guide
 
