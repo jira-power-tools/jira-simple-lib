@@ -3,12 +3,13 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/rimshaveritus/dummy-project/main.yml?branch=main)
-![License](https://img.shields.io/github/license/rimshaveritus/dummy-project)
-![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/dummy-project)
-![Issues](https://img.shields.io/github/issues/rimshaveritus/dummy-project)
-![Stars](https://img.shields.io/github/stars/rimshaveritus/dummy-project)
-[![codecov](https://codecov.io/gh/rimshaveritus/dummy-project/branch/main/graph/badge.svg)](https://codecov.io/gh/rimshaveritus)
+![Build Status](https://img.shields.io/github/actions/workflow/status/jira-power-tools/jira-simple-lib/main.yml?branch=JSL)
+![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
+![Last Commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib)
+![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
+![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
+[![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools/jira-simple-lib)
+
 
 ## Getting Started Guide
 
