@@ -4,11 +4,11 @@ A tool to manage Jira with CLI.
 # Badges
 
 
-[![Build Status](https://img.shields.io/github/workflow/status/{jira-power-tools}/{jira-simple-lib}/{CI}?branch={JSL})](https://github.com/{jira-power-tools}/{jira-simple-lib}/actions)
-[![License](https://img.shields.io/github/license/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/blob/main/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/commits/main)
-[![Issues](https://img.shields.io/github/issues/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/issues)
-[![Stars](https://img.shields.io/github/stars/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/stargazers)
+[![Build Status](https://img.shields.io/github/workflow/status/{rimshaveritus}/{jira-simple-lib}/{CI}?branch={JSL})](https://github.com/{rimshaveritus}/{jira-simple-lib}/actions)
+[![License](https://img.shields.io/github/license/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/commits/main)
+[![Issues](https://img.shields.io/github/issues/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/issues)
+[![Stars](https://img.shields.io/github/stars/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/stargazers)
 
 
 
@@ -52,7 +52,7 @@ This guide will help you get started with the Jira Simple Lib library.
 1. Open your terminal or command prompt.
 2. Clone the repository using the provided link:
    ```sh
-   git clone https://github.com/jira-power-tools/jira-simple-lib.git
+   git clone https://github.com/rimshaveritus/jira-simple-lib.git
 3. Navigate to the cloned repository folder:
    cd jira-simple-lib
 4. Check out the desired branch:
