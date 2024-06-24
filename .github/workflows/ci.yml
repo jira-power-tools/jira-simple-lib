@@ -1,31 +1,39 @@
-name: CI
+name: Run Tests and Coverage
 
 on:
   push:
     branches:
-      - JSL  # Change to your branch name if different
+      - JSL
   pull_request:
     branches:
-      - JSL  # Change to your branch name if different
+      - JSL
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9]
 
-    - name: Set up Python
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'  # Change to your Python version if different
+        python-version: ${{ matrix.python-version }}
 
-    - name: Install tox
-      run: pip install tox
+    - name: Install dependencies and coverage
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # Install your project dependencies
+        pip install coverage             # Install coverage tool
 
-    - name: Run tests with tox
-      run: tox
+    - name: Run tests with coverage
+      run: |
+        coverage run -m pytest
+        coverage xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
