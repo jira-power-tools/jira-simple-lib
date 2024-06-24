@@ -3,15 +3,12 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-
-[![Build Status](https://img.shields.io/github/workflow/status/yourusername/jira-simple-lib/CI/main)](https://github.com/yourusername/jira-simple-lib/actions/workflows/main.yml)
-[![Test Status](https://img.shields.io/github/workflow/status/yourusername/jira-simple-lib/Tests/main?label=tests)](https://github.com/yourusername/jira-simple-lib/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/yourusername/jira-simple-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/jira-simple-lib)
-[![License](https://img.shields.io/github/license/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/blob/main/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/commits/main)
-[![Issues](https://img.shields.io/github/issues/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/issues)
-[![Stars](https://img.shields.io/github/stars/yourusername/jira-simple-lib)](https://github.com/yourusername/jira-simple-lib/stargazers)
-
+[![Build Status](https://github.com/rimshaveritus/repository/workflows/workflow-name/badge.svg)](https://github.com/rimshaveritus/repository/actions)
+[![Coverage](https://codecov.io/gh/rimshaveritus/repository/branch/main/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/rimshaveritus/repository)
+[![License](https://img.shields.io/github/license/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/commits/main)
+[![Issues](https://img.shields.io/github/issues/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/issues)
+[![Stars](https://img.shields.io/github/stars/rimshaveritus/repository)](https://github.com/rimshaveritus/repository/stargazers)
 
 ## Getting Started Guide
 
@@ -62,9 +59,9 @@ This guide will help you get started with the Jira Simple Lib library.
    pip3 install -r requirements.txt
 2. Run the main script:
    python3 ./jsl.py
-3. If you don't have a config.json file, follow the prompts to enter your Jira URL, username, and API token:
+3. If you don't have a config.json file, follow the prompts to enter your Jira URL, rimshaveritus, and API token:
     Enter Jira URL: https://jirasimplelib.atlassian.net
-    Enter your username:
+    Enter your rimshaveritus:
     Enter your Jira API token:
 **Create your API Token**
 1. Log in to Atlassian API Tokens.
