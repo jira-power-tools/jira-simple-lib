@@ -28,7 +28,7 @@ jobs:
 
     - name: Run tests and generate coverage report
       run: |
-        coverage run -m pytest
+        coverage run -m pytest automatetest.py  # Replace with your test file name
         coverage xml
 
     - name: Upload coverage to Codecov
