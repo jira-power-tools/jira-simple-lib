@@ -26,7 +26,7 @@ Getting Started Guide:
 - [Community](#community)
 
 ## Prerequisites
-```sh
+```
 1- Git Installation: Ensure you have Git installed on your system. You can download and install it from https://git-scm.com/ 
 2- GitHub Account: You must have a GitHub account to clone repositories.
 3- Python Installation: Ensure you have Python installed on your system. You can download it from https://www.python.org/ 
