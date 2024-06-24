@@ -3,11 +3,12 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://github.com/rimshaveritus/jira-simple-lib/workflows/main/badge.svg?branch=JSL)
-![License](https://img.shields.io/github/license/rimshaveritus/jira-simple-lib)
-![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/jira-simple-lib)
-![Issues](https://img.shields.io/github/issues/rimshaveritus/jira-simple-lib)
-![Stars](https://img.shields.io/github/stars/rimshaveritus/jira-simple-lib)
+
+[![Build Status](https://img.shields.io/github/workflow/status/{jira-power-tools}/{jira-simple-lib}/{CI}?branch={JSL})](https://github.com/{jira-power-tools}/{jira-simple-lib}/actions)
+[![License](https://img.shields.io/github/license/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/commits/main)
+[![Issues](https://img.shields.io/github/issues/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/issues)
+[![Stars](https://img.shields.io/github/stars/{jira-power-tools}/{jira-simple-lib})](https://github.com/{jira-power-tools}/{jira-simple-lib}/stargazers)
 
 
 
