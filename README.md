@@ -17,13 +17,21 @@ Simplifying Jira Management with Command Line Interface
 
 ## Table of Contents
 Getting Started Guide:
-
+- [Prerequisites](#Prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [API Reference](#api-reference)
 - [License](#license)
 - [Community](#community)
+
+## Prerequisites
+
+1- Git Installation: Ensure you have Git installed on your system. You can download and install it from https://git-scm.com/ 
+2- GitHub Account: You must have a GitHub account to clone repositories.
+3- Python Installation: Ensure you have Python installed on your system. You can download it from https://www.python.org/ 
+4- API Token: Instead of a password, you will use an API token for authentication.
+
 
 ## Installation
 
