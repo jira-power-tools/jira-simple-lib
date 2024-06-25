@@ -1325,10 +1325,9 @@ def get_board_id(jira, board_name):
         logging.error(f"Error retrieving board ID: {e}")
         return None
 
-
 def my_stories(jira, project_key, user):
     """
-    Retrieve stories assigned to a specific user in a project.
+    Retrieve and print stories assigned to a specific user in a project.
 
     Args:
         jira (JIRA): An authenticated JIRA client instance.
@@ -1336,29 +1335,27 @@ def my_stories(jira, project_key, user):
         user (str): The username of the user to retrieve stories for.
 
     Returns:
-        list or None: A list of dictionaries containing story keys and summaries if successful, None otherwise.
+        None
     """
     try:
-        # Construct JQL query to search for issues assigned to the user in the project
+        # Construct JQL query to search for issues assigned to the user in the project with specific statuses
         jql_query = (
-            f"project = {project_key} AND assignee = '{user}' AND issuetype = Task"
+            f"project = {project_key} AND assignee = '{user}' "
+            f"AND issuetype = Task AND status IN ('To Do', 'In Progress', 'In Review')"
         )
 
         # Search for issues using the constructed JQL query
         issues = jira.search_issues(jql_query)
 
-        # Extract issue keys and summaries from the search result
-        stories = [
-            {"key": issue.key, "summary": issue.fields.summary} for issue in issues
-        ]
+        # Print issue key, summary, and status from the search result
+        for issue in issues:
+            print(f"Key: {issue.key}, Summary: {issue.fields.summary}, Status: {issue.fields.status.name}")
 
-        return stories
     except JIRAError as e:
         logging.error(f"Error retrieving stories for user: {e}")
-        return None
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
-        return None
+
 
 
 def render_tui(issues, fetching_data=False):
@@ -1980,58 +1977,64 @@ def list_stories_in_sprint_tui(jira, sprint_id):
         return None
 
 
-# def sprint_report_tui(jira, sprint_id, project_key):
-#     """
-#     Generate a text-based user interface (TUI) sprint report for a specified sprint.
+def my_stories_tui(jira, project_key, user):
+    """
+    Retrieve and display stories assigned to a specific user with TUI formatting.
 
-#     Args:
-#         jira: JIRA connection object.
-#         sprint_id (str): ID of the sprint.
-#         project_key (str): Key of the project.
+    Args:
+        jira: JIRA connection object.
+        project_key (str): Key of the project.
+        user (str): Username of the user.
 
-#     Returns:
-#         None
-#     """
-#     try:
-#         term = blessed.Terminal()
+    Returns:
+        list: List of dictionaries containing story keys, summaries, and statuses.
+    """
+    try:
+        term = Terminal()
 
-#         # Get detailed information about the sprint
-#         sprint_info = jira.sprint(sprint_id)
-#         if not sprint_info:
-#             print(f"Sprint with ID {sprint_id} not found.")
-#             return
+        # Construct JQL query to retrieve stories for the user with specific statuses
+        jql_query = (
+            f"project = '{project_key}' AND assignee = '{user}' "
+            f"AND issuetype = Task AND status IN ('To Do', 'In Progress', 'In Review')"
+        )
 
-#         # Print sprint details with TUI formatting
-#         print(term.bold("Sprint Details:"))
-#         print_boundary(term)
-#         for key, value in sprint_info.raw.items():
-#             print_row(term, [key, value])
-#         print_boundary(term)
+        # Search for issues using the JQL query
+        issues = jira.search_issues(jql_query)
 
-#         # Define the JQL query to search for issues of type 'Story' in the sprint
-#         jql_query = (
-#             f"project = {project_key} AND issuetype = Story AND Sprint = {sprint_id}"
-#         )
+        # Check if any issues are found
+        if not issues:
+            print(term.bold_red(f"No stories found assigned to {user}."))
+            return None
 
-#         # Search for issues using the JQL query
-#         issues = jira.search_issues(jql_query)
+        # Print user stories with TUI formatting
+        print(term.bold(f"Stories assigned to {user}:"))
+        print_boundary(term)
+        print_row(term, ["Key", "Summary", "Status"])
+        print_boundary(term)
 
-#         # Count issue statuses
-#         status_counts = {"To Do": 0, "In Progress": 0, "Done": 0}
-#         for issue in issues:
-#             status = issue.fields.status.name
-#             if status in status_counts:
-#                 status_counts[status] += 1
+        stories = []
+        for issue in issues:
+            key = issue.key
+            summary = issue.fields.summary
+            status = issue.fields.status.name
+            stories.append({"key": key, "summary": summary, "status": status})
+            print_row(term, [key, summary, status])
 
-#         # Print issue status distribution with TUI formatting
-#         print(term.bold("Issue Status Distribution in Sprint:"))
-#         print_boundary(term)
-#         for status, count in status_counts.items():
-#             print_row(term, [status, str(count)])
-#         print_boundary(term)
+        print_boundary(term)
 
-#     except Exception as e:
-#         print(f"Error generating sprint report: {e}")
+        # Return the list of user stories
+        return stories
+
+    except Exception as e:
+        logging.error(f"Error retrieving stories for user: {e}")
+        return None
+
+def print_boundary(term):
+    print(term.bold('+' + '-'*48 + '+'))
+
+def print_row(term, columns):
+    print(term.bold('| {0: <10} | {1: <30} | {2: <5} |'.format(*columns)))
+
 
 
 # def print_row(term, row):
@@ -2061,78 +2064,6 @@ def list_stories_in_sprint_tui(jira, sprint_id):
 #     """
 #     boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
 #     print(term.green(boundary))
-
-
-def my_stories_tui(jira, project_key, user):
-    """
-    Retrieve and display stories assigned to a specific user with TUI formatting.
-
-    Args:
-        jira: JIRA connection object.
-        project_key (str): Key of the project.
-        user (str): Username of the user.
-
-    Returns:
-        list: List of dictionaries containing story keys and summaries.
-    """
-    try:
-        term = blessed.Terminal()
-
-        # Construct JQL query to retrieve stories for the user
-        jql_query = (
-            f"project = '{project_key}' AND assignee = '{user}' AND issuetype = Task"
-        )
-
-        # Search for issues using the JQL query
-        issues = jira.search_issues(jql_query)
-
-        # Check if any issues are found
-        if not issues:
-            print(f"No stories found assigned to  {user}")
-            return None
-
-        # Print user stories with TUI formatting
-        print(term.bold(f"Stories assigned to  {user}:"))
-        print_boundary(term)
-        for issue in issues:
-            print_row(term, [issue.key, issue.fields.summary])
-        print_boundary(term)
-
-        # Return the list of user stories
-        return [{"key": issue.key, "summary": issue.fields.summary} for issue in issues]
-
-    except Exception as e:
-        logging.error(f"Error retrieving stories for user: {e}")
-        return None
-
-
-def print_row(term, row):
-    """
-    Print a row of data with TUI formatting.
-
-    Args:
-        term: blessed.Terminal object.
-        row (list): List of fields to print in the row.
-
-    Returns:
-        None
-    """
-    formatted_row = [f"{field:<30}" for field in row]  # Adjust width as needed
-    print(f"| {' | '.join(formatted_row)} |")
-
-
-def print_boundary(term):
-    """
-    Print a boundary line with TUI formatting.
-
-    Args:
-        term: blessed.Terminal object.
-
-    Returns:
-        None
-    """
-    boundary = "+-" + "-+-".join("-" * 40 for _ in range(2)) + "-+"
-    print(term.green(boundary))
 
 
 def list_members(jira, project_key):
