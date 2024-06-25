@@ -1,35 +1,36 @@
-name: CI  # This is the workflow name
+name: CI  # Workflow ka naam
 
 on:
   push:
     branches:
-      - JSL
+      - main  # Push hone par main branch ke liye
   pull_request:
     branches:
-      - JSL
+      - main  # Pull request hone par main branch ke liye
+
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-20.04  # Ubuntu 20.04 par run hoga
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2  # GitHub repository ko checkout karega
 
-    - name: Set up Python
+    - name: Set up Python  # Python setup
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'
+        python-version: '3.9'
 
-    - name: Install dependencies
+    - name: Install dependencies  # Dependencies install karega
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run tests
+    - name: Run tests  # Tests run karega
       run: |
         pytest
 
-    - name: Upload coverage to Codecov
+    - name: Upload coverage to Codecov  # Codecov mein coverage upload karega
       uses: codecov/codecov-action@v2
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml
+        file: ./coverage.xml  # Coverage.xml file ka istemal karega
