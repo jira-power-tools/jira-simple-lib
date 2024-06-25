@@ -17,27 +17,37 @@ jobs:
         python-version: [3.9]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies and coverage
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox coverage
+      - name: Install dependencies and coverage
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox coverage
 
-    - name: Run tests with coverage
-      run: |
-        tox
+      - name: Run tests with coverage
+        run: |
+          tox
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
+      - name: Fetch last commit details
+        id: commit
+        run: |
+          echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
+          echo "::set-output name=commit_message::$(git log --format=%B -n 1)"
+          echo "::set-output name=commit_author::$(git log --format=%an -n 1)"
+          echo "::set-output name=commit_date::$(git log --format=%cd -n 1)"
+        shell: bash
+
