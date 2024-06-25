@@ -3,10 +3,10 @@ name: CI  # Workflow ka naam
 on:
   push:
     branches:
-      - main  # Push hone par main branch ke liye
+      - JSL  # Push hone par main branch ke liye
   pull_request:
     branches:
-      - main  # Pull request hone par main branch ke liye
+      - JSL  # Pull request hone par main branch ke liye
 
 jobs:
   build:
