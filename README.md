@@ -3,14 +3,12 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-
-[![Build Status](https://img.shields.io/github/workflow/status/{rimshaveritus}/{jira-simple-lib}/{CI}?branch={JSL})](https://github.com/{rimshaveritus}/{jira-simple-lib}/actions)
-[![License](https://img.shields.io/github/LICENSE/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/blob/JSL/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/commits/main)
-[![Issues](https://img.shields.io/github/issues/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/issues)
-[![Stars](https://img.shields.io/github/stars/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/stargazers)
-
-
+![Build Status](https://img.shields.io/github/actions/workflow/status/rimshaveritus/jira-simple-lib/main.yml?branch=JSL)
+![License](https://img.shields.io/github/license/rimshaveritus/dummy-project)
+![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/dummy-project)
+![Issues](https://img.shields.io/github/issues/rimshaveritus/dummy-project)
+![Stars](https://img.shields.io/github/stars/rimshaveritus/dummy-project)
+[![codecov](https://codecov.io/gh/rimshaveritus/dummy-project/branch/main/graph/badge.svg)](https://codecov.io/gh/rimshaveritus)
 
 
 ## Getting Started Guide
