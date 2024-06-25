@@ -3,12 +3,8 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/rimshaveritus/jira-simple-lib/main.yml?branch=JSL)
-![License](https://img.shields.io/github/license/rimshaveritus/jira-simple-lib)
-![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/jira-simple-lib)
-![Issues](https://img.shields.io/github/issues/rimshaveritus/jira-simple-lib)
-![Stars](https://img.shields.io/github/stars/rimshaveritus/jira-simple-lib)
-[![codecov](https://codecov.io/gh/rimshaveritus/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/rimshaveritus)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions)
+
 
 
 ## Getting Started Guide
