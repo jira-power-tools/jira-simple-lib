@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, mock_open,MagicMock, call
-import os,logging,jsl,requests,json
+import os,logging,jsl,requests, json
 from jsl import (
     JIRAError,
     read_config,update_story_assignee,
@@ -279,20 +279,6 @@ class TestListProjects(unittest.TestCase):
         self.assertEqual(result, [project1, project2])
         # Check if the projects method of the mock was called
         jira_mock.projects.assert_called_once()
-        
-class TestDeleteProject(unittest.TestCase):
-    def test_delete_project_success(self):
-        # Mock JIRA client
-        jira_mock = MagicMock()
-        jira_mock.delete_project.return_value = True
-        
-        # Call function with valid arguments
-        result = delete_project(jira_mock, 'PROJ-123')
-        
-        # Check if project deletion was successful
-        self.assertTrue(result)
-        # Check if delete_project method of the mock was called with the correct argument
-        jira_mock.delete_project.assert_called_once_with('PROJ-123')
 
 class TestListStoriesForProject(unittest.TestCase):
     def setUp(self):

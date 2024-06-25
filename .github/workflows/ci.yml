@@ -27,13 +27,11 @@ jobs:
     - name: Install dependencies and coverage
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt  # Install your project dependencies
-        pip install coverage             # Install coverage tool
+        pip install tox coverage
 
     - name: Run tests with coverage
       run: |
-        coverage run -m pytest
-        coverage xml
+        tox
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
