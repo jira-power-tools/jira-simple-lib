@@ -5,7 +5,7 @@ A tool to manage Jira with CLI.
 
 
 [![Build Status](https://img.shields.io/github/workflow/status/{rimshaveritus}/{jira-simple-lib}/{CI}?branch={JSL})](https://github.com/{rimshaveritus}/{jira-simple-lib}/actions)
-[![License](https://img.shields.io/github/license/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/blob/main/LICENSE)
+[![License](https://img.shields.io/github/LICENSE/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/blob/JSL/LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/commits/main)
 [![Issues](https://img.shields.io/github/issues/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/issues)
 [![Stars](https://img.shields.io/github/stars/{rimshaveritus}/{jira-simple-lib})](https://github.com/{rimshaveritus}/{jira-simple-lib}/stargazers)
