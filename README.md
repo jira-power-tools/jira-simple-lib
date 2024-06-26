@@ -3,15 +3,14 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/jira-power-tools/jira-simple-lib/ci.yml?branch=JSL)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/run_tests_and_coverage.yml)
-![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
 ![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
 ![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
+![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib?style=social)
 ![GitHub last commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib/JSL?label=last%20commit)
 ![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)
-![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib?style=social)
+
 
 
 
