@@ -4,6 +4,7 @@ A tool to manage Jira with CLI.
 # Badges
 
 <!-- [![Build Status](https://github.com/jira-power-tools/jira-simple-lib/workflows/CI/badge.svg)](https://github.com/jira-power-tools/jira-simple-lib/actions) -->
+![Build Status](https://github.com/jira-power-tools/jira-simple-lib/workflows/Build/badge.svg)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions)
 ![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
 ![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
