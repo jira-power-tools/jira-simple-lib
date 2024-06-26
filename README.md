@@ -3,8 +3,7 @@ A tool to manage Jira with CLI.
 
 # Badges
 
-![Build Status](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/Run%20Tests%20and%20Coverage/badge.svg)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions)
+[![Build Status](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/Run%20Tests%20and%20Coverage/badge.svg)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/Run%20Tests%20and%20Coverage)[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions)
 ![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
 ![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
