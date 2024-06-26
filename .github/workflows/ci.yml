@@ -1,4 +1,4 @@
-name: Run Tests and Coverage
+name: CI
 
 on:
   push:
