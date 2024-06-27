@@ -6,10 +6,10 @@ A tool to manage Jira with CLI.
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/run_tests_and_coverage.yml)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
 [![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools)
-![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
-![Last Commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib)
-![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
-![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
+![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib/JSL)
+![Last Commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib/JSL)
+![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib/JSL)
+![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib/JSL)
 
 
 ## Getting Started Guide
