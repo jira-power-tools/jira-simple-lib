@@ -5,11 +5,11 @@ A tool to manage Jira with CLI.
 <!-- [![Build Status](https://github.com/jira-power-tools/jira-simple-lib/workflows/CI/badge.svg)](https://github.com/jira-power-tools/jira-simple-lib/actions) -->
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/run_tests_and_coverage.yml)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
-[![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)(https://codecov.io/gh/jira-power-tools)]
-![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib/JSL)
-![Last Commit](https://img.shield./github.com/jira-power-tools/jira-simple-lib/commits/JSL/)
-![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib/JSL)
-![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib/JSL)
+<!-- [![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools) -->
+![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
+![Last Commit](https://img.shield./github/lastcommit/jira-power-tools/jira-simple-lib)
+![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
+![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
 
 
 ## Getting Started Guide
