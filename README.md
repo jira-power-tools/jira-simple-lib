@@ -10,6 +10,10 @@ A tool to manage Jira with CLI.
 ![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib?style=social)
 ![GitHub last commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib?label=last%20commit)
 ![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)
+![License](https://img.shields.io/github/license/rimshaveritus/dummy-project)
+![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/dummy-project)
+![Issues](https://img.shields.io/github/issues/rimshaveritus/dummy-project)
+![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
 
 
 ## Getting Started Guide
