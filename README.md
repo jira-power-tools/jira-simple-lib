@@ -8,8 +8,7 @@ A tool to manage Jira with CLI.
 <!-- [![codecov](https://codecov.io/gh/jira-power-tools/jira-simple-lib/branch/JSL/graph/badge.svg)](https://codecov.io/gh/jira-power-tools) -->
 ![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
 ![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
-![GitHub last commit (branch)](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib/JSL?label=last%20commit)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib/main?label=last%20commit)
 
 
 ## Getting Started Guide
