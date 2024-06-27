@@ -29,7 +29,7 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        token: CODECOV_TOKEN=f7652b06-0b26-4d33-b77f-79e74d237308
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
