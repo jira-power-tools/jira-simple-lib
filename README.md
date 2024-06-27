@@ -5,6 +5,7 @@ A tool to manage Jira with CLI.
 [![Build Status](https://github.com/jira-power-tools/jira-simple-lib/workflows/CI/badge.svg)](https://github.com/jira-power-tools/jira-simple-lib/actions)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/run_tests_and_coverage.yml)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
+[![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/blob/JSL/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/issues)
 [![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/network/members)
