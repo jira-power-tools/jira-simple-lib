@@ -12,12 +12,6 @@ A tool to manage Jira with CLI.
 ![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)
 
 
-
-
-
-
-
-
 ## Getting Started Guide
 
 This guide will help you get started with the Jira Simple Lib library.
