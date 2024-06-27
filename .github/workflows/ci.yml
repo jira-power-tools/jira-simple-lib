@@ -50,3 +50,4 @@ jobs:
           echo "::set-output name=commit_author::$(git log --format=%an -n 1)"
           echo "::set-output name=commit_date::$(git log --format=%cd -n 1)"
         shell: bash
+
