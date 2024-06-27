@@ -8,9 +8,12 @@ A tool to manage Jira with CLI.
 [![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)]
 [![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/issues)
 [![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/network/members)
-[![GitHub last commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/commits/JSL)
-[![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)](https://github.com/jira-power-tools/jira-simple-lib/graphs/contributors)
+![GitHub last commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib/JSL?label=last%20commit)
+![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)
+![GitHub release](https://img.shields.io/github/v/release/jira-power-tools/jira-simple-lib)
+![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib?style=social)
+
+
 
 
 
