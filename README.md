@@ -5,14 +5,9 @@ A tool to manage Jira with CLI.
 [![Build Status](https://github.com/jira-power-tools/jira-simple-lib/workflows/CI/badge.svg)](https://github.com/jira-power-tools/jira-simple-lib/actions)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/jira-power-tools/jira-simple-lib/actions/workflows/run_tests_and_coverage.yml)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://example.com/coverage-report)
-![GitHub issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
-![GitHub stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib?style=social)
-![GitHub forks](https://img.shields.io/github/forks/jira-power-tools/jira-simple-lib?style=social)
-![GitHub last commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib?label=last%20commit)
-![GitHub contributors](https://img.shields.io/github/contributors/jira-power-tools/jira-simple-lib)
-![License](https://img.shields.io/github/license/rimshaveritus/dummy-project)
-![Last Commit](https://img.shields.io/github/last-commit/rimshaveritus/dummy-project)
-![Issues](https://img.shields.io/github/issues/rimshaveritus/dummy-project)
+![License](https://img.shields.io/github/license/jira-power-tools/jira-simple-lib)
+![Last Commit](https://img.shields.io/github/last-commit/jira-power-tools/jira-simple-lib)
+![Issues](https://img.shields.io/github/issues/jira-power-tools/jira-simple-lib)
 ![Stars](https://img.shields.io/github/stars/jira-power-tools/jira-simple-lib)
 
 
