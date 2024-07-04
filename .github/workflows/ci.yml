@@ -1,4 +1,57 @@
-name: Run Tests and Coverage
+# name: Run Tests and Coverage
+
+# on:
+#   push:
+#     branches:
+#       - JSL
+#   pull_request:
+#     branches:
+#       - JSL
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-20.04
+
+#     strategy:
+#       matrix:
+#         python-version: [3.9]
+
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - name: Set up Python ${{ matrix.python-version }}
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: ${{ matrix.python-version }}
+
+#       - name: Install dependencies and coverage
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install tox coverage
+
+#       - name: Run tests with coverage
+#         run: |
+#           tox
+
+#       - name: Upload coverage to Codecov
+#         uses: codecov/codecov-action@v2
+#         with:
+#           token: ${{ secrets.CODECOV_TOKEN }}
+#           file: ./coverage.xml
+#           flags: unittests
+#           name: codecov-umbrella
+#           fail_ci_if_error: true
+
+#       - name: Fetch last commit details
+#         id: commit
+#         run: |
+#           echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
+#           echo "::set-output name=commit_message::$(git log --format=%B -n 1)"
+#           echo "::set-output name=commit_author::$(git log --format=%an -n 1)"
+#           echo "::set-output name=commit_date::$(git log --format=%cd -n 1)"
+#         shell: bash
+
+name: Update Badge
 
 on:
   push:
@@ -7,47 +60,32 @@ on:
   pull_request:
     branches:
       - JSL
+  schedule:
+    - cron: '0 * * * *'  # This will run every hour
 
 jobs:
-  test:
+  update-badge:
     runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        python-version: [3.9]
-
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies and coverage
-        run: |
-          python -m pip install --upgrade pip
-          pip install tox coverage
-
-      - name: Run tests with coverage
-        run: |
-          tox
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
-
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
       - name: Fetch last commit details
         id: commit
         run: |
-          echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
-          echo "::set-output name=commit_message::$(git log --format=%B -n 1)"
-          echo "::set-output name=commit_author::$(git log --format=%an -n 1)"
-          echo "::set-output name=commit_date::$(git log --format=%cd -n 1)"
-        shell: bash
+          LAST_COMMIT_DATE=$(git log -1 --format=%cd --date=short)
+          echo "Last commit date: $LAST_COMMIT_DATE"
+          echo "::set-output name=commit_date::$LAST_COMMIT_DATE"
 
+      - name: Update badge
+        run: |
+          COMMIT_DATE=${{ steps.commit.outputs.commit_date }}
+          echo "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='20'><rect width='150' height='20' fill='#555'/><rect x='37' width='113' height='20' fill='#4c1'/><rect rx='3' width='150' height='20' fill='none'/><g fill='#fff' text-anchor='middle' font-family='Verdana' font-size='110'><text x='195' y='140' transform='scale(.1)' textLength='260'>last commit</text><text x='945' y='140' transform='scale(.1)' textLength='630'>${COMMIT_DATE}</text></g></svg>" > badges/last_commit.svg
+          
+      - name: Commit and push badge
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add badges/last_commit.svg
+          git commit -m "Update last commit badge"
+          git push
