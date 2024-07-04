@@ -83,8 +83,6 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
-
-
 def read_config(filename):
     """
     Read configuration from a JSON file.
@@ -160,7 +158,8 @@ def create_jira_connection(jira_url, username, api_token):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         raise
-     
+
+
 def create_jira_project(jira, project_name, project_key):
     """
     Creates a new project in Jira.
@@ -277,8 +276,7 @@ def list_projects(jira):
     except JIRAError as e:
         logging.error(f"Error listing projects: {e}")
         return []
-    
-    
+
 
 def delete_project(jira, project_key, auto_confirm=False):
     """
@@ -328,6 +326,7 @@ def delete_project(jira, project_key, auto_confirm=False):
         error_message = f"Unexpected error deleting project {project_key}: {e}"
         logging.error(error_message)
         raise Exception(error_message) from e
+
 
 def list_stories_for_project(jira, project_key):
     """
@@ -657,6 +656,7 @@ def get_assignee(jira, issue_key):
     except JIRAError as e:
         logging.error(f"Error viewing assignee: {e}")
 
+
 def delete_story(jira, issue_key, auto_confirm=True):
     """
     Delete a specific Jira story.
@@ -674,7 +674,9 @@ def delete_story(jira, issue_key, auto_confirm=True):
         if issue:
             if not auto_confirm:
                 confirmation = (
-                    input(f"Do you really want to delete the story with key {issue_key}? [y/n]: ")
+                    input(
+                        f"Do you really want to delete the story with key {issue_key}? [y/n]: "
+                    )
                     .strip()
                     .lower()
                 )
@@ -690,7 +692,9 @@ def delete_story(jira, issue_key, auto_confirm=True):
             return False
     except JIRAError as e:
         if e.status_code == 403:
-            logging.error(f"Permission denied: You do not have permission to delete the story with key {issue_key}. Response text: {e.text}")
+            logging.error(
+                f"Permission denied: You do not have permission to delete the story with key {issue_key}. Response text: {e.text}"
+            )
         else:
             logging.error(f"Error deleting story: {e}. Response text: {e.text}")
         return False
@@ -1169,7 +1173,6 @@ def update_sprint_summary(jira, sprint_id, new_summary):
         return False
 
 
-
 def get_sprint_details(jira, sprint_id, project_key):
     """
     Generate a report for a sprint in Jira.
@@ -1328,6 +1331,7 @@ def get_board_id(jira, board_name):
         logging.error(f"Error retrieving board ID: {e}")
         return None
 
+
 def my_stories(jira, project_key, user):
     """
     Retrieve and print stories assigned to a specific user in a project.
@@ -1352,13 +1356,14 @@ def my_stories(jira, project_key, user):
 
         # Print issue key, summary, and status from the search result
         for issue in issues:
-            print(f"Key: {issue.key}, Summary: {issue.fields.summary}, Status: {issue.fields.status.name}")
+            print(
+                f"Key: {issue.key}, Summary: {issue.fields.summary}, Status: {issue.fields.status.name}"
+            )
 
     except JIRAError as e:
         logging.error(f"Error retrieving stories for user: {e}")
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
-
 
 
 def render_tui(issues, fetching_data=False):
@@ -2032,12 +2037,13 @@ def my_stories_tui(jira, project_key, user):
         logging.error(f"Error retrieving stories for user: {e}")
         return None
 
+
 def print_boundary(term):
-    print(term.bold('+' + '-'*48 + '+'))
+    print(term.bold("+" + "-" * 48 + "+"))
+
 
 def print_row(term, columns):
-    print(term.bold('| {0: <10} | {1: <30} | {2: <5} |'.format(*columns)))
-
+    print(term.bold("| {0: <10} | {1: <30} | {2: <5} |".format(*columns)))
 
 
 # def print_row(term, row):
@@ -2384,7 +2390,7 @@ def create_stories_from_csv(jira, project_key, csv_file_path):
             for row in rows:
                 summary = row.get("Summary")
                 description = row.get("Description")
-                issue_type = row.get("Issue Type", "Task") 
+                issue_type = row.get("Issue Type", "Task")
                 assignee_username = row.get("Assignee Username")
                 if summary and description:
                     new_story = create_story(jira, project_key, summary, description)
@@ -2671,7 +2677,9 @@ def parse_arguments():
     # Assuming you have already defined the 'sprint_parser' and 'sprint_subparsers' objects
 
     # Create subparser for updating a sprint
-    update_sprint_parser = sprint_subparsers.add_parser("update", help="Update a sprint")
+    update_sprint_parser = sprint_subparsers.add_parser(
+        "update", help="Update a sprint"
+    )
 
     # Add arguments for updating a sprint
     update_sprint_parser.add_argument(
@@ -2878,7 +2886,9 @@ def main():
             if args.project_action == "get-id":
                 user_account_id = get_user_account_id(jira, args.username)
                 if user_account_id is not None:
-                    logging.info(f"Account ID of user '{args.username}': {user_account_id}")
+                    logging.info(
+                        f"Account ID of user '{args.username}': {user_account_id}"
+                    )
             elif args.project_action == "create":
                 if args.name and args.project_key:
                     create_jira_project(jira, args.name, args.project_key)
@@ -2922,9 +2932,9 @@ def main():
                     print(f"The ID of the board '{args.name}' is: {board_id}")
         elif args.command == "sprint":
             if args.sprint_action == "create":
-                create_sprint(jira, args.board_id, args.name)        
+                create_sprint(jira, args.board_id, args.name)
             elif args.sprint_action == "update":
-                    update_sprint_summary(jira, args.sprint_id, args.new_summary)
+                update_sprint_summary(jira, args.sprint_id, args.new_summary)
             elif args.sprint_action == "list":
                 sprints = list_sprints_for_board_tui(jira, args.board_id)
                 if sprints:
