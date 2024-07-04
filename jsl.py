@@ -15,6 +15,10 @@ from blessed import Terminal
 import logging
 from jira import JIRAError
 import requests
+from ipywidgets import Button, VBox, Text
+from IPython.display import display
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 
 
 def load_dotenv():
@@ -156,8 +160,7 @@ def create_jira_connection(jira_url, username, api_token):
     except Exception as e:
         logging.error(f"Error creating Jira connection: {e}")
         raise
-
-
+     
 def create_jira_project(jira, project_name, project_key):
     """
     Creates a new project in Jira.
@@ -2875,11 +2878,10 @@ def main():
             if args.project_action == "get-id":
                 user_account_id = get_user_account_id(jira, args.username)
                 if user_account_id is not None:
-                    logging.info(
-                        f"Account ID of user '{args.username}': {user_account_id}"
-                    )
+                    logging.info(f"Account ID of user '{args.username}': {user_account_id}")
             elif args.project_action == "create":
-                create_jira_project(jira, args.name, args.project_key)
+                if args.name and args.project_key:
+                    create_jira_project(jira, args.name, args.project_key)
             elif args.project_action == "update":
                 update_jira_project(jira, args.project_key, args.name, args.new_key)
             elif args.project_action == "delete":
