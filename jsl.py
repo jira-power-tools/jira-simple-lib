@@ -15,10 +15,6 @@ from blessed import Terminal
 import logging
 from jira import JIRAError
 import requests
-from ipywidgets import Button, VBox, Text
-from IPython.display import display
-import ipywidgets as widgets
-from IPython.display import display, clear_output
 
 
 def load_dotenv():
