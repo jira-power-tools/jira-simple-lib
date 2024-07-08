@@ -25,6 +25,7 @@ A tool to manage Jira with CLI.
 
 
 
+
 ## Getting Started Guide
 
 This guide will help you get started with the Jira Simple Lib library.
