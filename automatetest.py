@@ -1,4 +1,6 @@
 import unittest
+from builtins import input  # to mock input function
+from requests.models import Response
 from unittest.mock import patch, mock_open,MagicMock, call
 import os,logging,jsl,requests, json
 from jsl import (
@@ -663,7 +665,483 @@ class TestGetAssignee(unittest.TestCase):
         # Check if the error message contains the expected substring
         self.assertIn('Error viewing assignee: ', logged_error)
         self.assertIn('Error message', logged_error)
+    
+class TestDeleteStory(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_delete_story_success_auto_confirm(self, mock_logging):
+        jira_mock = MagicMock()
+        issue_mock = MagicMock()
 
-            
+        jira_mock.issue.return_value = issue_mock
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=True)
+
+        issue_mock.delete.assert_called_once()
+        mock_logging.info.assert_called_once_with('Story deleted successfully. Key: PROJ-123')
+        self.assertTrue(result)
+
+    @patch('jsl.logging')
+    @patch('builtins.input', return_value='y')
+    def test_delete_story_success_manual_confirm(self, mock_input, mock_logging):
+        jira_mock = MagicMock()
+        issue_mock = MagicMock()
+
+        jira_mock.issue.return_value = issue_mock
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=False)
+
+        mock_input.assert_called_once_with('Do you really want to delete the story with key PROJ-123? [y/n]: ')
+        issue_mock.delete.assert_called_once()
+        mock_logging.info.assert_called_once_with('Story deleted successfully. Key: PROJ-123')
+        self.assertTrue(result)
+
+    @patch('jsl.logging')
+    @patch('builtins.input', return_value='n')
+    def test_delete_story_cancel_manual_confirm(self, mock_input, mock_logging):
+        jira_mock = MagicMock()
+        issue_mock = MagicMock()
+
+        jira_mock.issue.return_value = issue_mock
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=False)
+
+        mock_input.assert_called_once_with('Do you really want to delete the story with key PROJ-123? [y/n]: ')
+        issue_mock.delete.assert_not_called()
+        mock_logging.info.assert_called_once_with('Story deletion cancelled by user. Key: PROJ-123')
+        self.assertFalse(result)
+
+    @patch('jsl.logging')
+    def test_delete_story_issue_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.return_value = None
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=True)
+
+        jira_mock.issue.assert_called_once_with('PROJ-123')
+        mock_logging.error.assert_called_once_with('Story with key PROJ-123 does not exist.')
+        self.assertFalse(result)
+
+    @patch('jsl.logging')
+    def test_delete_story_permission_denied(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.side_effect = JIRAError(status_code=403, text='Permission denied')
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=True)
+
+        jira_mock.issue.assert_called_once_with('PROJ-123')
+        mock_logging.error.assert_called_once_with(
+            'Permission denied: You do not have permission to delete the story with key PROJ-123. Response text: Permission denied'
+        )
+        self.assertFalse(result)
+    @patch('jsl.logging')
+    def test_delete_story_unexpected_error(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.side_effect = Exception('Unexpected error')
+
+        result = delete_story(jira_mock, 'PROJ-123', auto_confirm=True)
+
+        jira_mock.issue.assert_called_once_with('PROJ-123')
+        mock_logging.error.assert_called_once_with('An unexpected error occurred: Unexpected error')
+        self.assertFalse(result)
+        
+    
+class TestAddComment(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_add_comment_success(self, mock_logging):
+        jira_mock = MagicMock()
+        issue_mock = MagicMock()
+
+        jira_mock.issue.return_value = issue_mock
+
+        result = add_comment(jira_mock, 'PROJ-123', 'This is a comment')
+
+        jira_mock.add_comment.assert_called_once_with(issue_mock, 'This is a comment')
+        mock_logging.info.assert_called_once_with('Comment added to issue PROJ-123')
+        self.assertEqual(result, 1)
+
+    @patch('jsl.logging')
+    def test_add_comment_issue_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.return_value = None
+
+        result = add_comment(jira_mock, 'PROJ-123', 'This is a comment')
+
+        jira_mock.issue.assert_called_once_with('PROJ-123')
+        jira_mock.add_comment.assert_not_called()
+        mock_logging.error.assert_called_once_with('Issue with key PROJ-123 does not exist.')
+        self.assertEqual(result, 0)
+
+    
+class TestGetStoryDetails(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_get_story_details_success(self, mock_logging):
+        jira_mock = MagicMock()
+        story_mock = MagicMock()
+
+        story_mock.key = 'PROJ-123'
+        story_mock.fields.summary = 'Story summary'
+        story_mock.fields.description = 'Story description'
+        story_mock.fields.status.name = 'Open'
+        story_mock.fields.assignee.displayName = 'John Doe'
+        story_mock.fields.reporter.displayName = 'Jane Doe'
+        story_mock.fields.created = '2024-01-01T00:00:00.000+0000'
+        story_mock.fields.updated = '2024-01-02T00:00:00.000+0000'
+
+        jira_mock.issue.return_value = story_mock
+
+        get_story_details(jira_mock, 'PROJ-123')
+
+        mock_logging.info.assert_any_call('Key: PROJ-123')
+        mock_logging.info.assert_any_call('Summary: Story summary')
+        mock_logging.info.assert_any_call('Description: Story description')
+        mock_logging.info.assert_any_call('Status: Open')
+        mock_logging.info.assert_any_call('Assignee: John Doe')
+        mock_logging.info.assert_any_call('Reporter: Jane Doe')
+        mock_logging.info.assert_any_call('Created: 2024-01-01T00:00:00.000+0000')
+        mock_logging.info.assert_any_call('Updated: 2024-01-02T00:00:00.000+0000')
+
+    @patch('jsl.logging')
+    def test_get_story_details_unassigned(self, mock_logging):
+        jira_mock = MagicMock()
+        story_mock = MagicMock()
+
+        story_mock.key = 'PROJ-123'
+        story_mock.fields.summary = 'Story summary'
+        story_mock.fields.description = 'Story description'
+        story_mock.fields.status.name = 'Open'
+        story_mock.fields.assignee = None
+        story_mock.fields.reporter = None
+        story_mock.fields.created = '2024-01-01T00:00:00.000+0000'
+        story_mock.fields.updated = '2024-01-02T00:00:00.000+0000'
+
+        jira_mock.issue.return_value = story_mock
+
+        get_story_details(jira_mock, 'PROJ-123')
+
+        mock_logging.info.assert_any_call('Key: PROJ-123')
+        mock_logging.info.assert_any_call('Summary: Story summary')
+        mock_logging.info.assert_any_call('Description: Story description')
+        mock_logging.info.assert_any_call('Status: Open')
+        mock_logging.info.assert_any_call('Assignee: Unassigned')
+        mock_logging.info.assert_any_call('Reporter: Unassigned')
+        mock_logging.info.assert_any_call('Created: 2024-01-01T00:00:00.000+0000')
+        mock_logging.info.assert_any_call('Updated: 2024-01-02T00:00:00.000+0000')
+
+    @patch('jsl.logging')
+    def test_get_story_details_issue_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.return_value = None
+
+        get_story_details(jira_mock, 'PROJ-123')
+
+        jira_mock.issue.assert_called_once_with('PROJ-123')
+        mock_logging.error.assert_called_once_with('Story with key PROJ-123 does not exist.')
+class TestCreateEpic(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_create_epic_success(self, mock_logging):
+        jira_mock = MagicMock()
+        new_epic_mock = MagicMock()
+
+        jira_mock.create_issue.return_value = new_epic_mock
+        new_epic_mock.key = 'EPIC-123'
+
+        result = create_epic(jira_mock, 'PROJ', 'Epic Name', 'Epic Summary')
+
+        jira_mock.create_issue.assert_called_once_with(
+            project='PROJ',
+            summary='Epic Summary',
+            issuetype={"name": "Epic"}
+        )
+        mock_logging.info.assert_called_once_with('Epic created successfully. Epic Key: EPIC-123')
+        self.assertEqual(result, new_epic_mock)
+
+class TestListEpics(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_list_epics_success(self, mock_logging):
+        jira_mock = MagicMock()
+        epics_mock = [MagicMock(), MagicMock()]
+
+        jira_mock.search_issues.return_value = epics_mock
+
+        result = list_epics(jira_mock, 'PROJ')
+
+        jira_mock.search_issues.assert_called_once_with('project = PROJ AND issuetype = Epic')
+        self.assertEqual(result, epics_mock)
+
+    @patch('jsl.logging')
+    def test_list_epics_exception(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.search_issues.side_effect = Exception('Unexpected error')
+
+        result = list_epics(jira_mock, 'PROJ')
+
+        jira_mock.search_issues.assert_called_once_with('project = PROJ AND issuetype = Epic')
+        mock_logging.error.assert_called_once_with('Error listing epics: Unexpected error')
+        self.assertIsNone(result)
+        
+
+class TestUpdateEpic(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_update_epic_success(self, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+
+        jira_mock.issue.return_value = epic_mock
+
+        result = update_epic(jira_mock, 'EPIC-123', 'New Summary', 'New Description')
+
+        epic_mock.update.assert_called_once_with(
+            summary='New Summary',
+            description='New Description'
+        )
+        mock_logging.info.assert_called_once_with('Epic updated successfully. Key: EPIC-123')
+        self.assertEqual(result, epic_mock)
+
+
+class TestGetEpicDetails(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_get_epic_details_success_with_stories(self, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+        story_mock1 = MagicMock()
+        story_mock2 = MagicMock()
+
+        epic_mock.key = 'EPIC-123'
+        epic_mock.fields.summary = 'Epic Summary'
+
+        story_mock1.key = 'STORY-1'
+        story_mock1.fields.summary = 'Story 1 Summary'
+        story_mock1.fields.status = 'In Progress'
+        story_mock1.fields.assignee = 'John Doe'
+        story_mock1.fields.duedate = '2024-07-15'
+        story_mock1.fields.customfield_10015 = '2024-07-10'
+
+        story_mock2.key = 'STORY-2'
+        story_mock2.fields.summary = 'Story 2 Summary'
+        story_mock2.fields.status = 'To Do'
+        story_mock2.fields.assignee = None
+        story_mock2.fields.duedate = None
+        story_mock2.fields.customfield_10015 = None
+
+        jira_mock.issue.side_effect = [epic_mock, story_mock1, story_mock2]
+        jira_mock.search_issues.return_value = [story_mock1, story_mock2]
+
+        get_epic_details(jira_mock, 'EPIC-123')
+
+        mock_logging.info.assert_any_call('Epic Key: EPIC-123')
+        mock_logging.info.assert_any_call('Summary: Epic Summary')
+        mock_logging.info.assert_any_call('Stories in the Epic:')
+        mock_logging.info.assert_any_call('Story Key: STORY-1')
+        mock_logging.info.assert_any_call('Summary: Story 1 Summary')
+        mock_logging.info.assert_any_call('Status: In Progress')
+        mock_logging.info.assert_any_call('Assignee: John Doe')
+        mock_logging.info.assert_any_call('Due Date: 2024-07-15')
+        mock_logging.info.assert_any_call('Start Date: 2024-07-10')
+        mock_logging.info.assert_any_call('Story Key: STORY-2')
+        mock_logging.info.assert_any_call('Summary: Story 2 Summary')
+        mock_logging.info.assert_any_call('Status: To Do')
+        mock_logging.info.assert_any_call('Assignee: None')
+        mock_logging.info.assert_any_call('Due Date: None')
+        mock_logging.info.assert_any_call('Start Date: None')
+
+    @patch('jsl.logging')
+    def test_get_epic_details_success_no_stories(self, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+
+        epic_mock.key = 'EPIC-123'
+        epic_mock.fields.summary = 'Epic Summary'
+
+        jira_mock.issue.return_value = epic_mock
+        jira_mock.search_issues.return_value = []
+
+        get_epic_details(jira_mock, 'EPIC-123')
+
+        mock_logging.info.assert_any_call('Epic Key: EPIC-123')
+        mock_logging.info.assert_any_call('Summary: Epic Summary')
+        mock_logging.info.assert_any_call('No stories found in the Epic.')
+
+
+class TestAddIssuesToEpic(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_add_issues_to_epic_epic_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.return_value = None
+
+        result = add_issues_to_epic(jira_mock, 'EPIC-123', ['ISSUE-1'])
+
+        jira_mock.issue.assert_called_once_with('EPIC-123')
+        mock_logging.error.assert_called_once_with('Epic with key EPIC-123 does not exist.')
+        self.assertFalse(result)
+
+    @patch('jsl.logging')
+    def test_add_issues_to_epic_issue_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+
+        epic_mock.key = 'EPIC-123'
+        jira_mock.issue.side_effect = [epic_mock, None]
+
+        result = add_issues_to_epic(jira_mock, 'EPIC-123', ['ISSUE-1'])
+
+        jira_mock.issue.assert_any_call('EPIC-123')
+        jira_mock.issue.assert_any_call('ISSUE-1')
+
+        mock_logging.error.assert_called_once_with('Issue with key ISSUE-1 does not exist.')
+        self.assertFalse(result)
+
+
+class TestUnlinkStoryFromEpic(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_unlink_story_from_epic_success(self, mock_logging):
+        jira_mock = MagicMock()
+        story_mock = MagicMock()
+
+        story_mock.key = 'STORY-1'
+
+        jira_mock.issue.return_value = story_mock
+
+        result = unlink_story_from_epic(jira_mock, 'STORY-1')
+
+        jira_mock.issue.assert_called_once_with('STORY-1')
+        story_mock.update.assert_called_once_with(fields={'customfield_10014': None})
+
+        mock_logging.info.assert_called_once_with('Story STORY-1 unlinked from its Epic')
+        self.assertTrue(result)
+
+class TestDeleteEpic(unittest.TestCase):
+    @patch('jsl.logging')
+    @patch('builtins.input', return_value='y')  # Mocking user input to 'y'
+    def test_delete_epic_with_auto_confirm(self, mock_input, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+
+        epic_mock.key = 'EPIC-123'
+
+        jira_mock.issue.return_value = epic_mock
+
+        result = delete_epic(jira_mock, 'EPIC-123', auto_confirm=True)
+
+        jira_mock.issue.assert_called_once_with('EPIC-123')
+        epic_mock.delete.assert_called_once()
+
+        mock_logging.info.assert_called_once_with('Epic deleted successfully. Key: EPIC-123')
+        self.assertTrue(result)
+
+    @patch('jsl.logging')
+    @patch('builtins.input', return_value='y')  # Mocking user input to 'y'
+    def test_delete_epic_without_auto_confirm(self, mock_input, mock_logging):
+        jira_mock = MagicMock()
+        epic_mock = MagicMock()
+
+        epic_mock.key = 'EPIC-123'
+
+        jira_mock.issue.return_value = epic_mock
+
+        result = delete_epic(jira_mock, 'EPIC-123', auto_confirm=False)
+
+        jira_mock.issue.assert_called_once_with('EPIC-123')
+        epic_mock.delete.assert_called_once()
+
+        mock_input.assert_called_once()
+        mock_logging.info.assert_called_once_with('Epic deleted successfully. Key: EPIC-123')
+        self.assertTrue(result)
+
+    @patch('jsl.logging')
+    def test_delete_epic_epic_not_found(self, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock.issue.return_value = None
+
+        result = delete_epic(jira_mock, 'EPIC-123')
+
+        jira_mock.issue.assert_called_once_with('EPIC-123')
+        mock_logging.error.assert_called_once_with('Epic with key EPIC-123 does not exist.')
+        self.assertFalse(result)
+class TestCreateSprint(unittest.TestCase):
+    @patch('jsl.logging')
+    @patch('jsl.requests.post')
+    def test_create_sprint_success(self, mock_post, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock._options = {'server': 'https://example.com'}
+        jira_mock._session.auth = ('username', 'password')
+
+        board_id = 1001
+        sprint_name = 'New Sprint'
+
+        mock_response = MagicMock(spec=Response)
+        mock_response.status_code = 201
+        mock_response.json.return_value = {'id': 2001}
+        mock_post.return_value = mock_response
+
+        result = create_sprint(jira_mock, board_id, sprint_name)
+
+        mock_post.assert_called_once_with(
+            'https://example.com/rest/agile/1.0/sprint',
+            json={'name': sprint_name, 'originBoardId': board_id},
+            auth=('username', 'password')
+        )
+
+        mock_logging.info.assert_called_once_with('New Sprint created with ID: 2001')
+        self.assertEqual(result, 2001)
+
+    @patch('jsl.logging')
+    @patch('jsl.requests.post')
+    def test_create_sprint_failure(self, mock_post, mock_logging):
+        jira_mock = MagicMock()
+        jira_mock._options = {'server': 'https://example.com'}
+        jira_mock._session.auth = ('username', 'password')
+
+        board_id = 1001
+        sprint_name = 'New Sprint'
+
+        mock_response = MagicMock(spec=Response)
+        mock_response.status_code = 400
+        mock_response.text = 'Error message'
+        mock_post.return_value = mock_response
+
+        result = create_sprint(jira_mock, board_id, sprint_name)
+
+        mock_post.assert_called_once_with(
+            'https://example.com/rest/agile/1.0/sprint',
+            json={'name': sprint_name, 'originBoardId': board_id},
+            auth=('username', 'password')
+        )
+
+        mock_logging.error.assert_called_once_with(
+            'Failed to create a new Sprint. Status code: 400, Error: Error message'
+        )
+        self.assertIsNone(result)
+
+
+class TestListSprints(unittest.TestCase):
+    @patch('jsl.logging')
+    def test_list_sprints_success(self, mock_logging):
+        jira_mock = MagicMock()
+        board_id = 1001
+        expected_sprints = [
+            {'id': 2001, 'name': 'Sprint 1'},
+            {'id': 2002, 'name': 'Sprint 2'}
+        ]
+        jira_mock.sprints.return_value = expected_sprints
+
+        result = list_sprints(jira_mock, board_id)
+
+        jira_mock.sprints.assert_called_once_with(board_id)
+        self.assertEqual(result, expected_sprints)
+        mock_logging.assert_not_called()  # Ensure no logging occurred on success
+
+    @patch('jsl.logging')
+    def test_list_sprints_error(self, mock_logging):
+        jira_mock = MagicMock()
+        board_id = 1001
+        jira_mock.sprints.side_effect = Exception('Connection error')
+
+        result = list_sprints(jira_mock, board_id)
+
+        jira_mock.sprints.assert_called_once_with(board_id)
+        mock_logging.error.assert_called_once_with('Error retrieving sprints for board: Connection error')
+        self.assertIsNone(result)
+        
+                      
 if __name__ == "__main__":
     unittest.main()
